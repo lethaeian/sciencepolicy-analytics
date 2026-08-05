@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>骨太方針2026・日本成長戦略の財政方針 — 国会統制と政府指針の変遷</title>
+<style>
+/* ──────────────────────────────────────────────
+   ledger — 予算統制をテーマにした帳簿罫のスタイル
+   色は「規律の方向」を符号化する:  緑=強化  朱=緩和  灰=維持
+   ────────────────────────────────────────────── */
+:root{
+  --paper:#F7F8F5;
+  --paper-deep:#EDF0EA;
+  --ink:#1A1F1B;
+  --ink-soft:#4A5450;
+  --ink-faint:#7C8783;
+  --rule:#CBD5CC;
+  --rule-hair:#DFE5DE;
+  --ledger:#2E5E4E;      /* 規律強化 */
+  --ledger-wash:#E4EDE7;
+  --seal:#A8341F;        /* 規律緩和 */
+  --seal-wash:#F6E4DF;
+  --hold:#8A8F86;        /* 維持 */
+
+  --mincho:"Hiragino Mincho ProN","HiraMinProN-W3","Yu Mincho","YuMincho","Noto Serif JP","Songti SC",serif;
+  --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Noto Sans JP","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+
+  --measure:34rem;
+  --gutter:9.5rem;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--gothic);
+  font-size:16px;
+  line-height:1.95;
+  font-feature-settings:"palt" 1;
+  letter-spacing:.01em;
+}
+
+.sheet{
+  max-width:calc(var(--measure) + var(--gutter) + 4rem);
+  margin:0 auto;
+  padding:0 1.5rem 8rem;
+}
+
+/* ── 見出し帯（英字＋和文）: サイト共通の編集慣行 ─────────── */
+.band{
+  display:flex;
+  align-items:baseline;
+  gap:.6em;
+  margin:5.5rem 0 1.8rem;
+  padding-bottom:.5rem;
+  border-bottom:1.5px solid var(--ink);
+}
+.band .en{
+  font-family:var(--mono);
+  font-size:.72rem;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--ledger);
+  font-weight:600;
+}
+.band .ja{
+  font-family:var(--mincho);
+  font-size:1.02rem;
+  font-weight:600;
+  letter-spacing:.06em;
+}
+
+/* ── ヘッダ ───────────────────────────────────── */
+.masthead{padding:4.5rem 0 0}
+.kicker{
+  font-family:var(--mono);
+  font-size:.7rem;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--seal);
+  margin:0 0 1.6rem;
+}
+h1{
+  font-family:var(--mincho);
+  font-size:clamp(1.65rem,4.6vw,2.5rem);
+  line-height:1.42;
+  font-weight:600;
+  letter-spacing:.01em;
+  margin:0 0 .5rem;
+}
+h1 .sub{
+  display:block;
+  font-size:.56em;
+  color:var(--ink-soft);
+  margin-top:.7rem;
+  letter-spacing:.04em;
+}
+.standfirst{
+  font-size:.94rem;
+  color:var(--ink-soft);
+  margin:1.4rem 0 2.6rem;
+  max-width:var(--measure);
+}
+
+/* ── 書誌ブロック ─────────────────────────────── */
+.colophon{
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  padding:1.4rem 0;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:.55rem 1.6rem;
+  font-size:.86rem;
+  line-height:1.7;
+}
+.colophon dt{
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  padding-top:.3em;
+  white-space:nowrap;
+}
+.colophon dd{margin:0}
+
+/* ── 本文 ─────────────────────────────────────── */
+h2.part{
+  font-family:var(--mincho);
+  font-size:1.4rem;
+  letter-spacing:.04em;
+  margin:5rem 0 2.2rem;
+  padding:1.1rem 0 1.1rem 1.2rem;
+  border-left:5px solid var(--ledger);
+  background:linear-gradient(90deg,var(--ledger-wash),transparent 72%);
+}
+h2.part .no{
+  display:block;
+  font-family:var(--mono);
+  font-size:.66rem;
+  letter-spacing:.24em;
+  color:var(--ledger);
+  margin-bottom:.5rem;
+}
+
+/* 節見出し＋傍注ロケータ（講義ノートのタイムスタンプに相当） */
+.sec{margin:3.2rem 0 0}
+h3{
+  font-family:var(--mincho);
+  font-size:1.09rem;
+  font-weight:600;
+  line-height:1.62;
+  letter-spacing:.03em;
+  margin:0 0 1rem;
+  max-width:var(--measure);
+}
+h3 .n{
+  font-family:var(--mono);
+  font-size:.78em;
+  color:var(--ledger);
+  margin-right:.6em;
+  font-weight:600;
+}
+.loc{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:.04em;
+  color:var(--ink-faint);
+  background:var(--paper-deep);
+  padding:.12em .55em;
+  margin-left:.5em;
+  vertical-align:.14em;
+  white-space:nowrap;
+}
+
+p{max-width:var(--measure);margin:0 0 1.35rem}
+strong{font-weight:700;background:linear-gradient(transparent 62%,var(--ledger-wash) 62%)}
+em{font-style:normal;color:var(--seal);font-weight:600}
+.lede{font-family:var(--mincho);font-size:1.02rem;line-height:1.9}
+
+ul,ol{max-width:var(--measure);padding-left:1.3rem;margin:0 0 1.35rem}
+li{margin-bottom:.5rem}
+
+/* ── 引用（法令・文書からの引用） ───────────────── */
+blockquote{
+  margin:1.8rem 0;
+  padding:.2rem 0 .2rem 1.3rem;
+  border-left:2px solid var(--rule);
+  max-width:var(--measure);
+  font-family:var(--mincho);
+  font-size:.97rem;
+  color:var(--ink-soft);
+}
+blockquote cite{
+  display:block;
+  font-family:var(--mono);
+  font-style:normal;
+  font-size:.68rem;
+  letter-spacing:.08em;
+  color:var(--ink-faint);
+  margin-top:.7rem;
+}
+
+/* ── 批判点ボックス ───────────────────────────── */
+.claim{
+  margin:2.2rem 0;
+  padding:1.5rem 1.6rem;
+  background:#fff;
+  border:1px solid var(--rule);
+  border-top:3px solid var(--seal);
+  max-width:var(--measure);
+}
+.claim .tag{
+  font-family:var(--mono);
+  font-size:.65rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--seal);
+  display:block;
+  margin-bottom:.8rem;
+}
+.claim p:last-child{margin-bottom:0}
+.claim p{max-width:none}
+
+/* ── 表（帳簿罫） ─────────────────────────────── */
+.tablewrap{overflow-x:auto;margin:2rem 0;-webkit-overflow-scrolling:touch}
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:34rem;
+  font-size:.85rem;
+  line-height:1.65;
+  font-variant-numeric:tabular-nums;
+}
+caption{
+  text-align:left;
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:.14em;
+  color:var(--ink-faint);
+  padding-bottom:.7rem;
+}
+th,td{
+  padding:.72rem .85rem;
+  border-bottom:1px solid var(--rule-hair);
+  vertical-align:top;
+  text-align:left;
+}
+thead th{
+  background:var(--ledger-wash);
+  border-bottom:1.5px solid var(--ledger);
+  font-size:.75rem;
+  letter-spacing:.05em;
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+td.num{font-family:var(--mono);white-space:nowrap}
+
+/* ── 署名要素：規律の年表 ───────────────────────
+   各エントリを「規律を強めたか緩めたか」で色分けする    */
+.chron{
+  margin:2.4rem 0 2.8rem;
+  border-top:1.5px solid var(--ink);
+}
+.entry{
+  display:grid;
+  grid-template-columns:5.6rem 1fr;
+  gap:0 1.1rem;
+  padding:1.15rem 0 1.15rem .9rem;
+  border-bottom:1px solid var(--rule-hair);
+  border-left:4px solid var(--rule);
+  position:relative;
+}
+.entry.up{border-left-color:var(--ledger);background:linear-gradient(90deg,var(--ledger-wash),transparent 34%)}
+.entry.down{border-left-color:var(--seal);background:linear-gradient(90deg,var(--seal-wash),transparent 34%)}
+.entry.key{border-left-width:8px}
+.entry time{
+  font-family:var(--mono);
+  font-size:.76rem;
+  letter-spacing:.02em;
+  color:var(--ink-soft);
+  padding-top:.22em;
+  white-space:nowrap;
+}
+.entry .ev{font-size:.9rem;line-height:1.8}
+.entry .ev b{font-weight:700}
+.dir{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:.63rem;
+  letter-spacing:.16em;
+  padding:.14em .5em;
+  margin-left:.45em;
+  vertical-align:.16em;
+  border:1px solid currentColor;
+  white-space:nowrap;
+}
+.dir.up{color:var(--ledger)}
+.dir.down{color:var(--seal)}
+.dir.hold{color:var(--hold)}
+
+.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:1.1rem;
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:.1em;
+  color:var(--ink-faint);
+  margin:0 0 1.2rem;
+}
+.legend span{display:flex;align-items:center;gap:.4em}
+.legend i{width:.85rem;height:.55rem;display:inline-block}
+.legend .u{background:var(--ledger)}
+.legend .d{background:var(--seal)}
+.legend .h{background:var(--rule)}
+
+/* ── 付録リスト ───────────────────────────────── */
+.refs{max-width:var(--measure);font-size:.85rem;line-height:1.8}
+.refs li{margin-bottom:.75rem}
+.checklist{counter-reset:c;list-style:none;padding-left:0;max-width:var(--measure)}
+.checklist li{
+  counter-increment:c;
+  position:relative;
+  padding-left:2.4rem;
+  margin-bottom:1rem;
+  font-size:.92rem;
+}
+.checklist li::before{
+  content:counter(c,decimal-leading-zero);
+  position:absolute;left:0;top:.15em;
+  font-family:var(--mono);font-size:.72rem;
+  color:var(--seal);letter-spacing:.06em;
+}
+
+.note{
+  margin-top:4rem;
+  padding-top:1.4rem;
+  border-top:1px solid var(--rule);
+  font-size:.78rem;
+  line-height:1.85;
+  color:var(--ink-faint);
+  max-width:var(--measure);
+}
+
+a{color:var(--ledger);text-underline-offset:.2em}
+a:focus-visible,:focus-visible{outline:2px solid var(--seal);outline-offset:3px}
+
+@media (max-width:640px){
+  body{font-size:15.5px;line-height:1.9}
+  .sheet{padding:0 1.15rem 5rem}
+  .masthead{padding-top:2.6rem}
+  .band{margin:3.8rem 0 1.4rem;flex-wrap:wrap;gap:.35em}
+  h2.part{margin:3.4rem 0 1.8rem;padding-left:.9rem}
+  .colophon{grid-template-columns:1fr;gap:.15rem 0}
+  .colophon dd{margin-bottom:.75rem}
+  .entry{grid-template-columns:1fr;gap:.3rem}
+  .entry time{padding-top:0}
+  .loc{display:block;margin:.45em 0 0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="sheet">
+
+<header class="masthead">
+  <p class="kicker">Fiscal Control and the Diet</p>
+  <h1>骨太方針2026・日本成長戦略の財政方針
+    <span class="sub">国会によるコントロールと、2023年からの政府指針の変遷</span>
+  </h1>
+  <p class="standfirst">『「強く豊かな日本」投資枠』は、複数年度化のために国会統制を弱める必要がないにもかかわらず弱めている。その判断が、どの水準の議論を経て行われたのかを検証する。</p>
+
+  <dl class="colophon">
+    <dt>対象文書</dt>
+    <dd>経済財政運営と改革の基本方針2026／日本成長戦略（いずれも令和8年7月21日閣議決定）</dd>
+    <dt>分析視角</dt>
+    <dd>① 財政民主主義の観点からの国会統制　② 2023年を起点とする政府指針の通時的変遷</dd>
+    <dt>主要論点</dt>
+    <dd>シーリング撤廃／特別会計別枠管理／つなぎ国債の指標除外／基金3年ルールの不適用</dd>
+    <dt>作成</dt>
+    <dd>2026年8月4日</dd>
+  </dl>
+</header>
+
+<!-- ══════════════════════════════════════════ -->
+<div class="band"><span class="en">Overview</span><span class="ja">概要</span></div>
+
+<p class="lede">本稿の結論を先に置く。<strong>複数年度にわたる予見可能な投資支援は、国会の事前議決を伴う既存制度で完全に実現可能である。</strong>継続費（財政法第14条の2）と国庫債務負担行為（同第15条）がそれであり、いずれも原則5か年度以内の複数年度化を、国会の議決を前提として認めている。</p>
+
+<p>にもかかわらず骨太方針2026は「財政単年度主義の弊害を是正し、予算の作り方を根本から改める」として新しい機構を創設した。既存制度と新機構の実質的な差異は一点、<em>新機構が国会の事前議決を経ないこと</em>にある。したがって批判の焦点は積極財政の是非ではなく、「なぜ継続費の活用拡大では不十分なのか」という論証の不在に置かれる。</p>
+
+<p>第二の観点である指針の変遷は、この判断がいかに短期間で反転したかを示す。基金への予算措置を原則3年とするルールは2023年12月に確立され、2024年には実際に国庫返納と基金廃止をもたらした。それが2026年に成長投資について不適用とされるまで、<strong>約2年5か月</strong>である。</p>
+
+<!-- ══════════════════════════════════════════ -->
+<div class="band"><span class="en">Method</span><span class="ja">調査方法</span></div>
+
+<p>内閣府「経済財政運営と改革の基本方針2026」本文および原案（令和8年6月30日 経済財政諮問会議資料）、行政改革推進会議「基金の点検・見直しの横断的な方針について」（令和5年12月20日）ならびに「基金全体の点検・見直し結果」（令和6年4月）、財務省繰越制度ガイドブック、衆議院調査局『予算単年度主義における基金の課題』（2022）、参議院調査室『経済のプリズム』No.181、会計検査院研究誌所収の木村琢麿論文を参照した。</p>
+
+<p>検索語は「基金の点検・見直しの横断的な方針 3年」「GX経済移行債 つなぎ国債 特別会計」「骨太方針 PB黒字化 削除 2026」「単年度主義の弊害是正 国庫債務負担行為」等。数値・引用は原典または一次資料に基づくものと、報道・二次資料に依拠するものを本文中で区別した。</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 class="part"><span class="no">Part 1</span>国会によるコントロール</h2>
+
+<section class="sec">
+<h3><span class="n">1.</span>憲法・財政法上の枠組み<span class="loc">憲法83・85・86条</span></h3>
+
+<p>財政民主主義の根拠は明確である。日本国憲法第86条は、内閣が毎会計年度の予算を作成し国会に提出して審議・議決を経なければならないと規定する。予算の単年度主義は、毎会計年度ごとに国会の議決を求めることによって、国会の予算審議権を確保し、予算に対する国会のコントロールを保障するための原則である。</p>
+
+<p>学説上の位置づけも重要である。予算単年度主義が憲法上の原則であるのに対し、会計年度独立の原則は法律上の原則にすぎないとされるのが一般的な説明である。すなわち<strong>単年度主義の緩和は技術的な予算改革ではなく、憲法上の原則に触れる問題</strong>であり、その正当化には相応の論証を要する。</p>
+</section>
+
+<section class="sec">
+<h3><span class="n">2.</span>決定的論点 — 例外制度はすでに整備されている<span class="loc">財政法14条の2・14条の3・15条</span></h3>
+
+<blockquote>
+財政単年度主義の弊害を是正し、予算の作り方を根本から改める。
+<cite>骨太方針2026 本文</cite>
+</blockquote>
+
+<p>この論法には、財政学者からすでに提起された反論がある。単年度主義に弊害があること自体は争われていない。年度末近くに無理な予算執行が生じる例は繰り返し指摘されてきた。だからこそ、国会での事前の議決を経れば単年度主義の例外扱いが認められている。その代表例が予算の繰越し、継続費、国庫債務負担行為である。</p>
+
+<div class="tablewrap">
+<table>
+<caption>Table 1 — 国会の事前議決を伴う複数年度化の既存制度</caption>
+<thead>
+<tr><th>制度</th><th>根拠</th><th>期間</th><th>国会の関与</th></tr>
+</thead>
+<tbody>
+<tr><td>継続費</td><td class="num">財政法 14条の2</td><td class="num">原則5か年度以内</td><td>経費の総額と年割額を定め、<b>あらかじめ議決</b></td></tr>
+<tr><td>国庫債務負担行為</td><td class="num">財政法 15条</td><td class="num">原則5か年度以内</td><td>総額を明示して<b>あらかじめ議決</b></td></tr>
+<tr><td>繰越明許費</td><td class="num">財政法 14条の3</td><td class="num">翌年度</td><td><b>あらかじめ議決</b></td></tr>
+<tr><td>『「強く豊かな日本」投資枠』</td><td class="num">閣議決定</td><td class="num">複数年度（期限の明示なし）</td><td>事前議決の規定なし</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="claim">
+  <span class="tag">批判の核心</span>
+  <p>複数年度化それ自体は、国会の事前議決を伴う既存制度で実現できる。両者の唯一の実質的差異は、新機構が国会の事前議決を経ない点にある。すなわち<b>「複数年度化」は目的であるより、国会統制の迂回を正当化する語彙として機能している疑いがある。</b></p>
+  <p>政府はこの問いに答える責任を負うが、骨太方針2026本文にも日本成長戦略本文にも「なぜ継続費の活用拡大では不十分なのか」という論証は見当たらない。政策文書としての説明責任の欠落である。</p>
+</div>
+</section>
+
+<section class="sec">
+<h3><span class="n">3.</span>国会統制を弱める4つの機構と、その作用局面<span class="loc">成長戦略 Ⅳ.1／Ⅳ.3</span></h3>
+
+<p>導入される4機構は、統制のどの局面に作用するかがそれぞれ異なる。まとめると次のようになる。</p>
+
+<div class="tablewrap">
+<table>
+<caption>Table 2 — 機構ごとの作用局面</caption>
+<thead>
+<tr><th>機構</th><th>弱まる統制の局面</th><th>機序</th></tr>
+</thead>
+<tbody>
+<tr><td><b>シーリング撤廃</b></td><td>事前統制<br>（予算編成段階）</td><td>「要求上限を設けることなく、事項要求も含めて必要額を適切に要求できる仕組み」。査定機能が外れ、国会提出前の規模抑制が働かない</td></tr>
+<tr><td><b>特別会計での別枠管理</b></td><td>審議統制<br>（予算審議段階）</td><td>一般会計と分離され、審議の焦点から外れる。特別会計は従来から「見えにくい財政」として批判の対象</td></tr>
+<tr><td><b>つなぎ国債＋指標除外</b></td><td>指標統制<br>（規律の物差し）</td><td>PB・債務残高対GDP比の算定から除外。国会が規律を判定する基準そのものが対象を捕捉しない</td></tr>
+<tr><td><b>基金3年ルール不適用</b></td><td>事後統制<br>（執行・検証段階）</td><td>基金は一度計上されれば各省庁裁量で複数年度執行され、年次の国会審議が及ばない</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>第三の機構については、税制・財政の専門家である森信茂樹氏が明確に警告している。骨太方針は2040年度までの370兆円の官民投資を掲げ、そのうち財政支出は年間10兆円と言われるが、それは「つなぎ国債」でファイナンスするとされ、PBの計算には含めない。しかしその財源は不明であり、さらなる財政拡大につながる問題である、というのが同氏の指摘である。PB黒字化目標の削除は、予算編成のプロセスで基準とすべきメルクマールを失わせるとも述べる。</p>
+
+<p><strong>定量的に見れば、年間10兆円規模の財政支出が、国会が財政健全化の達成度を判定する指標の外側で決定される構造になる。</strong>令和8年度の科学技術関係予算が4兆円台であることと対比すれば、この規模の意味は明らかである。</p>
+</section>
+
+<section class="sec">
+<h3><span class="n">4.</span>基金と国会議決の関係の脆弱性 — 実証された前例<span class="loc">衆議院調査局 2022</span></h3>
+
+<p>基金方式が国会統制を実質的に迂回しうることは、すでに国会自身の調査機関によって実証されている。</p>
+
+<blockquote>
+基金には財政法上の規定はなく、歴代の財務大臣は、基金が予算の単年度主義に反しないのは、国が基金へ支出する年度の歳出予算として国会の議決を経ているからであると説明してきた。しかし令和3年度にガソリン補助金を支給するために設置された基金を検証したところ、予備費使用や予算の移用・流用など、基金への支出として国会の議決を経ているとは言い難い予算措置が見られた。
+<cite>衆議院調査局『予算単年度主義における基金の課題』要旨より</cite>
+</blockquote>
+
+<p>すなわち<em>「基金は国会議決を経ている」という政府の正当化論拠は、実際の運用において成立していない事例が確認されている</em>。この実証を踏まえずに基金ルールを緩和することは、既知の統制欠陥を拡大する政策判断となる。</p>
+</section>
+
+<section class="sec">
+<h3><span class="n">5.</span>事後統制の空洞化 — PDCAの自己評価構造<span class="loc">成長戦略 Ⅳ.3</span></h3>
+
+<p>日本成長戦略Ⅳ.3は、投資枠のPDCAを「日本成長戦略会議の下で定期的に繰り返していく」と規定する。ここで注意すべきは統制の帰属である。</p>
+
+<ul>
+<li><b>事前統制</b> — シーリング撤廃により査定が弱まる</li>
+<li><b>審議統制</b> — 特別会計別枠により国会審議の焦点から外れる</li>
+<li><b>事後統制</b> — 内閣官房の会議体が自ら評価する</li>
+</ul>
+
+<p>三段階すべてにおいて、執行主体から独立した検証主体が関与しない設計になっている。会計検査院による決算検査は残るが、これは事後2年程度を要し、かつ違法・不当性の指摘が中心であって政策の当否には及びにくい。<strong>国会が主体的に規模を制御する契機が、制度上どこにも残っていない。</strong></p>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 class="part"><span class="no">Part 2</span>2023年からの政府指針の変遷</h2>
+
+<section class="sec">
+<h3><span class="n">6.</span>規律の年表 — 強化と緩和の反転<span class="loc">2021–2026</span></h3>
+
+<p>色は各時点で財政規律がどちらに動いたかを示す。緑は規律の強化、朱は緩和、灰は維持である。</p>
+
+<div class="legend">
+  <span><i class="u"></i>規律強化</span>
+  <span><i class="d"></i>規律緩和</span>
+  <span><i class="h"></i>維持</span>
+</div>
+
+<div class="chron">
+
+  <div class="entry">
+    <time>2021.10</time>
+    <div class="ev">岸田首相所信表明「公的分配を担う財政の単年度主義の弊害是正です。科学技術の振興、経済安全保障、重要インフラの整備など、国家課題に計画的に取り組みます」<span class="dir hold">起点</span></div>
+  </div>
+
+  <div class="entry down key">
+    <time>2023.05–06</time>
+    <div class="ev"><b>GX推進法成立。</b>GX経済移行債（10年20兆円）を特別会計から発行するつなぎ国債として制度化。<b>償還財源をカーボンプライシング収入と法定し、2050年度までの償還完了を法律で義務化</b><span class="dir down">緩和＋法的規律</span></div>
+  </div>
+
+  <div class="entry down">
+    <time>2023.06</time>
+    <div class="ev">防衛財源確保法成立。防衛力強化資金の設置<span class="dir down">緩和</span></div>
+  </div>
+
+  <div class="entry up">
+    <time>2023.11</time>
+    <div class="ev">第2回デジタル行財政改革会議における総理指示<span class="dir up">転換点</span></div>
+  </div>
+
+  <div class="entry up key">
+    <time>2023.12.20</time>
+    <div class="ev"><b>行政改革推進会議「基金の点検・見直しの横断的な方針」決定。</b>予算措置は最大でも3年程度、終期設定は10年以内を原則、定量的な成果目標とロジックモデルの基金シートへの明記を要求<span class="dir up">強化</span></div>
+  </div>
+
+  <div class="entry up">
+    <time>2024.04</time>
+    <div class="ev">基金全体（200基金事業・152基金）の点検結果公表。経済産業省は令和6年度中に1,105億円を国庫返納、支出が管理費のみとなっている10の基金事業を全廃<span class="dir up">強化</span></div>
+  </div>
+
+  <div class="entry">
+    <time>2024.06</time>
+    <div class="ev">骨太方針2024「経済・財政新生計画」<span class="dir hold">維持</span></div>
+  </div>
+
+  <div class="entry">
+    <time>2025.06</time>
+    <div class="ev">骨太方針2025（石破内閣）。「2025年度から2026年度を通じて、可能な限り早期の国・地方を合わせたPB黒字化」を維持<span class="dir hold">維持</span></div>
+  </div>
+
+  <div class="entry down">
+    <time>2026.05</time>
+    <div class="ev">高市首相、基金への予算制約ルールを成長投資には<b>「適用せず」</b>と検討表明<span class="dir down">緩和</span></div>
+  </div>
+
+  <div class="entry down key">
+    <time>2026.07.21</time>
+    <div class="ev"><b>骨太方針2026・日本成長戦略 閣議決定。</b>PB黒字化を目標の前面から外し、債務残高対GDP比の安定的低下を中核とする枠組みへ。投資枠を創設<span class="dir down">緩和（法的規律なし）</span></div>
+  </div>
+
+</div>
+</section>
+
+<section class="sec">
+<h3><span class="n">7.</span>2023年12月ルールの内容と、その解除の意味<span class="loc">行革推進会議 令和5.12.20</span></h3>
+
+<p>2023年12月に確立された規律の内容は具体的である。各年度の所要額がおおむね予想可能なものについては基金によらない通常の予算措置によること。短期の成果目標を設定した上で予算措置は最大でも3年程度とし、成果の検証を踏まえて次の措置を検討すること。終期設定は10年以内を原則とすること。短期・中長期の成果目標を達成するためのロジックモデルを基金シートに明記すること。定量的な成果目標を設定すること。</p>
+
+<p>このルールは実効性を持った。経済産業省は執行状況を踏まえた合理的な事業見込みを算定して保有資金規模を精査し、令和6年度中に1,105億円を国庫へ返納する方針を示した。事業が終了し支出が管理費のみとなっている基金は終了時期を前倒しし、令和6年度までに10の基金事業すべてを廃止した。</p>
+
+<div class="claim">
+  <span class="tag">批判点 — ルールの法的地位</span>
+  <p>このルールは行政改革推進会議の決定という、閣議決定より下位の会議体決定であった。したがって同レベルの政治的判断で解除できる。<b>国会の関与を経ずに作られた規律は、国会の関与を経ずに解除される。</b>財政規律の水準が法律ではなく政権の裁量で上下する構造が、この2年半で実証された。</p>
+  <p>さらに、2023年12月ルールが要求した「定量的な成果目標」「ロジックモデルの明記」「保有資金規模の精査」は、いずれも外部から検証可能な形式を要求するものであった。骨太方針2026の投資枠にこれに対応する要求は見当たらない。規律の解除は3年という時間制約の解除にとどまらず、<b>説明形式の要求水準そのものの後退</b>を含む可能性がある。</p>
+</div>
+</section>
+
+<section class="sec">
+<h3><span class="n">8.</span>GX経済移行債との比較 — 同じ器、異なる中身<span class="loc">GX推進法 第11条</span></h3>
+
+<p>2023年と2026年の対比が、本分析における最も重要な発見である。両者は「特別会計＋つなぎ国債」という同一の器を用いるが、法的規律の水準が決定的に異なる。</p>
+
+<div class="tablewrap">
+<table>
+<caption>Table 3 — つなぎ国債スキームの規律水準の比較</caption>
+<thead>
+<tr><th>項目</th><th>GX経済移行債（2023）</th><th>『「強く豊かな日本」投資枠』（2026）</th></tr>
+</thead>
+<tbody>
+<tr><td>発行根拠</td><td><b>GX推進法（法律）</b></td><td>骨太方針・成長戦略（閣議決定）</td></tr>
+<tr><td>償還財源</td><td><b>カーボンプライシング収入と法定</b></td><td>「償還財源の裏付けのある」との記述のみ</td></tr>
+<tr><td>償還期限</td><td class="num"><b>2050年度までと法律で義務化</b></td><td>明示なし</td></tr>
+<tr><td>規模</td><td class="num">10年20兆円と明示</td><td class="num">年10兆円規模とされるが本文に明記なし</td></tr>
+<tr><td>財政指標での扱い</td><td>国債として計上</td><td><b>別枠管理により算定から除外</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>GX推進法第11条は、成長志向型カーボンプライシングから得た収入により当該国債の元利償還に充てることを明記し、2050年度までの償還完了を法律で義務づけた。この設計は、任意の政策変更によって財源が不透明になるリスクを法的に遮断している。</p>
+
+<p><strong>2023年の制度設計は、「複数年度の予見可能性を高める」という目的を、法律による償還財源・償還期限の拘束という規律とセットで実現していた。</strong>2026年の投資枠は器だけを継承し、この規律を欠く。森信氏の「つなぎ国債の財源は不明」という指摘は、この対比において具体的な意味を持つ。</p>
+
+<p>これは単なる緩和ではなく、<em>先行制度が確立した規律水準からの後退（制度的退化）</em>として評価すべきである。ここから、「2023年のGX方式に倣い、投資枠についても償還財源と期限を法定すべきである」という具体的な対案が導かれる。</p>
+</section>
+
+<section class="sec">
+<h3><span class="n">9.</span>「単年度主義の弊害是正」というスローガンの射程の変質<span class="loc">2021 → 2026</span></h3>
+
+<p>同一の文言が5年間で意味を拡大させた過程も追跡できる。</p>
+
+<div class="tablewrap">
+<table>
+<caption>Table 4 — 同一文言の射程の推移</caption>
+<thead>
+<tr><th>時点</th><th>文言</th><th>射程</th></tr>
+</thead>
+<tbody>
+<tr><td class="num">2021.10<br>岸田所信表明</td><td>「財政の単年度主義の弊害是正です。科学技術の振興、経済安全保障、重要インフラの整備など、国家課題に計画的に取り組みます」</td><td>特定の政策分野における<br>計画的取組</td></tr>
+<tr><td class="num">2026.07<br>骨太方針2026</td><td>「財政単年度主義の弊害を是正し、<b>予算の作り方を根本から改める</b>」「これまでの慣行や前例を躊躇なく見直して」</td><td><b>予算制度全体</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>2021年時点でも、この文言の憲法上の位置づけは国会で問われていた。令和3年12月20日、参議院に「財政の単年度主義に関する質問主意書」が提出され、予算の単年度主義の原則は国会における予算の議決を各会計年度ごとに行うべしという原則であることを踏まえて、政府の単年度主義の考え方が質されている。</p>
+
+<p><strong>5年を経て射程は「特定分野の計画的取組」から「予算の作り方の根本的改変」へと拡大したが、憲法上の論点への回答は示されないままである。</strong></p>
+</section>
+
+<section class="sec">
+<h3><span class="n">10.</span>財政目標の位置づけの転換と、効果の可視化時期<span class="loc">骨太2025 → 2026</span></h3>
+
+<p>骨太方針2025は「2025年度から2026年度を通じて、可能な限り早期の国・地方を合わせたPB黒字化を目指す」としつつ、米国の関税措置の影響を検証した上で必要に応じ目標年度の再確認を行うとの留保を付していた。骨太方針2026はこれを、国・地方の総債務残高対GDP比の安定的低下を中核とする枠組みに書き換え、PBは債務残高対GDP比の低下に向けて確認する指標として複数年で管理し、単年度の黒字化時期を機械的に追わないものとした。</p>
+
+<p>ここで注目すべきは、<strong>2026年度予算自体は旧規律の下で編成されていた</strong>という事実である。2026年度予算はインフレ分を除けば実質横ばいであり、これは骨太方針2025で維持されたPB黒字化目標に基づいていたと指摘されている。したがって規律緩和の実際の効果が予算に現れるのは令和9年度予算からであり、<em>その最初の可視化は2026年8月末の概算要求</em>となる。</p>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<div class="band"><span class="en">Synthesis</span><span class="ja">総合評価</span></div>
+
+<section class="sec">
+<h3><span class="n">11.</span>二つの観点の交差点</h3>
+
+<div class="claim">
+  <span class="tag">結論</span>
+  <p><b>2023年の制度設計は「複数年度化 ＋ 法律による規律」というパッケージであった。2026年の制度設計は「複数年度化 ＋ 会議体決定による規律の解除」である。</b></p>
+  <p>この差は、複数年度化が財政民主主義と両立するか否かを分ける。国会の事前議決を伴う継続費・国庫債務負担行為、あるいは償還財源を法定したGX経済移行債は、複数年度化を国会統制の内側で実現していた。骨太方針2026の投資枠は、複数年度化を国会統制の外側で実現しようとしている。</p>
+  <p>「単年度主義の弊害」という語彙は、両者を区別しない。<b>その区別しなさによって、後者を前者と同列に見せる機能を果たしている。</b></p>
+</div>
+</section>
+
+<section class="sec">
+<h3><span class="n">12.</span>提起可能な要求項目</h3>
+
+<p>以下はいずれも積極財政の是非という価値対立を回避し、手続的・形式的な要求として構成されている。立場を問わず議論可能な形にしてある。</p>
+
+<ol class="checklist">
+<li><b>継続費活用との比較検討の開示</b> — 財政法第14条の2による継続費（5か年度以内、国会事前議決）では投資枠の目的が達成できない理由の明示</li>
+<li><b>償還財源・償還期限の法定</b> — GX推進法第11条に倣い、つなぎ国債の償還財源と完了期限を法律で規定すること</li>
+<li><b>財政指標からの除外範囲の限定と公表</b> — 除外対象の事業・金額を毎年度公表し、除外前後の指標を併記すること</li>
+<li><b>成果目標・ロジックモデルの要求水準の維持</b> — 2023年12月方針が課した定量的成果目標とロジックモデルの明記を投資枠にも適用すること。3年ルールの不適用と、説明形式の要求の解除は別問題である</li>
+<li><b>国会への報告義務の制度化</b> — 日本成長戦略会議のPDCA結果を国会に報告し、審議の対象とする仕組み</li>
+</ol>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<div class="band"><span class="en">Appendix</span><span class="ja">付録</span></div>
+
+<section class="sec">
+<h3>未検証事項</h3>
+<ul class="refs">
+<li>骨太方針2023（令和5年6月）本文における財政規律関連記述の詳細。本稿は2023年の起点をGX推進法・防衛財源確保法・基金方針に置いたが、骨太2023本文の原典確認を行っていない</li>
+<li><b>『「強く豊かな日本」投資枠』の法的根拠。</b>関連法案が次期通常国会に提出されるか、閣議決定のみで運用されるかは、統制の水準を決定的に左右する</li>
+<li>特別会計別枠管理の対象分野の具体的範囲（本文は「経済安全保障上、特に重要な分野など」とのみ記す）</li>
+<li>会計検査院による投資枠の検査方針</li>
+<li>令和9年度概算要求（2026年8月末）における投資枠の実際の要求規模と、シーリング撤廃の実効的影響</li>
+</ul>
+</section>
+
+<section class="sec">
+<h3>主要参照資料</h3>
+<ul class="refs">
+<li>内閣府「経済財政運営と改革の基本方針2026」令和8年7月21日閣議決定／同原案（令和8年6月30日 経済財政諮問会議資料1）</li>
+<li>「日本成長戦略」令和8年7月21日閣議決定</li>
+<li>行政改革推進会議「基金の点検・見直しの横断的な方針について」令和5年12月20日</li>
+<li>行政改革推進会議「基金全体の点検・見直し結果について」令和6年4月22日</li>
+<li>経済産業省「経済産業省において基金の総点検・見直しを行いました」令和6年4月22日</li>
+<li>脱炭素成長型経済構造への円滑な移行の推進に関する法律（GX推進法）令和5年法律第32号、特に第11条</li>
+<li>財務省「繰越制度等ガイドブック」令和6年度版</li>
+<li>衆議院調査局『予算単年度主義における基金の課題 — コロナ下における燃料油激変緩和基金の例を通じて』2022</li>
+<li>参議院予算委員会調査室 藤井亮二『歳出の複数年度化が進む予算 — 増える継続費、国庫債務負担行為』経済のプリズム No.181、2019年11月</li>
+<li>木村琢麿「予算・会計改革に向けた法的論点の整理」会計検査研究</li>
+<li>参議院 第207回国会 質問第38号「財政の単年度主義に関する質問主意書」令和3年12月20日</li>
+<li>土居丈朗「岸田内閣の『財政の単年度主義の弊害是正』の意味は？」／森信茂樹「骨太の方針2026、PB黒字化目標のない財政運営はブレーキのない自動車運転」（いずれも専門家による論評）</li>
+</ul>
+</section>
+
+<p class="note">本稿は財政規律の観点からの批判的検討である。積極財政を支持する立場からは「規律の形式性が投資機会を逸してきた」「市場は成長期待を織り込む」といった反論が成立する。国会統制の強化と投資の機動性はトレードオフの関係にあり、どの水準で均衡させるかは政治的判断の領域に属する。本稿が提起したのは、その判断が明示的に行われているかという手続的問いである。<br><br>数値・引用のうち一次資料で確認したものと報道・二次資料に依拠するものを本文中で区別した。年間10兆円という財政支出規模、および2026年度予算が実質横ばいであるとの評価は、いずれも専門家の論評に基づく推計であり、政府文書に明記されたものではない。</p>
+
+</main>
+</body>
+</html>
+<!-- probe2 -->
