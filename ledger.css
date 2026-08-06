@@ -400,3 +400,16 @@ a:focus-visible,:focus-visible{outline:2px solid var(--seal);outline-offset:3px}
   .loc{display:block;margin:.45em 0 0}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+
+/* ── トグル（第2・3章の対案・文献リスト） ── */
+details{max-width:var(--measure);margin:1.4rem 0;border:1px solid var(--rule);border-left:3px solid var(--ledger);background:#fff}
+details[open]{padding-bottom:.4rem}
+summary{cursor:pointer;padding:.95rem 1.2rem;font-family:var(--mincho);font-size:.97rem;letter-spacing:.03em;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'▸';display:inline-block;margin-right:.6em;color:var(--ledger);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+summary:hover{background:var(--ledger-wash)}
+details>*:not(summary){padding:0 1.2rem;max-width:none}
+details .refs{max-width:none;padding-left:2.6rem}
+@media (prefers-reduced-motion:reduce){summary::before{transition:none}}
