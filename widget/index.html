@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,309 +17,305 @@
 <style>
   :root{
     color-scheme: light;
-    --surface:        #fcfcfb;
-    --surface-sunk:   #f4f4f1;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #898781;
-    --hairline:       #e1e0d9;
-    --series-pressure:#2a78d6;
-    --series-temp:    #eb6834;
-    --series-humidity:#1baf7a;
-    --good:           #0ca30c;
-    --warning:        #fab219;
-    --serious:        #ec835a;
-    --critical:       #d03b3b;
+    --bg:        #ffffff;
+    --ink:       #0b0b0b;
+    --ink-soft:  #6b6a67;
+    --ink-faint: #a3a19c;
+    --rule:      #e6e5e0;
+    --good:      #0ca30c;
+    --warning:   #c98500;
+    --serious:   #ec835a;
+    --critical:  #d03b3b;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --surface:        #1a1a19;
-      --surface-sunk:   #232322;
-      --text-primary:   #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted:     #898781;
-      --hairline:       #2c2c2a;
-      --series-pressure:#3987e5;
-      --series-temp:    #d95926;
-      --series-humidity:#199e70;
+      --bg:        #0d0d0d;
+      --ink:       #f5f4f0;
+      --ink-soft:  #9a9893;
+      --ink-faint: #6a6864;
+      --rule:      #262523;
+      --good:      #34b334;
+      --warning:   #d9a01f;
+      --serious:   #ec835a;
+      --critical:  #e05c5c;
     }
   }
 
-  *{ box-sizing: border-box; }
+  *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
-    background: var(--surface);
-    color: var(--text-primary);
+    background: var(--bg);
+    color: var(--ink);
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
   .app{
-    max-width: 460px;
+    max-width: 420px;
     margin: 0 auto;
-    padding: calc(env(safe-area-inset-top) + 18px) 20px
-             calc(env(safe-area-inset-bottom) + 28px);
+    padding: calc(env(safe-area-inset-top) + 26px) 26px
+             calc(env(safe-area-inset-bottom) + 26px);
   }
 
-  /* ---- header: location + time, nothing else ---- */
-  .head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    min-height: 28px;
-  }
+  /* ---------- place ---------- */
   .place{
-    display:flex;
-    align-items:baseline;
-    gap:8px;
-    background:none;
-    border:none;
-    padding:0;
-    margin:0;
-    color: var(--text-secondary);
+    display:block;
+    width:100%;
+    background:none; border:none; padding:0; margin:0;
     font: inherit;
-    font-size: 13px;
-    letter-spacing: .01em;
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
   }
-  .place .dot{
-    color: var(--text-muted);
-  }
-  .place .time{
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .refresh{
-    background:none;
-    border:none;
-    padding:6px;
-    margin:-6px;
-    color: var(--text-muted);
-    line-height:0;
-    border-radius: 999px;
-  }
-  .refresh svg{ width:19px; height:19px; display:block; }
-  .refresh[data-busy="1"] svg{ animation: spin .9s linear infinite; }
-  @keyframes spin{ to{ transform: rotate(360deg); } }
 
-  /* ---- hero ---- */
+  /* ---------- hero ---------- */
   .hero{
-    margin-top: 26px;
-    display:flex;
-    align-items: baseline;
-    gap: 10px;
+    text-align:center;
+    margin-top: 30px;
   }
   .hero-value{
-    font-size: 76px;
-    font-weight: 300;
-    letter-spacing: -0.035em;
-    line-height: .92;
+    font-size: 88px;
+    font-weight: 200;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    display:block;
   }
   .hero-unit{
-    font-size: 15px;
-    color: var(--text-muted);
-  }
-  .hero-delta{
-    margin-top: 10px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
-    min-height: 1.2em;
+    display:block;
+    margin-top: 8px;
+    font-size: 12px;
+    letter-spacing: .1em;
+    color: var(--ink-faint);
   }
 
-  /* ---- status ---- */
+  /* ---------- status ---------- */
   .status{
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    margin-top: 22px;
-    padding-top: 18px;
-    border-top: 1px solid var(--hairline);
+    text-align:center;
+    margin-top: 26px;
   }
   .status[data-level="good"]     { --tone: var(--good); }
   .status[data-level="warning"]  { --tone: var(--warning); }
   .status[data-level="serious"]  { --tone: var(--serious); }
   .status[data-level="critical"] { --tone: var(--critical); }
-  .status-mark{
-    flex: none;
-    margin-top: 5px;
-    width: 9px; height: 9px;
+  .status-word{
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: .02em;
+  }
+  .status-word::before{
+    content:"";
+    display:inline-block;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--tone);
-  }
-  .status[data-level="critical"] .status-mark{
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--critical) 22%, transparent);
-  }
-  .status-word{
-    font-size: 19px;
-    font-weight: 600;
-    letter-spacing: .01em;
-    line-height: 1.25;
+    margin-right: 8px;
+    vertical-align: 2px;
   }
   .status-note{
-    font-size: 13px;
-    color: var(--text-secondary);
+    margin-top: 7px;
+    font-size: 12px;
+    color: var(--ink-soft);
     line-height: 1.5;
-    margin-top: 3px;
   }
   .status-note:empty{ display:none; }
 
-  /* ---- charts ---- */
-  .plot{
-    margin-top: 26px;
-    position: relative;
-    touch-action: pan-y;
+  /* ---------- rules ---------- */
+  .rule{
+    height: 1px;
+    background: var(--rule);
+    margin: 26px 0 0;
   }
-  .plot svg{ display:block; width:100%; height:auto; overflow: visible; }
 
-  .pair{
+  /* ---------- forecast strip ---------- */
+  .strip{
     display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-top: 26px;
+    grid-template-columns: repeat(6, 1fr);
+    margin-top: 20px;
+    font-variant-numeric: tabular-nums;
   }
-  .mini{
-    background: var(--surface-sunk);
-    border-radius: 14px;
-    padding: 13px 14px 10px;
-  }
-  .mini-label{
+  .strip div{ text-align:center; }
+  .strip .h{
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--ink-faint);
     letter-spacing: .04em;
   }
-  .mini-value{
-    font-size: 27px;
-    font-weight: 300;
-    letter-spacing: -0.02em;
-    margin-top: 1px;
+  .strip .v{
+    font-size: 14px;
+    margin-top: 7px;
+    letter-spacing: -0.01em;
   }
-  .mini-value .u{ font-size: 13px; color: var(--text-muted); }
-  .mini svg{ display:block; width:100%; height:auto; margin-top: 6px; }
+  .strip .now .h,
+  .strip .now .v{ color: var(--ink); font-weight: 500; }
 
-  /* ---- search (hidden until the place name is tapped) ---- */
+  /* ---------- main plot ---------- */
+  .plot{
+    margin-top: 22px;
+    touch-action: pan-y;
+  }
+  .plot svg{ display:block; width:100%; height:auto; overflow:visible; }
+  .plot-foot{
+    display:flex;
+    justify-content:space-between;
+    margin-top: 7px;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: .06em;
+    font-variant-numeric: tabular-nums;
+    min-height: 1.2em;
+  }
+  .plot-foot .mid{ color: var(--ink-soft); }
+
+  /* ---------- metric rows ---------- */
+  .row{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .row:first-of-type{ border-top: 1px solid var(--rule); }
+  .row-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: .1em;
+    width: 3.2em;
+    flex: none;
+  }
+  .row-spark{ flex: 1; min-width: 0; }
+  .row-spark svg{ display:block; width:100%; height:auto; }
+  .row-value{
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    width: 4.4em;
+    flex: none;
+    letter-spacing: -0.01em;
+  }
+  .row-value .u{ font-size: 11px; color: var(--ink-faint); margin-left: 1px; }
+
+  /* ---------- foot ---------- */
+  .foot-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding: 16px 0 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: .06em;
+  }
+  .foot-row button{
+    background:none; border:none; padding:0; margin:0;
+    font: inherit; color: var(--ink-soft); letter-spacing:.06em;
+  }
+  .foot-row .t{ font-variant-numeric: tabular-nums; color: var(--ink-faint); }
+
+  .msg{
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    line-height:1.55;
+    margin-top: 12px;
+  }
+  .msg:empty{ display:none; }
+
+  /* ---------- search ---------- */
   .search{ margin-top: 22px; }
   .search.hidden{ display:none; }
   .search input{
     width:100%;
     border:none;
-    border-bottom: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--rule);
     background: transparent;
-    color: var(--text-primary);
-    padding: 10px 2px;
-    font-size: 16px; /* 16px keeps iOS from zooming on focus */
+    color: var(--ink);
+    padding: 10px 0;
+    font-size: 16px;
     font-family: inherit;
+    text-align:center;
+    letter-spacing: .04em;
   }
-  .search input:focus{ outline:none; border-bottom-color: var(--series-pressure); }
-  .search ul{
-    list-style:none;
-    margin: 4px 0 0;
-    padding:0;
-  }
+  .search input:focus{ outline:none; border-bottom-color: var(--ink-soft); }
+  .search ul{ list-style:none; margin: 2px 0 0; padding:0; }
   .search li{
-    padding: 13px 2px;
-    font-size: 15px;
-    border-bottom: 1px solid var(--hairline);
-    color: var(--text-primary);
+    padding: 13px 0;
+    font-size: 14px;
+    text-align:center;
+    border-bottom: 1px solid var(--rule);
+    letter-spacing: .04em;
   }
-  .search li:active{ color: var(--series-pressure); }
-  .search li.empty{ color: var(--text-muted); border:none; }
+  .search li:active{ color: var(--ink-soft); }
+  .search li.empty{ color: var(--ink-faint); border:none; }
 
-  /* ---- footer ---- */
-  .foot{
-    margin-top: 30px;
-    padding-top: 16px;
-    border-top: 1px solid var(--hairline);
-  }
-  .foot summary{
+  /* ---------- note ---------- */
+  details.note{ margin-top: 24px; }
+  details.note summary{
     list-style:none;
-    font-size: 12px;
-    color: var(--text-muted);
-    cursor: default;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: .1em;
+    text-transform: uppercase;
   }
-  .foot summary::-webkit-details-marker{ display:none; }
-  .foot p{
-    font-size: 12px;
-    line-height: 1.65;
-    color: var(--text-muted);
-    margin: 10px 0 0;
+  details.note summary::-webkit-details-marker{ display:none; }
+  details.note p{
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--ink-faint);
+    margin: 12px 0 0;
   }
-  .foot a{ color: var(--text-secondary); }
-
-  .msg{
-    font-size: 12.5px;
-    color: var(--text-muted);
-    margin-top: 14px;
-    line-height:1.5;
-  }
-  .msg:empty{ display:none; }
-
-  .scrub-time{
-    font-size: 12px;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-    min-height: 1.2em;
-    margin-top: 8px;
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    .refresh[data-busy="1"] svg{ animation: none; opacity:.5; }
-  }
+  details.note a{ color: var(--ink-soft); }
 </style>
 </head>
 <body>
 <div class="app">
 
-  <div class="head">
-    <button class="place" id="placeBtn" type="button">
-      <span id="placeName">…</span>
-      <span class="dot">·</span>
-      <span class="time" id="placeTime"></span>
-    </button>
-    <button class="refresh" id="refreshBtn" type="button" aria-label="更新">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
-        <path d="M21 3v6h-6"/>
-      </svg>
-    </button>
-  </div>
+  <button class="place" id="placeBtn" type="button"><span id="placeName">…</span></button>
 
   <div class="hero">
     <span class="hero-value" id="heroValue">--</span>
     <span class="hero-unit">hPa</span>
   </div>
-  <div class="hero-delta" id="heroDelta"></div>
 
   <div class="status" id="status" data-level="good">
-    <span class="status-mark"></span>
-    <div>
-      <div class="status-word" id="statusWord">読み込み中</div>
-      <div class="status-note" id="statusNote"></div>
-    </div>
+    <div class="status-word" id="statusWord">読み込み中</div>
+    <div class="status-note" id="statusNote"></div>
   </div>
+
+  <div class="rule"></div>
+
+  <div class="strip" id="strip"></div>
 
   <div class="plot" id="plot">
-    <svg id="chartPressure" viewBox="0 0 320 132" preserveAspectRatio="none"
+    <svg id="chartPressure" viewBox="0 0 320 104" preserveAspectRatio="none"
          role="img" aria-label="気圧の推移"></svg>
-    <div class="scrub-time" id="scrubTime"></div>
+    <div class="plot-foot">
+      <span>24時間前</span>
+      <span class="mid" id="plotMid">現在</span>
+      <span>24時間後</span>
+    </div>
   </div>
 
-  <div class="pair">
-    <div class="mini">
-      <div class="mini-label">気温</div>
-      <div class="mini-value"><span id="tempValue">--</span><span class="u">°</span></div>
-      <svg id="chartTemp" viewBox="0 0 140 34" preserveAspectRatio="none"
-           role="img" aria-label="気温の推移"></svg>
-    </div>
-    <div class="mini">
-      <div class="mini-label">湿度</div>
-      <div class="mini-value"><span id="humidityValue">--</span><span class="u">%</span></div>
-      <svg id="chartHumidity" viewBox="0 0 140 34" preserveAspectRatio="none"
-           role="img" aria-label="湿度の推移"></svg>
-    </div>
+  <div class="rule" style="margin-top:24px"></div>
+
+  <div class="row">
+    <div class="row-label">気温</div>
+    <div class="row-spark"><svg id="chartTemp" viewBox="0 0 160 26" preserveAspectRatio="none"
+      role="img" aria-label="気温の推移"></svg></div>
+    <div class="row-value"><span id="tempValue">--</span><span class="u">°C</span></div>
   </div>
+  <div class="row">
+    <div class="row-label">湿度</div>
+    <div class="row-spark"><svg id="chartHumidity" viewBox="0 0 160 26" preserveAspectRatio="none"
+      role="img" aria-label="湿度の推移"></svg></div>
+    <div class="row-value"><span id="humidityValue">--</span><span class="u">%</span></div>
+  </div>
+
+  <div class="foot-row">
+    <button id="refreshBtn" type="button">更新</button>
+    <span class="t" id="footTime"></span>
+  </div>
+
+  <div class="msg" id="msg"></div>
 
   <div class="search hidden" id="search">
     <input type="text" id="geoInput" placeholder="地名で検索" autocomplete="off"
@@ -327,9 +323,7 @@
     <ul id="geoResults"></ul>
   </div>
 
-  <div class="msg" id="msg"></div>
-
-  <details class="foot">
+  <details class="note">
     <summary>体調の目安について</summary>
     <p>気圧・気温・湿度の変化にもとづく一般的な目安です。医学的な診断ではありません。体調がすぐれないときは無理をせず、症状が続く場合は医療機関にご相談ください。</p>
     <p>気象データ: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
@@ -341,20 +335,21 @@
 (function(){
   "use strict";
 
-  var REFRESH_MS = 15 * 60 * 1000;   // 長時間開きっぱなしのときの定期更新
+  var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
   var CACHE_KEY    = "wxwidget.cache.v2";
 
   var $ = function(id){ return document.getElementById(id); };
   var els = {
-    placeBtn:$("placeBtn"), placeName:$("placeName"), placeTime:$("placeTime"),
-    refreshBtn:$("refreshBtn"),
-    heroValue:$("heroValue"), heroDelta:$("heroDelta"),
+    placeBtn:$("placeBtn"), placeName:$("placeName"),
+    heroValue:$("heroValue"),
     status:$("status"), statusWord:$("statusWord"), statusNote:$("statusNote"),
-    plot:$("plot"), chartPressure:$("chartPressure"), scrubTime:$("scrubTime"),
+    strip:$("strip"),
+    plot:$("plot"), chartPressure:$("chartPressure"), plotMid:$("plotMid"),
     tempValue:$("tempValue"), humidityValue:$("humidityValue"),
     chartTemp:$("chartTemp"), chartHumidity:$("chartHumidity"),
+    refreshBtn:$("refreshBtn"), footTime:$("footTime"),
     search:$("search"), geoInput:$("geoInput"), geoResults:$("geoResults"),
     msg:$("msg")
   };
@@ -363,23 +358,18 @@
 
   // ---------- storage ----------
 
-  function readJSON(key){
-    try{ var r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
-    catch(e){ return null; }
+  function readJSON(k){
+    try{ var r = localStorage.getItem(k); return r ? JSON.parse(r) : null; }catch(e){ return null; }
   }
-  function writeJSON(key, val){
-    try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
-  }
+  function writeJSON(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 
-  // mode: "auto" = 起動のたびに現在地を取り直す / "manual" = 選んだ地点に固定
   function loadPref(){ return readJSON(LOCATION_KEY) || { mode:"auto" }; }
   function savePref(p){ writeJSON(LOCATION_KEY, p); }
 
   // ---------- geolocation ----------
 
   // getCurrentPosition の timeout は許可が下りてから数え始める仕様のため、
-  // 許可プロンプトが放置されると永久に返らない。画面が固まらないよう、
-  // 位置情報APIとは別に実時間で打ち切る。
+  // 許可プロンプトが放置されると永久に返らない。実時間で打ち切る。
   function withDeadline(promise, ms){
     return new Promise(function(resolve, reject){
       var settled = false;
@@ -400,41 +390,36 @@
       navigator.geolocation.getCurrentPosition(
         function(pos){ resolve({ lat:pos.coords.latitude, lon:pos.coords.longitude }); },
         reject,
-        // maximumAge を短くして、起動のたびに実際の現在地を取り直す
         { enableHighAccuracy:false, timeout:10000, maximumAge:60000 }
       );
     }), 12000);
   }
 
   function reverseName(lat, lon){
-    var url = "https://geocoding-api.open-meteo.com/v1/search?latitude=" + lat +
-      "&longitude=" + lon + "&count=1&language=ja&format=json";
-    return fetch(url)
+    return fetch("https://geocoding-api.open-meteo.com/v1/search?latitude=" + lat +
+      "&longitude=" + lon + "&count=1&language=ja&format=json")
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(j){ return (j && j.results && j.results[0] && j.results[0].name) || "現在地"; })
       .catch(function(){ return "現在地"; });
   }
 
   function geocodeSearch(q){
-    var url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
-      encodeURIComponent(q) + "&count=5&language=ja&format=json";
-    return fetch(url).then(function(r){
-      if(!r.ok) throw new Error("geocode-" + r.status);
-      return r.json();
-    }).then(function(j){ return j.results || []; });
+    return fetch("https://geocoding-api.open-meteo.com/v1/search?name=" +
+      encodeURIComponent(q) + "&count=5&language=ja&format=json")
+      .then(function(r){ if(!r.ok) throw new Error("geocode"); return r.json(); })
+      .then(function(j){ return j.results || []; });
   }
 
   // ---------- weather ----------
 
-  // hourly は毎時ちょうど、current.time は分を含む値が返るため、両者は一致しない。
-  // 観測地点の現地時刻から「今の時間帯」の位置を直接求める。
+  // hourly は毎時ちょうど、current.time は分を含むため両者は一致しない。
+  // 観測地点の現地時刻から「今の時間帯」を直接求める。
   function computeNowIndex(times, utcOffsetSeconds){
     var localNow = new Date(Date.now() + (utcOffsetSeconds || 0) * 1000);
-    var key = localNow.toISOString().slice(0, 13);   // "YYYY-MM-DDTHH"
+    var key = localNow.toISOString().slice(0, 13);
     for(var i = 0; i < times.length; i++){
       if(times[i].slice(0, 13) === key) return i;
     }
-    // 一致しない場合は現在を過ぎていない直近の時刻に寄せる
     var best = 0;
     for(var j = 0; j < times.length; j++){
       if(times[j].slice(0, 13) <= key) best = j; else break;
@@ -443,12 +428,12 @@
   }
 
   function fetchWeather(lat, lon){
-    var url = "https://api.open-meteo.com/v1/forecast" +
+    return fetch("https://api.open-meteo.com/v1/forecast" +
       "?latitude=" + encodeURIComponent(lat) +
       "&longitude=" + encodeURIComponent(lon) +
       "&hourly=temperature_2m,relative_humidity_2m,pressure_msl" +
-      "&past_days=1&forecast_days=2&timezone=auto";
-    return fetch(url, { cache:"no-store" }).then(function(res){
+      "&past_days=1&forecast_days=2&timezone=auto", { cache:"no-store" }
+    ).then(function(res){
       if(!res.ok) throw new Error("forecast-" + res.status);
       return res.json();
     }).then(function(json){
@@ -474,183 +459,123 @@
   var ORDER = { good:0, warning:1, serious:2, critical:3 };
   var WORD  = { good:"問題なし", warning:"注意", serious:"警戒", critical:"厳重警戒" };
 
-  function back(arr, i, n){
-    var j = i - n;
-    if(j < 0 || i >= arr.length || arr[j] == null || arr[i] == null) return null;
-    return arr[i] - arr[j];
-  }
-  function ahead(arr, i, n){
-    var j = i + n;
-    if(j >= arr.length || arr[j] == null || arr[i] == null) return null;
-    return arr[j] - arr[i];
-  }
-  function levelFor(d, key){
-    if(d == null) return "good";
-    if(d <= THRESH.critical[key]) return "critical";
-    if(d <= THRESH.serious[key])  return "serious";
-    if(d <= THRESH.warning[key])  return "warning";
+  function back(a,i,n){ var j=i-n; if(j<0||i>=a.length||a[j]==null||a[i]==null) return null; return a[i]-a[j]; }
+  function ahead(a,i,n){ var j=i+n; if(j>=a.length||a[j]==null||a[i]==null) return null; return a[j]-a[i]; }
+  function levelFor(d,k){
+    if(d==null) return "good";
+    if(d<=THRESH.critical[k]) return "critical";
+    if(d<=THRESH.serious[k])  return "serious";
+    if(d<=THRESH.warning[k])  return "warning";
     return "good";
   }
 
-  function computeAlarm(data){
-    var p = data.pressure, i = data.nowIndex;
-    var d3 = back(p, i, 3), d6 = back(p, i, 6), f6 = ahead(p, i, 6);
-    var levels = [levelFor(d3,"past3"), levelFor(d6,"past6"), levelFor(f6,"future6")];
-    var level = "good";
-    levels.forEach(function(l){ if(ORDER[l] > ORDER[level]) level = l; });
+  function computeAlarm(d){
+    var p=d.pressure, i=d.nowIndex;
+    var d3=back(p,i,3), d6=back(p,i,6), f6=ahead(p,i,6);
+    var lv=[levelFor(d3,"past3"), levelFor(d6,"past6"), levelFor(f6,"future6")];
+    var level="good";
+    lv.forEach(function(l){ if(ORDER[l]>ORDER[level]) level=l; });
 
-    // 注記は一行だけ。いちばん効いている根拠を選ぶ。
-    var note = "";
-    if(level !== "good"){
-      // 「低下」で向きは伝わるので、数値は符号を外して読みやすくする
-      var cands = [];
-      if(d3 != null && ORDER[levels[0]] > 0) cands.push({ v:d3, t:"3時間で" + Math.abs(d3).toFixed(1) + "hPa低下" });
-      if(d6 != null && ORDER[levels[1]] > 0) cands.push({ v:d6, t:"6時間で" + Math.abs(d6).toFixed(1) + "hPa低下" });
-      if(f6 != null && ORDER[levels[2]] > 0) cands.push({ v:f6, t:"この先6時間で" + Math.abs(f6).toFixed(1) + "hPa低下の予報" });
-      cands.sort(function(a,b){ return a.v - b.v; });
-      if(cands.length) note = cands[0].t;
+    var note="";
+    if(level!=="good"){
+      // 「低下」で向きは伝わるので数値の符号は外す
+      var c=[];
+      if(d3!=null&&ORDER[lv[0]]>0) c.push({v:d3,t:"3時間で"+Math.abs(d3).toFixed(1)+"hPa低下"});
+      if(d6!=null&&ORDER[lv[1]]>0) c.push({v:d6,t:"6時間で"+Math.abs(d6).toFixed(1)+"hPa低下"});
+      if(f6!=null&&ORDER[lv[2]]>0) c.push({v:f6,t:"この先6時間で"+Math.abs(f6).toFixed(1)+"hPa低下の予報"});
+      c.sort(function(a,b){ return a.v-b.v; });
+      if(c.length) note=c[0].t;
     }
     return { level:level, word:WORD[level], note:note };
   }
 
-  // ---------- formatting ----------
+  // ---------- format ----------
 
   function describeAge(ms){
-    var min = Math.floor((Date.now() - ms) / 60000);
-    if(min < 1)  return "たった今";
-    if(min < 60) return min + "分前";
-    var h = Math.floor(min / 60);
-    if(h < 24)   return h + "時間前";
-    return Math.floor(h / 24) + "日前";
+    var min=Math.floor((Date.now()-ms)/60000);
+    if(min<1) return "たった今";
+    if(min<60) return min+"分前";
+    var h=Math.floor(min/60);
+    if(h<24) return h+"時間前";
+    return Math.floor(h/24)+"日前";
   }
+  function hhmm(iso){ return iso.slice(11,16); }
+  function hourOf(iso){ return iso.slice(11,13); }
+  function localClock(off){ return new Date(Date.now()+(off||0)*1000).toISOString().slice(11,16); }
 
-  function clockAt(iso){
-    return iso.slice(11, 16);
-  }
+  // ---------- svg ----------
 
-  function localClock(utcOffset){
-    var d = new Date(Date.now() + (utcOffset || 0) * 1000);
-    return d.toISOString().slice(11, 16);
-  }
-
-  // ---------- charts ----------
-
-  var NS = "http://www.w3.org/2000/svg";
-  function mk(tag, attrs){
-    var n = document.createElementNS(NS, tag);
-    for(var k in attrs) n.setAttribute(k, attrs[k]);
-    return n;
-  }
-  function clear(svg){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
-
-  function scaleOf(values, minSpan){
-    var v = values.filter(function(x){ return x != null; });
+  var NS="http://www.w3.org/2000/svg";
+  function mk(tag,a){ var n=document.createElementNS(NS,tag); for(var k in a) n.setAttribute(k,a[k]); return n; }
+  function clear(s){ while(s.firstChild) s.removeChild(s.firstChild); }
+  function scaleOf(vals,minSpan){
+    var v=vals.filter(function(x){ return x!=null; });
     if(!v.length) return null;
-    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
-    var span = hi - lo;
-    if(span < minSpan){ var pad = (minSpan - span) / 2; lo -= pad; hi += pad; }
-    else { var e = span * 0.15; lo -= e; hi += e; }
-    return { lo:lo, hi:hi };
+    var lo=Math.min.apply(null,v), hi=Math.max.apply(null,v), span=hi-lo;
+    if(span<minSpan){ var pad=(minSpan-span)/2; lo-=pad; hi+=pad; }
+    else { var e=span*0.15; lo-=e; hi+=e; }
+    return {lo:lo,hi:hi};
   }
-
   function pathOf(pts){
-    return pts.map(function(p, i){
-      return (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1);
-    }).join("");
+    return pts.map(function(p,i){ return (i?"L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1); }).join("");
   }
 
-  // 主グラフ。数字は現在値のみ、目盛りは置かない。形とラベル1つで読ませる。
-  function drawMain(svg, data, color, focusIndex){
+  // 主グラフ。塗りも目盛りも置かず、線一本と現在位置だけで読ませる。
+  function drawMain(svg, d, focus){
     clear(svg);
-    var values = data.pressure, times = data.times, now = data.nowIndex;
-    var W = 320, H = 132, top = 16, bottom = 22;
-    var sc = scaleOf(values, 6);
-    if(!sc) return;
-    var plotH = H - top - bottom;
+    var v=d.pressure, now=d.nowIndex, W=320, H=104, top=10, bot=8;
+    var sc=scaleOf(v,6); if(!sc) return;
+    var ph=H-top-bot;
+    function X(i){ return (i/(v.length-1))*W; }
+    function Y(x){ return top+(1-(x-sc.lo)/(sc.hi-sc.lo))*ph; }
 
-    function X(i){ return (i / (values.length - 1)) * W; }
-    function Y(v){ return top + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * plotH; }
-
-    var past = [], future = [];
-    for(var i = 0; i < values.length; i++){
-      if(values[i] == null) continue;
-      var pt = [X(i), Y(values[i])];
-      if(i <= now) past.push(pt);
-      if(i >= now) future.push(pt);
+    var past=[], future=[];
+    for(var i=0;i<v.length;i++){
+      if(v[i]==null) continue;
+      var pt=[X(i),Y(v[i])];
+      if(i<=now) past.push(pt);
+      if(i>=now) future.push(pt);
     }
-
-    if(past.length > 1){
-      svg.appendChild(mk("path", {
-        d: pathOf(past) + "L" + past[past.length-1][0].toFixed(1) + "," + (H-bottom) +
-           "L" + past[0][0].toFixed(1) + "," + (H-bottom) + "Z",
-        fill: color, opacity: .10
-      }));
-      svg.appendChild(mk("path", {
-        d: pathOf(past), fill:"none", stroke:color, "stroke-width":2,
-        "stroke-linejoin":"round", "stroke-linecap":"round"
-      }));
+    if(past.length>1){
+      svg.appendChild(mk("path",{ d:pathOf(past), fill:"none", stroke:"var(--ink)",
+        "stroke-width":1.5, "stroke-linejoin":"round", "stroke-linecap":"round" }));
     }
-    if(future.length > 1){
-      svg.appendChild(mk("path", {
-        d: pathOf(future), fill:"none", stroke:color, "stroke-width":2, opacity:.4,
-        "stroke-linejoin":"round", "stroke-linecap":"round", "stroke-dasharray":"1 4"
-      }));
-    }
-
-    // ベースライン代わりの極細ライン（目盛りは置かない）
-    svg.appendChild(mk("line", {
-      x1:0, x2:W, y1:H-bottom, y2:H-bottom,
-      stroke:"var(--hairline)", "stroke-width":1
-    }));
-
-    var at = (focusIndex == null) ? now : focusIndex;
-    if(values[at] != null){
-      var cx = X(at), cy = Y(values[at]);
-      svg.appendChild(mk("line", {
-        x1:cx, x2:cx, y1:top-8, y2:H-bottom,
-        stroke:"var(--hairline)", "stroke-width":1
-      }));
-      svg.appendChild(mk("circle", { cx:cx, cy:cy, r:5.5, fill:"var(--surface)" }));
-      svg.appendChild(mk("circle", { cx:cx, cy:cy, r:3.5, fill:color }));
-    }
-
-    // 両端の時刻だけ。ここだけは向きが分からなくなるので残す。
-    var t0 = mk("text", { x:0, y:H-5, "text-anchor":"start",
-      "font-size":"9.5", fill:"var(--text-muted)" });
-    t0.textContent = "24時間前";
-    var t1 = mk("text", { x:W, y:H-5, "text-anchor":"end",
-      "font-size":"9.5", fill:"var(--text-muted)" });
-    t1.textContent = "24時間後";
-    svg.appendChild(t0); svg.appendChild(t1);
-  }
-
-  function drawMini(svg, values, now, color, minSpan){
-    clear(svg);
-    var W = 140, H = 34, pad = 4;
-    var sc = scaleOf(values, minSpan);
-    if(!sc) return;
-    function X(i){ return (i / (values.length - 1)) * W; }
-    function Y(v){ return pad + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (H - pad*2); }
-
-    var past = [], future = [];
-    for(var i = 0; i < values.length; i++){
-      if(values[i] == null) continue;
-      var pt = [X(i), Y(values[i])];
-      if(i <= now) past.push(pt);
-      if(i >= now) future.push(pt);
-    }
-    if(past.length > 1){
-      svg.appendChild(mk("path", { d:pathOf(past), fill:"none", stroke:color,
-        "stroke-width":1.8, "stroke-linejoin":"round", "stroke-linecap":"round" }));
-    }
-    if(future.length > 1){
-      svg.appendChild(mk("path", { d:pathOf(future), fill:"none", stroke:color,
-        "stroke-width":1.8, opacity:.4, "stroke-linejoin":"round",
+    if(future.length>1){
+      svg.appendChild(mk("path",{ d:pathOf(future), fill:"none", stroke:"var(--ink)",
+        "stroke-width":1.5, opacity:.32, "stroke-linejoin":"round",
         "stroke-linecap":"round", "stroke-dasharray":"1 3.5" }));
     }
-    if(values[now] != null){
-      svg.appendChild(mk("circle", { cx:X(now), cy:Y(values[now]), r:3.6, fill:"var(--surface-sunk)" }));
-      svg.appendChild(mk("circle", { cx:X(now), cy:Y(values[now]), r:2.2, fill:color }));
+    var at = (focus==null) ? now : focus;
+    if(v[at]!=null){
+      var cx=X(at), cy=Y(v[at]);
+      svg.appendChild(mk("line",{ x1:cx, x2:cx, y1:0, y2:H,
+        stroke:"var(--rule)", "stroke-width":1 }));
+      svg.appendChild(mk("circle",{ cx:cx, cy:cy, r:4.5, fill:"var(--bg)" }));
+      svg.appendChild(mk("circle",{ cx:cx, cy:cy, r:2.6, fill:"var(--ink)" }));
+    }
+  }
+
+  function drawSpark(svg, vals, now){
+    clear(svg);
+    var W=160,H=26,pad=3;
+    var sc=scaleOf(vals, 4); if(!sc) return;
+    function X(i){ return (i/(vals.length-1))*W; }
+    function Y(x){ return pad+(1-(x-sc.lo)/(sc.hi-sc.lo))*(H-pad*2); }
+    var past=[],future=[];
+    for(var i=0;i<vals.length;i++){
+      if(vals[i]==null) continue;
+      var pt=[X(i),Y(vals[i])];
+      if(i<=now) past.push(pt);
+      if(i>=now) future.push(pt);
+    }
+    if(past.length>1) svg.appendChild(mk("path",{ d:pathOf(past), fill:"none",
+      stroke:"var(--ink)", "stroke-width":1.2, "stroke-linejoin":"round", "stroke-linecap":"round" }));
+    if(future.length>1) svg.appendChild(mk("path",{ d:pathOf(future), fill:"none",
+      stroke:"var(--ink)", "stroke-width":1.2, opacity:.3, "stroke-linejoin":"round",
+      "stroke-linecap":"round", "stroke-dasharray":"1 3" }));
+    if(vals[now]!=null){
+      svg.appendChild(mk("circle",{ cx:X(now), cy:Y(vals[now]), r:3.2, fill:"var(--bg)" }));
+      svg.appendChild(mk("circle",{ cx:X(now), cy:Y(vals[now]), r:1.9, fill:"var(--ink)" }));
     }
   }
 
@@ -658,132 +583,133 @@
 
   var state = { data:null, fetchedAt:0, place:"", scrub:null };
 
-  function renderNumbers(){
-    var d = state.data;
-    if(!d) return;
-    var i = (state.scrub == null) ? d.nowIndex : state.scrub;
-
-    els.heroValue.textContent = d.pressure[i] == null ? "--" : Math.round(d.pressure[i]);
-    els.tempValue.textContent = d.temp[i] == null ? "--" : d.temp[i].toFixed(1);
-    els.humidityValue.textContent = d.humidity[i] == null ? "--" : Math.round(d.humidity[i]);
-
-    if(state.scrub == null){
-      var d3 = back(d.pressure, d.nowIndex, 3);
-      els.heroDelta.textContent = d3 == null ? "" :
-        (d3 < 0 ? "▼ " : (d3 > 0 ? "▲ " : "→ ")) + Math.abs(d3).toFixed(1) + " / 3時間";
-      els.scrubTime.textContent = "";
-    }else{
-      els.heroDelta.textContent = "";
-      els.scrubTime.textContent = clockAt(d.times[i]) +
-        (i < d.nowIndex ? "（過去）" : (i > d.nowIndex ? "（予報）" : "（現在）"));
-    }
+  function renderHero(){
+    var d=state.data; if(!d) return;
+    var i = (state.scrub==null) ? d.nowIndex : state.scrub;
+    els.heroValue.textContent = d.pressure[i]==null ? "--" : Math.round(d.pressure[i]);
+    els.tempValue.textContent = d.temp[i]==null ? "--" : d.temp[i].toFixed(1);
+    els.humidityValue.textContent = d.humidity[i]==null ? "--" : Math.round(d.humidity[i]);
+    els.plotMid.textContent = (state.scrub==null)
+      ? "現在"
+      : hhmm(d.times[i]) + (i<d.nowIndex ? "・過去" : (i>d.nowIndex ? "・予報" : "・現在"));
   }
 
   function renderStatus(){
-    var d = state.data;
-    if(!d) return;
-    var a = computeAlarm(d);
+    var d=state.data; if(!d) return;
+    var a=computeAlarm(d);
     els.status.setAttribute("data-level", a.level);
+    els.statusWord.textContent = a.word;
+    els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
+      ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
+      : a.note;
+  }
 
-    if(Date.now() - state.fetchedAt > STALE_MS){
-      els.statusWord.textContent = a.word;
-      els.statusNote.textContent = describeAge(state.fetchedAt) + "のデータです。更新してください。";
-    }else{
-      els.statusWord.textContent = a.word;
-      els.statusNote.textContent = a.note;
+  // 3時間ごとの気圧予報。Weat の時刻ストリップにあたる部分。
+  // 絶対値を整数で並べると、このアプリが見たい数hPaの変化が丸めで消えるため、
+  // 先頭だけ実測値、以降は「今からの変化」を符号つきで示す。
+  function renderStrip(){
+    var d=state.data; if(!d) return;
+    var base = d.pressure[d.nowIndex];
+    els.strip.innerHTML="";
+    for(var k=0;k<6;k++){
+      var i=d.nowIndex+k*3;
+      if(i>=d.times.length) break;
+      var cell=document.createElement("div");
+      if(k===0) cell.className="now";
+
+      var h=document.createElement("div");
+      h.className="h";
+      h.textContent = (k===0) ? "今" : hourOf(d.times[i])+"時";
+
+      var v=document.createElement("div");
+      v.className="v";
+      if(d.pressure[i]==null || base==null){
+        v.textContent = "--";
+      }else if(k===0){
+        v.textContent = Math.round(base);
+      }else{
+        var diff = d.pressure[i] - base;
+        var r = Math.abs(diff) < 0.05 ? 0 : diff;   // -0.0 を出さない
+        v.textContent = (r > 0 ? "+" : (r < 0 ? "-" : "±")) + Math.abs(r).toFixed(1);
+      }
+      cell.appendChild(h); cell.appendChild(v);
+      els.strip.appendChild(cell);
     }
   }
 
   function renderAll(){
-    var d = state.data;
-    if(!d) return;
-    renderNumbers();
+    var d=state.data; if(!d) return;
+    renderHero();
     renderStatus();
-    drawMain(els.chartPressure, d, "var(--series-pressure)", state.scrub);
-    drawMini(els.chartTemp, d.temp, d.nowIndex, "var(--series-temp)", 4);
-    drawMini(els.chartHumidity, d.humidity, d.nowIndex, "var(--series-humidity)", 20);
-    els.placeTime.textContent = localClock(d.utcOffset);
+    renderStrip();
+    drawMain(els.chartPressure, d, state.scrub);
+    drawSpark(els.chartTemp, d.temp, d.nowIndex);
+    drawSpark(els.chartHumidity, d.humidity, d.nowIndex);
+    els.footTime.textContent = localClock(d.utcOffset);
   }
 
-  // ---------- scrub (touch/drag on the main chart) ----------
+  // ---------- scrub ----------
 
-  function indexFromClientX(clientX){
-    var d = state.data;
-    if(!d) return null;
-    var r = els.chartPressure.getBoundingClientRect();
+  function indexFromX(clientX){
+    var d=state.data; if(!d) return null;
+    var r=els.chartPressure.getBoundingClientRect();
     if(!r.width) return null;
-    var ratio = (clientX - r.left) / r.width;
-    ratio = Math.max(0, Math.min(1, ratio));
-    return Math.round(ratio * (d.times.length - 1));
+    var t=Math.max(0, Math.min(1, (clientX-r.left)/r.width));
+    return Math.round(t*(d.times.length-1));
   }
-
-  var scrubbing = false;
-  function onScrubStart(e){
-    if(!state.data) return;
-    scrubbing = true;
-    onScrubMove(e);
-  }
-  function onScrubMove(e){
-    if(!scrubbing || !state.data) return;
+  var scrubbing=false;
+  function sStart(e){ if(!state.data) return; scrubbing=true; sMove(e); }
+  function sMove(e){
+    if(!scrubbing||!state.data) return;
     var x = e.touches ? e.touches[0].clientX : e.clientX;
-    var i = indexFromClientX(x);
-    if(i == null || i === state.scrub) return;
-    state.scrub = i;
-    renderNumbers();
-    drawMain(els.chartPressure, state.data, "var(--series-pressure)", i);
+    var i = indexFromX(x);
+    if(i==null||i===state.scrub) return;
+    state.scrub=i;
+    renderHero();
+    drawMain(els.chartPressure, state.data, i);
   }
-  function onScrubEnd(){
+  function sEnd(){
     if(!scrubbing) return;
-    scrubbing = false;
-    state.scrub = null;
-    renderNumbers();
-    if(state.data) drawMain(els.chartPressure, state.data, "var(--series-pressure)", null);
+    scrubbing=false; state.scrub=null;
+    renderHero();
+    if(state.data) drawMain(els.chartPressure, state.data, null);
   }
-  els.plot.addEventListener("touchstart", onScrubStart, { passive:true });
-  els.plot.addEventListener("touchmove",  onScrubMove,  { passive:true });
-  els.plot.addEventListener("touchend",   onScrubEnd);
-  els.plot.addEventListener("touchcancel",onScrubEnd);
-  els.plot.addEventListener("mousedown",  onScrubStart);
-  window.addEventListener("mousemove",    onScrubMove);
-  window.addEventListener("mouseup",      onScrubEnd);
+  els.plot.addEventListener("touchstart", sStart, {passive:true});
+  els.plot.addEventListener("touchmove",  sMove,  {passive:true});
+  els.plot.addEventListener("touchend",   sEnd);
+  els.plot.addEventListener("touchcancel",sEnd);
+  els.plot.addEventListener("mousedown",  sStart);
+  window.addEventListener("mousemove",    sMove);
+  window.addEventListener("mouseup",      sEnd);
 
   // ---------- data flow ----------
 
-  var busy = false;
-
+  var busy=false;
   function setBusy(on){
-    busy = on;
-    els.refreshBtn.setAttribute("data-busy", on ? "1" : "0");
+    busy=on;
+    els.refreshBtn.textContent = on ? "更新中" : "更新";
   }
 
   function applyCache(){
-    var c = readJSON(CACHE_KEY);
-    if(!c || !c.data) return false;
-    state.data = c.data;
-    state.fetchedAt = c.fetchedAt;
-    state.place = c.place;
-    els.placeName.textContent = c.place;
+    var c=readJSON(CACHE_KEY);
+    if(!c||!c.data) return false;
+    state.data=c.data; state.fetchedAt=c.fetchedAt; state.place=c.place;
+    els.placeName.textContent=c.place;
     renderAll();
     return true;
   }
 
   function load(place, lat, lon){
-    setBusy(true);
-    setMsg("");
+    setBusy(true); setMsg("");
     return fetchWeather(lat, lon).then(function(data){
-      state.data = data;
-      state.fetchedAt = Date.now();
-      state.place = place;
-      state.scrub = null;
-      els.placeName.textContent = place;
-      writeJSON(CACHE_KEY, { place:place, lat:lat, lon:lon, data:data, fetchedAt:Date.now() });
-      renderAll();
-      setBusy(false);
+      state.data=data; state.fetchedAt=Date.now(); state.place=place; state.scrub=null;
+      els.placeName.textContent=place;
+      writeJSON(CACHE_KEY,{place:place,lat:lat,lon:lon,data:data,fetchedAt:Date.now()});
+      renderAll(); setBusy(false);
     }).catch(function(err){
-      setBusy(false);
-      console.error(err);
-      var had = state.data != null;
-      setMsg(had ? "更新できませんでした。表示は" + describeAge(state.fetchedAt) + "のデータです。"
+      setBusy(false); console.error(err);
+      var had = state.data!=null;
+      setMsg(had ? "更新できませんでした。表示は"+describeAge(state.fetchedAt)+"のデータです。"
                  : "データを取得できませんでした。通信環境を確認してください。");
       if(had) renderStatus();
     });
@@ -792,27 +718,23 @@
   // 起動・復帰のたびに呼ぶ。auto なら現在地を取り直してから読み込む。
   function start(){
     if(busy) return Promise.resolve();
-    var pref = loadPref();
-
-    if(pref.mode === "manual"){
-      return load(pref.name, pref.lat, pref.lon);
-    }
+    var pref=loadPref();
+    if(pref.mode==="manual") return load(pref.name, pref.lat, pref.lon);
 
     setBusy(true);
     return getCurrentPosition().then(function(pos){
       setBusy(false);
-      // 表示名は毎回引き直さず、十分に動いたときだけ取り直す
-      var c = readJSON(CACHE_KEY);
-      var moved = !c || c.place == null ||
-        Math.abs((c.lat || 0) - pos.lat) > 0.05 || Math.abs((c.lon || 0) - pos.lon) > 0.05;
+      var c=readJSON(CACHE_KEY);
+      var moved = !c || c.place==null ||
+        Math.abs((c.lat||0)-pos.lat)>0.05 || Math.abs((c.lon||0)-pos.lon)>0.05;
       if(!moved) return load(c.place, pos.lat, pos.lon);
-      return reverseName(pos.lat, pos.lon).then(function(name){
+      return reverseName(pos.lat,pos.lon).then(function(name){
         return load(name, pos.lat, pos.lon);
       });
     }).catch(function(){
       setBusy(false);
-      var c = readJSON(CACHE_KEY);
-      if(c && c.lat != null){
+      var c=readJSON(CACHE_KEY);
+      if(c && c.lat!=null){
         setMsg("現在地を取得できないため、前回の地点を表示しています。");
         return load(c.place, c.lat, c.lon);
       }
@@ -823,64 +745,53 @@
 
   // ---------- search ----------
 
-  function openSearch(){
-    els.search.classList.remove("hidden");
-    els.geoInput.focus();
-  }
+  function openSearch(){ els.search.classList.remove("hidden"); els.geoInput.focus(); }
   function closeSearch(){
     els.search.classList.add("hidden");
-    els.geoResults.innerHTML = "";
-    els.geoInput.value = "";
+    els.geoResults.innerHTML=""; els.geoInput.value="";
   }
-
   els.placeBtn.addEventListener("click", function(){
-    if(els.search.classList.contains("hidden")) openSearch();
-    else closeSearch();
+    if(els.search.classList.contains("hidden")) openSearch(); else closeSearch();
   });
 
-  var searchTimer = null;
+  var timer=null;
   els.geoInput.addEventListener("input", function(){
-    clearTimeout(searchTimer);
-    var q = els.geoInput.value.trim();
-    if(!q){ els.geoResults.innerHTML = ""; return; }
-    searchTimer = setTimeout(function(){ runSearch(q); }, 300);
+    clearTimeout(timer);
+    var q=els.geoInput.value.trim();
+    if(!q){ els.geoResults.innerHTML=""; return; }
+    timer=setTimeout(function(){ runSearch(q); }, 300);
   });
-
   function runSearch(q){
-    geocodeSearch(q).then(function(results){
-      if(!results.length){
-        els.geoResults.innerHTML = '<li class="empty">見つかりません</li>';
-        return;
-      }
-      els.geoResults.innerHTML = "";
-      results.forEach(function(r){
-        var li = document.createElement("li");
-        li.textContent = [r.name, r.admin1].filter(Boolean).join("、");
+    geocodeSearch(q).then(function(rs){
+      if(!rs.length){ els.geoResults.innerHTML='<li class="empty">見つかりません</li>'; return; }
+      els.geoResults.innerHTML="";
+      rs.forEach(function(r){
+        var li=document.createElement("li");
+        li.textContent=[r.name,r.admin1].filter(Boolean).join("、");
         li.addEventListener("click", function(){
-          savePref({ mode:"manual", name:r.name, lat:r.latitude, lon:r.longitude });
+          savePref({mode:"manual",name:r.name,lat:r.latitude,lon:r.longitude});
           closeSearch();
-          load(r.name, r.latitude, r.longitude);
+          load(r.name,r.latitude,r.longitude);
         });
         els.geoResults.appendChild(li);
       });
     }).catch(function(){
-      els.geoResults.innerHTML = '<li class="empty">検索できません</li>';
+      els.geoResults.innerHTML='<li class="empty">検索できません</li>';
     });
   }
 
-  // 現在地に戻す導線: 更新ボタンの長押し
-  var holdTimer = null;
+  // 現在地に戻す導線: 更新の長押し
+  var hold=null;
   els.refreshBtn.addEventListener("touchstart", function(){
-    holdTimer = setTimeout(function(){
-      savePref({ mode:"auto" });
+    hold=setTimeout(function(){
+      savePref({mode:"auto"});
       setMsg("現在地に戻しました。");
       start();
     }, 600);
-  }, { passive:true });
+  }, {passive:true});
   ["touchend","touchcancel","touchmove"].forEach(function(ev){
-    els.refreshBtn.addEventListener(ev, function(){ clearTimeout(holdTimer); });
+    els.refreshBtn.addEventListener(ev, function(){ clearTimeout(hold); });
   });
-
   els.refreshBtn.addEventListener("click", function(){ start(); });
 
   // ---------- lifecycle ----------
@@ -888,13 +799,11 @@
   // ホーム画面から起動したとき、アプリは再読み込みされず「復帰」することがある。
   // 復帰も起動と同じ扱いにして、必ず現在時刻・現在地を取り直す。
   document.addEventListener("visibilitychange", function(){
-    if(document.visibilityState === "visible") start();
+    if(document.visibilityState==="visible") start();
   });
-  window.addEventListener("pageshow", function(e){
-    if(e.persisted) start();
-  });
+  window.addEventListener("pageshow", function(e){ if(e.persisted) start(); });
   setInterval(function(){
-    if(document.visibilityState === "visible") start();
+    if(document.visibilityState==="visible") start();
   }, REFRESH_MS);
 
   applyCache();
@@ -902,8 +811,8 @@
 
   if("serviceWorker" in navigator && window.isSecureContext){
     window.addEventListener("load", function(){
-      navigator.serviceWorker.register("sw.js").catch(function(err){
-        console.warn("sw registration failed", err);
+      navigator.serviceWorker.register("sw.js").catch(function(e){
+        console.warn("sw registration failed", e);
       });
     });
   }
