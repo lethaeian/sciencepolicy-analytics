@@ -23,6 +23,7 @@
     --ink-soft:  #556b66;
     --ink-faint: #93a49f;
     --rule:      #e6dfcf;
+    --band:      rgba(22,48,44,.075);
     --shadow:
       0 1px 2px rgba(22,48,44,.05),
       0 6px 16px rgba(22,48,44,.06),
@@ -41,6 +42,7 @@
       --ink-soft:  #a6bcb6;
       --ink-faint: #6d8781;
       --rule:      #1f4741;
+      --band:      rgba(243,238,226,.085);
       --shadow:
         0 1px 2px rgba(0,0,0,.30),
         0 6px 18px rgba(0,0,0,.28),
@@ -239,6 +241,24 @@
     min-height: 1.2em;
   }
   .plot-foot .mid{ color: var(--ink-soft); }
+  .plot-note{
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    display:flex;
+    align-items:center;
+    gap: 7px;
+  }
+  .plot-note:empty{ display:none; }
+  .plot-note::before{
+    content:"";
+    flex: none;
+    width: 16px; height: 10px;
+    border-radius: 2px;
+    background: var(--band);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
 
   /* ---------- metric rows ---------- */
   .row{
@@ -257,7 +277,7 @@
     width: 3.2em;
     flex: none;
   }
-  .row-spark{ flex: 1; min-width: 0; }
+  .row-spark{ flex: 1; min-width: 0; touch-action: pan-y; }
   .row-spark svg{ display:block; width:100%; height:auto; }
   .row-value{
     font-size: 17px;
@@ -371,6 +391,7 @@
         <span class="mid" id="plotMid">現在</span>
         <span>24時間後</span>
       </div>
+      <div class="plot-note" id="plotNote"></div>
     </div>
   </div>
 
@@ -416,7 +437,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v7";
+  var BUILD = "v8";
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
@@ -430,6 +451,7 @@
     careLabel:$("careLabel"), careList:$("careList"),
     strip:$("strip"),
     plot:$("plot"), chartPressure:$("chartPressure"), plotMid:$("plotMid"),
+    plotNote:$("plotNote"),
     tempValue:$("tempValue"), humidityValue:$("humidityValue"),
     chartTemp:$("chartTemp"), chartHumidity:$("chartHumidity"),
     refreshBtn:$("refreshBtn"), footTime:$("footTime"),
@@ -651,6 +673,24 @@
   }
 
   // 主グラフ。塗りも目盛りも置かず、線一本と現在位置だけで読ませる。
+  // 3時間あたりの下がり幅が注意水準（-2hPa）に達する区間を洗い出す。
+  // 連続する区間はひと続きにまとめる。
+  function cautionBands(p){
+    var bands=[], cur=null;
+    for(var i=0; i+3 < p.length; i++){
+      if(p[i]==null || p[i+3]==null){ continue; }
+      var drop = p[i+3] - p[i];
+      if(drop <= THRESH.warning.past3){
+        if(cur) cur.e = i+3;
+        else cur = { s:i, e:i+3 };
+      }else if(cur){
+        bands.push(cur); cur = null;
+      }
+    }
+    if(cur) bands.push(cur);
+    return bands;
+  }
+
   function drawMain(svg, d, focus){
     clear(svg);
     var v=d.pressure, now=d.nowIndex, W=320, H=104, top=10, bot=8;
@@ -658,6 +698,14 @@
     var ph=H-top-bot;
     function X(i){ return (i/(v.length-1))*W; }
     function Y(x){ return top+(1-(x-sc.lo)/(sc.hi-sc.lo))*ph; }
+
+    // 要注意の時間帯を先に敷く。線より下のレイヤーに置く。
+    cautionBands(v).forEach(function(b){
+      svg.appendChild(mk("rect",{
+        x:X(b.s), y:0, width:Math.max(X(b.e)-X(b.s), 1), height:H,
+        fill:"var(--band)"
+      }));
+    });
 
     var past=[], future=[];
     for(var i=0;i<v.length;i++){
@@ -685,7 +733,7 @@
     }
   }
 
-  function drawSpark(svg, vals, now){
+  function drawSpark(svg, vals, now, focus){
     clear(svg);
     var W=160,H=26,pad=3;
     var sc=scaleOf(vals, 4); if(!sc) return;
@@ -703,9 +751,16 @@
     if(future.length>1) svg.appendChild(mk("path",{ d:pathOf(future), fill:"none",
       stroke:"var(--ink)", "stroke-width":1.2, opacity:.3, "stroke-linejoin":"round",
       "stroke-linecap":"round", "stroke-dasharray":"1 3" }));
-    if(vals[now]!=null){
-      svg.appendChild(mk("circle",{ cx:X(now), cy:Y(vals[now]), r:3.2, fill:"var(--card)" }));
-      svg.appendChild(mk("circle",{ cx:X(now), cy:Y(vals[now]), r:1.9, fill:"var(--ink)" }));
+
+    // 気圧のグラフをなぞったとき、気温・湿度の印も同じ時刻へ移す。
+    var at = (focus==null) ? now : focus;
+    if(vals[at]!=null){
+      if(focus!=null){
+        svg.appendChild(mk("line",{ x1:X(at), x2:X(at), y1:0, y2:H,
+          stroke:"var(--rule)", "stroke-width":1 }));
+      }
+      svg.appendChild(mk("circle",{ cx:X(at), cy:Y(vals[at]), r:3.2, fill:"var(--card)" }));
+      svg.appendChild(mk("circle",{ cx:X(at), cy:Y(vals[at]), r:1.9, fill:"var(--ink)" }));
     }
   }
 
@@ -768,28 +823,49 @@
     }
   }
 
+  // 要注意の時間帯があるときだけ、帯の意味を書き添える。
+  function renderPlotNote(){
+    var d=state.data; if(!d) return;
+    var n = cautionBands(d.pressure).length;
+    els.plotNote.textContent = n ? "気圧が下がりやすい時間帯" : "";
+  }
+
+  function drawCharts(focus){
+    var d=state.data; if(!d) return;
+    drawMain(els.chartPressure, d, focus);
+    drawSpark(els.chartTemp, d.temp, d.nowIndex, focus);
+    drawSpark(els.chartHumidity, d.humidity, d.nowIndex, focus);
+  }
+
   function renderAll(){
     var d=state.data; if(!d) return;
     renderHero();
     renderStatus();
     renderStrip();
-    drawMain(els.chartPressure, d, state.scrub);
-    drawSpark(els.chartTemp, d.temp, d.nowIndex);
-    drawSpark(els.chartHumidity, d.humidity, d.nowIndex);
+    renderPlotNote();
+    drawCharts(state.scrub);
     els.footTime.textContent = localClock(d.utcOffset);
   }
 
   // ---------- scrub ----------
 
+  // なぞる対象はどのグラフでもよい。時間軸はすべて共通なので、
+  // 触れている要素の幅を基準に位置を求める。
+  var scrubbing=false, scrubEl=null;
+
   function indexFromX(clientX){
-    var d=state.data; if(!d) return null;
-    var r=els.chartPressure.getBoundingClientRect();
+    var d=state.data; if(!d || !scrubEl) return null;
+    var r=scrubEl.getBoundingClientRect();
     if(!r.width) return null;
     var t=Math.max(0, Math.min(1, (clientX-r.left)/r.width));
     return Math.round(t*(d.times.length-1));
   }
-  var scrubbing=false;
-  function sStart(e){ if(!state.data) return; scrubbing=true; sMove(e); }
+  function sStart(e){
+    if(!state.data) return;
+    scrubEl = e.currentTarget.querySelector("svg") || e.currentTarget;
+    scrubbing=true;
+    sMove(e);
+  }
   function sMove(e){
     if(!scrubbing||!state.data) return;
     var x = e.touches ? e.touches[0].clientX : e.clientX;
@@ -797,21 +873,24 @@
     if(i==null||i===state.scrub) return;
     state.scrub=i;
     renderHero();
-    drawMain(els.chartPressure, state.data, i);
+    drawCharts(i);
   }
   function sEnd(){
     if(!scrubbing) return;
-    scrubbing=false; state.scrub=null;
+    scrubbing=false; scrubEl=null; state.scrub=null;
     renderHero();
-    if(state.data) drawMain(els.chartPressure, state.data, null);
+    if(state.data) drawCharts(null);
   }
-  els.plot.addEventListener("touchstart", sStart, {passive:true});
-  els.plot.addEventListener("touchmove",  sMove,  {passive:true});
-  els.plot.addEventListener("touchend",   sEnd);
-  els.plot.addEventListener("touchcancel",sEnd);
-  els.plot.addEventListener("mousedown",  sStart);
-  window.addEventListener("mousemove",    sMove);
-  window.addEventListener("mouseup",      sEnd);
+
+  [els.plot, els.chartTemp.parentNode, els.chartHumidity.parentNode].forEach(function(el){
+    el.addEventListener("touchstart", sStart, {passive:true});
+    el.addEventListener("touchmove",  sMove,  {passive:true});
+    el.addEventListener("touchend",   sEnd);
+    el.addEventListener("touchcancel",sEnd);
+    el.addEventListener("mousedown",  sStart);
+  });
+  window.addEventListener("mousemove", sMove);
+  window.addEventListener("mouseup",   sEnd);
 
   // ---------- data flow ----------
 
