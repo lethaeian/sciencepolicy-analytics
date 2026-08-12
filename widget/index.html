@@ -161,22 +161,31 @@
   }
 
   /* ---------- status ---------- */
+  /* 判定とmax/minを同じベースラインに載せ、1行として釣り合わせる */
   .status-row{
     display:flex;
-    align-items:center;
+    align-items: baseline;
     justify-content:space-between;
-    gap: 14px;
+    gap: 6px 12px;
+    /* 狭い画面では語を折らず、max/minごと次の行に落とす */
+    flex-wrap: wrap;
   }
   .minmax{
     display:flex;
-    gap: 14px;
+    align-items: baseline;
+    gap: 15px;
     flex: none;
     font-variant-numeric: tabular-nums;
   }
-  .minmax div{ text-align:right; }
+  .minmax > span{
+    display:inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    white-space: nowrap;
+  }
   .minmax .k{
-    font-size: 9.5px;
-    letter-spacing: .14em;
+    font-size: 10px;
+    letter-spacing: .12em;
     color: var(--ink-faint);
     text-transform: uppercase;
   }
@@ -184,7 +193,6 @@
     font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin-top: 2px;
   }
   .minmax .t .u{ font-size: 11px; color: var(--ink-faint); margin-left: 1px; }
   .status[data-level="good"]     { --tone: var(--good); }
@@ -195,6 +203,7 @@
     font-size: 17px;
     font-weight: 500;
     letter-spacing: .02em;
+    white-space: nowrap;
   }
   .status-word::before{
     content:"";
@@ -426,14 +435,8 @@
       <div class="status-row">
         <div class="status-word" id="statusWord">読み込み中</div>
         <div class="minmax">
-          <div>
-            <div class="k">max</div>
-            <div class="t"><span id="tMax">--</span><span class="u">°</span></div>
-          </div>
-          <div>
-            <div class="k">min</div>
-            <div class="t"><span id="tMin">--</span><span class="u">°</span></div>
-          </div>
+          <span><span class="k">max</span><span class="t"><span id="tMax">--</span><span class="u">°</span></span></span>
+          <span><span class="k">min</span><span class="t"><span id="tMin">--</span><span class="u">°</span></span></span>
         </div>
       </div>
       <div class="status-note" id="statusNote"></div>
@@ -501,7 +504,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v11";
+  var BUILD = "v12";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
