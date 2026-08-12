@@ -24,6 +24,7 @@
     --ink-faint: #93a49f;
     --rule:      #e6dfcf;
     --band:      rgba(22,48,44,.075);
+    --tile:      #efe9db;
     --shadow:
       0 1px 2px rgba(22,48,44,.05),
       0 6px 16px rgba(22,48,44,.06),
@@ -43,6 +44,7 @@
       --ink-faint: #6d8781;
       --rule:      #1f4741;
       --band:      rgba(243,238,226,.085);
+      --tile:      #0e2c27;
       --shadow:
         0 1px 2px rgba(0,0,0,.30),
         0 6px 18px rgba(0,0,0,.28),
@@ -93,50 +95,73 @@
     text-transform: uppercase;
   }
 
-  /* ---------- hero ---------- */
-  .hero{
-    text-align:center;
-    margin-top: 4px;
+  /* ---------- hero: flip digits ---------- */
+  .sr-only{
+    position:absolute; width:1px; height:1px;
+    margin:-1px; padding:0; overflow:hidden;
+    clip:rect(0 0 0 0); white-space:nowrap; border:0;
   }
-  /* フリップ時計の継ぎ目。カード地と同じ色の帯で数字だけを切る。
-     線の色を足すと数字のない余白でも帯が見えてしまうため、色は乗せない。 */
-  .flip{
+  .hero-card{ padding: 20px 16px 16px; }
+  .flips{
+    display:flex;
+    justify-content:center;
+    gap: 5px;
+  }
+  /* 1枚の札。上下の半分に分かれ、その隙間が継ぎ目になる。 */
+  .fd{
+    --fdH: min(132px, 31vw);
     position: relative;
-    display: block;
-  }
-  .flip::after{
-    content:"";
-    position:absolute;
-    left: -20px; right: -20px;
-    top: 53.5%;
-    height: 3px;
-    margin-top: -1.5px;
-    background: var(--card);
-    pointer-events:none;
-  }
-  .hero-value{
-    font-size: 96px;
+    flex: 1 1 0;
+    max-width: 82px;
+    height: var(--fdH);
+    perspective: 420px;
+    font-size: min(104px, 24.5vw);
     font-weight: 800;
-    letter-spacing: -0.05em;
-    line-height: .96;
-    display:block;
-    /* フリップ時計の数字に寄せて、太いまま横幅を少し詰める */
-    transform: scaleX(.94);
-    transform-origin: center;
+    letter-spacing: -0.04em;
+    color: var(--ink);
   }
+  .fd-half, .fd-flap{
+    position:absolute;
+    left:0; right:0;
+    height: calc(50% - 1px);   /* 上下の間に2pxの継ぎ目を残す */
+    overflow:hidden;
+    background: var(--tile);
+    backface-visibility: hidden;
+  }
+  .fd-half > span, .fd-flap > span{
+    position:absolute;
+    left:0; width:100%;
+    height: var(--fdH);
+    line-height: var(--fdH);
+    text-align:center;
+  }
+  .fd-top,  .fd-flap-top{ top:0;    border-radius: 9px 9px 2px 2px; }
+  .fd-bot,  .fd-flap-bot{ bottom:0; border-radius: 2px 2px 9px 9px; }
+  .fd-top > span,  .fd-flap-top > span{ top: 0; }
+  .fd-bot > span,  .fd-flap-bot > span{ top: calc(var(--fdH) * -0.5); }
+
+  .fd-flap{ z-index: 2; }
+  .fd-flap-top{ transform-origin: bottom center; animation: fdFall 170ms ease-in forwards; }
+  .fd-flap-bot{ transform-origin: top center;    transform: rotateX(90deg);
+                animation: fdRise 170ms ease-out 170ms forwards; }
+  @keyframes fdFall{ from{ transform: rotateX(0deg);  } to{ transform: rotateX(-90deg); } }
+  @keyframes fdRise{ from{ transform: rotateX(90deg); } to{ transform: rotateX(0deg);   } }
+
+  @media (prefers-reduced-motion: reduce){
+    .fd-flap{ display:none; }
+  }
+
   .hero-unit{
     display:block;
-    margin-top: 8px;
+    text-align:center;
+    margin-top: 14px;
     font-size: 12px;
     letter-spacing: .1em;
     color: var(--ink-faint);
   }
 
   /* ---------- status ---------- */
-  .status{
-    text-align:center;
-    margin-top: 26px;
-  }
+  .status{ text-align:center; }
   .status[data-level="good"]     { --tone: var(--good); }
   .status[data-level="warning"]  { --tone: var(--warning); }
   .status[data-level="serious"]  { --tone: var(--serious); }
@@ -365,11 +390,13 @@
 
   <button class="place" id="placeBtn" type="button"><span id="placeName">…</span></button>
 
+  <div class="card hero-card">
+    <div class="flips" id="flips" aria-hidden="true"></div>
+    <div class="sr-only" id="heroValue">--</div>
+    <div class="hero-unit">hPa</div>
+  </div>
+
   <div class="card">
-    <div class="hero">
-      <span class="flip"><span class="hero-value" id="heroValue">--</span></span>
-      <span class="hero-unit">hPa</span>
-    </div>
     <div class="status" id="status" data-level="good">
       <div class="status-word" id="statusWord">読み込み中</div>
       <div class="status-note" id="statusNote"></div>
@@ -437,7 +464,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v9";
+  var BUILD = "v10";
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
@@ -446,7 +473,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var els = {
     placeBtn:$("placeBtn"), placeName:$("placeName"),
-    heroValue:$("heroValue"),
+    heroValue:$("heroValue"), flips:$("flips"),
     status:$("status"), statusWord:$("statusWord"), statusNote:$("statusNote"),
     careLabel:$("careLabel"), careList:$("careList"),
     strip:$("strip"),
@@ -768,10 +795,96 @@
 
   var state = { data:null, fetchedAt:0, place:"", scrub:null };
 
-  function renderHero(){
+  // ---------- flip digits ----------
+
+  function makeTile(ch){
+    var fd = document.createElement("div");
+    fd.className = "fd";
+    fd.setAttribute("data-v", ch);
+    ["fd-top","fd-bot"].forEach(function(cls){
+      var half = document.createElement("div");
+      half.className = "fd-half " + cls;
+      var sp = document.createElement("span");
+      sp.textContent = ch;
+      half.appendChild(sp);
+      fd.appendChild(half);
+    });
+    return fd;
+  }
+
+  function halfWith(cls, ch){
+    var el = document.createElement("div");
+    el.className = "fd-flap " + cls;
+    var sp = document.createElement("span");
+    sp.textContent = ch;
+    el.appendChild(sp);
+    return el;
+  }
+
+  // 上半分が新しい数字に替わったところへ、古い数字の板が倒れ、
+  // 続いて新しい数字の下半分が起き上がる。
+  function flipTile(fd, next){
+    var prev = fd.getAttribute("data-v");
+    if(prev === next) return;
+    fd.setAttribute("data-v", next);
+
+    var top = fd.querySelector(".fd-top > span");
+    var bot = fd.querySelector(".fd-bot > span");
+
+    // 途中の札が残っていれば片付ける（連続更新への備え）
+    var stale = fd.querySelectorAll(".fd-flap");
+    for(var k=0;k<stale.length;k++) fd.removeChild(stale[k]);
+
+    top.textContent = next;          // 倒れる板の裏から現れる
+    // bot は倒れ終わるまで古い数字のまま残す
+
+    var flapTop = halfWith("fd-flap-top", prev);
+    var flapBot = halfWith("fd-flap-bot", next);
+    fd.appendChild(flapTop);
+    fd.appendChild(flapBot);
+
+    flapBot.addEventListener("animationend", function(){
+      bot.textContent = next;
+      if(flapTop.parentNode) fd.removeChild(flapTop);
+      if(flapBot.parentNode) fd.removeChild(flapBot);
+    });
+  }
+
+  function setTile(fd, ch){
+    fd.setAttribute("data-v", ch);
+    fd.querySelector(".fd-top > span").textContent = ch;
+    fd.querySelector(".fd-bot > span").textContent = ch;
+    var stale = fd.querySelectorAll(".fd-flap");
+    for(var k=0;k<stale.length;k++) fd.removeChild(stale[k]);
+  }
+
+  var reduceMotion = window.matchMedia
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function renderFlips(text, animate){
+    var chars = String(text).split("");
+    var tiles = els.flips.children;
+
+    // 桁数が変わったら組み直す（このときは動かさない）
+    if(tiles.length !== chars.length){
+      els.flips.innerHTML = "";
+      chars.forEach(function(ch){ els.flips.appendChild(makeTile(ch)); });
+      return;
+    }
+    chars.forEach(function(ch, i){
+      var fd = tiles[i];
+      if(animate && !reduceMotion) flipTile(fd, ch);
+      else if(fd.getAttribute("data-v") !== ch) setTile(fd, ch);
+    });
+  }
+
+  function renderHero(animate){
     var d=state.data; if(!d) return;
     var i = (state.scrub==null) ? d.nowIndex : state.scrub;
-    els.heroValue.textContent = d.pressure[i]==null ? "--" : Math.round(d.pressure[i]);
+    var shown = d.pressure[i]==null ? "--" : String(Math.round(d.pressure[i]));
+    els.heroValue.textContent = shown;
+    // なぞっている間は値が連続で変わるため、めくらずに差し替える
+    renderFlips(shown, animate === true && state.scrub == null);
     els.tempValue.textContent = d.temp[i]==null ? "--" : d.temp[i].toFixed(1);
     els.humidityValue.textContent = d.humidity[i]==null ? "--" : Math.round(d.humidity[i]);
     els.plotMid.textContent = (state.scrub==null)
@@ -837,9 +950,9 @@
     drawSpark(els.chartHumidity, d.humidity, d.nowIndex, focus);
   }
 
-  function renderAll(){
+  function renderAll(animate){
     var d=state.data; if(!d) return;
-    renderHero();
+    renderHero(animate);
     renderStatus();
     renderStrip();
     renderPlotNote();
@@ -905,7 +1018,7 @@
     if(!c||!c.data) return false;
     state.data=c.data; state.fetchedAt=c.fetchedAt; state.place=c.place;
     els.placeName.textContent=c.place;
-    renderAll();
+    renderAll(false);
     return true;
   }
 
@@ -915,7 +1028,7 @@
       state.data=data; state.fetchedAt=Date.now(); state.place=place; state.scrub=null;
       els.placeName.textContent=place;
       writeJSON(CACHE_KEY,{place:place,lat:lat,lon:lon,data:data,fetchedAt:Date.now()});
-      renderAll(); setBusy(false);
+      renderAll(true); setBusy(false);
     }).catch(function(err){
       setBusy(false); console.error(err);
       var had = state.data!=null;
