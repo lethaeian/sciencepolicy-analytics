@@ -77,11 +77,14 @@
     margin-top: 30px;
   }
   .hero-value{
-    font-size: 88px;
-    font-weight: 200;
-    letter-spacing: -0.04em;
-    line-height: 1;
+    font-size: 96px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: .96;
     display:block;
+    /* フリップ時計の数字に寄せて、太いまま横幅を少し詰める */
+    transform: scaleX(.94);
+    transform-origin: center;
   }
   .hero-unit{
     display:block;
@@ -129,11 +132,51 @@
     margin: 26px 0 0;
   }
 
+  /* ---------- care ---------- */
+  .care{ margin-top: 24px; }
+  .care-label{
+    font-size: 10px;
+    letter-spacing: .2em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    text-align:center;
+  }
+  .care ul{
+    list-style:none;
+    margin: 14px 0 0;
+    padding: 0;
+  }
+  .care li{
+    display:flex;
+    gap: 12px;
+    align-items:baseline;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .care li:first-child{ border-top: 1px solid var(--rule); }
+  .care li .n{
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+    width: 1.1em;
+  }
+  .care li .why{
+    display:block;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
   /* ---------- forecast strip ---------- */
   .strip{
     display:grid;
     grid-template-columns: repeat(6, 1fr);
-    margin-top: 20px;
+    margin-top: 26px;
     font-variant-numeric: tabular-nums;
   }
   .strip div{ text-align:center; }
@@ -143,12 +186,13 @@
     letter-spacing: .04em;
   }
   .strip .v{
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 600;
     margin-top: 7px;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
-  .strip .now .h,
-  .strip .now .v{ color: var(--ink); font-weight: 500; }
+  .strip .now .h{ color: var(--ink); }
+  .strip .now .v{ color: var(--ink); font-weight: 800; }
 
   /* ---------- main plot ---------- */
   .plot{
@@ -187,12 +231,13 @@
   .row-spark{ flex: 1; min-width: 0; }
   .row-spark svg{ display:block; width:100%; height:auto; }
   .row-value{
-    font-size: 15px;
+    font-size: 17px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: right;
     width: 4.4em;
     flex: none;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
   .row-value .u{ font-size: 11px; color: var(--ink-faint); margin-left: 1px; }
 
@@ -281,7 +326,10 @@
     <div class="status-note" id="statusNote"></div>
   </div>
 
-  <div class="rule"></div>
+  <div class="care" id="care">
+    <div class="care-label" id="careLabel">できること</div>
+    <ul id="careList"></ul>
+  </div>
 
   <div class="strip" id="strip"></div>
 
@@ -345,6 +393,7 @@
     placeBtn:$("placeBtn"), placeName:$("placeName"),
     heroValue:$("heroValue"),
     status:$("status"), statusWord:$("statusWord"), statusNote:$("statusNote"),
+    careLabel:$("careLabel"), careList:$("careList"),
     strip:$("strip"),
     plot:$("plot"), chartPressure:$("chartPressure"), plotMid:$("plotMid"),
     tempValue:$("tempValue"), humidityValue:$("humidityValue"),
@@ -489,6 +538,53 @@
     return { level:level, word:WORD[level], note:note };
   }
 
+  // ---------- self-care ----------
+  // 判定レベルごとの、その場でできる一般的なセルフケア。
+  // いずれも薬に頼らない範囲にとどめ、受診の判断は注記側に委ねる。
+  var CARE = {
+    good: [
+      { t:"こまめに水分をとる", w:"脱水は頭痛の引き金になりやすい" },
+      { t:"睡眠の時間帯を一定に保つ", w:"自律神経の乱れを防ぐ" }
+    ],
+    warning: [
+      { t:"水分をとる", w:"温かい飲み物だと体が冷えにくい" },
+      { t:"首と肩をゆっくり回す", w:"こわばりが頭痛につながりやすい" },
+      { t:"カフェインとアルコールは控えめに", w:"利尿で水分が失われる" }
+    ],
+    serious: [
+      { t:"耳を軽くつまんで、ゆっくり回す", w:"耳まわりの血流をうながす。1回1分ほど" },
+      { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい" },
+      { t:"温かい飲み物で水分をとる", w:"冷えると症状が強く出やすい" },
+      { t:"予定を詰め込まない", w:"低下が続く間は余裕をもって" }
+    ],
+    critical: [
+      { t:"横になれる場所で休む", w:"暗く静かな場所だとなお良い" },
+      { t:"耳と首の後ろを温める", w:"蒸しタオルや手のひらで十分" },
+      { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい" },
+      { t:"激しい運動と長時間の外出は避ける", w:"回復を優先する" }
+    ]
+  };
+
+  function renderCare(level){
+    var items = CARE[level] || CARE.good;
+    els.careLabel.textContent = (level === "good") ? "整えておくこと" : "いまできること";
+    els.careList.innerHTML = "";
+    items.forEach(function(it, i){
+      var li = document.createElement("li");
+      var n = document.createElement("span");
+      n.className = "n";
+      n.textContent = (i + 1);
+      var body = document.createElement("div");
+      body.appendChild(document.createTextNode(it.t));
+      var why = document.createElement("span");
+      why.className = "why";
+      why.textContent = it.w;
+      body.appendChild(why);
+      li.appendChild(n); li.appendChild(body);
+      els.careList.appendChild(li);
+    });
+  }
+
   // ---------- format ----------
 
   function describeAge(ms){
@@ -602,6 +698,7 @@
     els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
       ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
       : a.note;
+    renderCare(a.level);
   }
 
   // 3時間ごとの気圧予報。Weat の時刻ストリップにあたる部分。
