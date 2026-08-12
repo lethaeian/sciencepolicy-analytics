@@ -11,7 +11,7 @@
  *     「キャッシュ」と明示したうえで取得時刻とともに表示される。
  */
 
-var VERSION = "v8";
+var VERSION = "v9";
 var CACHE = "wxwidget-shell-" + VERSION;
 
 var SHELL = [
@@ -42,6 +42,18 @@ self.addEventListener("activate", function(event){
       }));
     }).then(function(){
       return self.clients.claim();
+    }).then(function(){
+      // 古い画面のまま止まっている窓を、こちら側から読み込み直させる。
+      // ページ側の更新処理に頼ると、その処理が入っていない古い版が
+      // 表示されている端末は永久に更新されない。
+      return self.clients.matchAll({ type:"window" }).then(function(list){
+        list.forEach(function(client){
+          if(client && typeof client.navigate === "function"){
+            try{ client.navigate(client.url).catch(function(){}); }
+            catch(e){ /* 未対応の環境ではページ側の処理に任せる */ }
+          }
+        });
+      });
     })
   );
 });
