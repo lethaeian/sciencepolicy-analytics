@@ -409,6 +409,7 @@
     <summary>体調の目安について</summary>
     <p>気圧・気温・湿度の変化にもとづく一般的な目安です。医学的な診断ではありません。体調がすぐれないときは無理をせず、症状が続く場合は医療機関にご相談ください。</p>
     <p>気象データ: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
+    <p>表示中のバージョン: <span id="buildId">-</span></p>
   </details>
 
 </div>
@@ -417,6 +418,8 @@
 (function(){
   "use strict";
 
+  // 画面が更新されたかを端末側で確かめられるようにする。
+  var BUILD = "v6";
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
@@ -937,12 +940,33 @@
     if(document.visibilityState==="visible") start();
   }, REFRESH_MS);
 
+  var buildEl = document.getElementById("buildId");
+  if(buildEl) buildEl.textContent = BUILD;
+
   applyCache();
   start();
 
   if("serviceWorker" in navigator && window.isSecureContext){
+    // ホーム画面から起動したアプリは、再読み込みされず前回の画面のまま
+    // 「再開」することがある。その状態では新しい版を配信しても画面が
+    // 古いままになるので、入れ替わりを検知して一度だけ読み込み直す。
+    var reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      if(reloading) return;
+      reloading = true;
+      location.reload();
+    });
+
     window.addEventListener("load", function(){
-      navigator.serviceWorker.register("sw.js").catch(function(e){
+      navigator.serviceWorker.register("sw.js").then(function(reg){
+        // 復帰のたびに新しい版の有無を確かめる。これがないと、
+        // 再開しかしない端末では更新の確認そのものが走らない。
+        document.addEventListener("visibilitychange", function(){
+          if(document.visibilityState === "visible") reg.update();
+        });
+        setInterval(function(){ reg.update(); }, REFRESH_MS);
+        reg.update();
+      }).catch(function(e){
         console.warn("sw registration failed", e);
       });
     });

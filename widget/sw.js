@@ -11,7 +11,7 @@
  *     「キャッシュ」と明示したうえで取得時刻とともに表示される。
  */
 
-var VERSION = "v5";
+var VERSION = "v6";
 var CACHE = "wxwidget-shell-" + VERSION;
 
 var SHELL = [
@@ -65,7 +65,9 @@ self.addEventListener("fetch", function(event){
   // キャッシュ済みのシェルを返す。
   if(req.mode === "navigate"){
     event.respondWith(
-      fetch(req).then(function(res){
+      // HTTPキャッシュを経由すると配信側の max-age の間だけ古いHTMLが
+      // 返り、更新したはずの画面が変わらない。常に取り直す。
+      fetch(req, { cache:"no-store" }).then(function(res){
         var copy = res.clone();
         caches.open(CACHE).then(function(cache){ cache.put("./index.html", copy); });
         return res;
