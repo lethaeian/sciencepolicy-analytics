@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2a78d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="気圧・体調">
+<title>気圧・体調アラーム ウィジェット</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a78d6'/%3E%3Cpath d='M14 40 L24 26 L32 34 L50 16' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='white'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%232a78d6'/%3E%3Cpath d='M14 40 L24 26 L32 34 L50 16' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --delta-good:     #006300;
+    --series-pressure: #2a78d6;
+    --series-temp:      #eb6834;
+    --series-humidity:  #1baf7a;
+    --status-good:     #0ca30c;
+    --status-warning:  #fab219;
+    --status-serious:  #ec835a;
+    --status-critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --delta-good:     #0ca30c;
+      --series-pressure: #3987e5;
+      --series-temp:      #d95926;
+      --series-humidity:  #199e70;
+    }
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app{
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 14px 14px 32px;
+    min-height: 100dvh;
+  }
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom: 12px;
+  }
+  header.top h1{
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .location-line{
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  button.icon-btn{
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  button.icon-btn:active{ opacity:.7; }
+
+  .card{
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  /* alarm banner */
+  .alarm{
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--status);
+    background: var(--surface-1);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .alarm[data-level="good"]{ --status: var(--status-good); }
+  .alarm[data-level="warning"]{ --status: var(--status-warning); }
+  .alarm[data-level="serious"]{ --status: var(--status-serious); }
+  .alarm[data-level="critical"]{ --status: var(--status-critical); }
+  .alarm-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:700;
+    font-size:15px;
+  }
+  .alarm-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:22px; height:22px;
+    border-radius:50%;
+    background: var(--status);
+    color:#fff;
+    font-size:13px;
+    flex: none;
+  }
+  .alarm-msg{
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .alarm-reasons{
+    margin: 6px 0 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .alarm-reasons li{ margin-top:2px; }
+
+  /* stat tiles */
+  .stats{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:8px;
+    margin-bottom: 10px;
+  }
+  .stat-tile{
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align:center;
+  }
+  .stat-label{
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .stat-value{
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .stat-unit{ font-size:11px; font-weight:400; color:var(--text-secondary); }
+  .stat-delta{
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .stat-delta.good{ color: var(--delta-good); }
+
+  /* charts */
+  .chart-card h2{
+    font-size: 13px;
+    margin: 0 0 2px;
+  }
+  .chart-sub{
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  svg.chart{ display:block; width:100%; height:auto; }
+  .chart-value-label{
+    font-size: 10px;
+    fill: var(--text-primary);
+    font-weight: 700;
+  }
+  .chart-tick-label{
+    font-size: 9px;
+    fill: var(--text-muted);
+  }
+  .now-label{
+    font-size: 9px;
+    fill: var(--text-muted);
+  }
+
+  .location-controls{ margin-top: 4px; }
+  .location-controls .row{
+    display:flex;
+    gap:6px;
+  }
+  .location-controls input[type="text"]{
+    flex:1;
+    min-width:0;
+    border:1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border-radius:8px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .location-controls button{
+    border:1px solid var(--border);
+    background: var(--series-pressure);
+    color:#fff;
+    border-radius:8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  ul.geo-results{
+    list-style:none;
+    margin:6px 0 0;
+    padding:0;
+    font-size: 13px;
+  }
+  ul.geo-results li{
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  ul.geo-results li:active{ background: var(--surface-2); }
+
+  .status-line{
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align:center;
+    margin-top: 4px;
+  }
+  footer.disclaimer{
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height:1.6;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gridline);
+  }
+  footer.disclaimer a{ color: var(--text-secondary); }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>気圧・体調アラーム</h1>
+      <div class="location-line" id="locationLine">位置情報を取得しています…</div>
+    </div>
+    <button class="icon-btn" id="refreshBtn" type="button" aria-label="更新">更新</button>
+  </header>
+
+  <div class="alarm" id="alarmBanner" data-level="good">
+    <div class="alarm-head">
+      <span class="alarm-badge" id="alarmBadge">✓</span>
+      <span id="alarmTitle">データ取得中…</span>
+    </div>
+    <p class="alarm-msg" id="alarmMsg">気圧・気温・湿度のデータを読み込んでいます。</p>
+    <ul class="alarm-reasons hidden" id="alarmReasons"></ul>
+  </div>
+
+  <div class="stats">
+    <div class="stat-tile">
+      <div class="stat-label">気圧</div>
+      <div class="stat-value"><span id="statPressure">--</span><span class="stat-unit"> hPa</span></div>
+      <div class="stat-delta" id="statPressureDelta">-</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">気温</div>
+      <div class="stat-value"><span id="statTemp">--</span><span class="stat-unit"> °C</span></div>
+      <div class="stat-delta" id="statTempDelta">-</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">湿度</div>
+      <div class="stat-value"><span id="statHumidity">--</span><span class="stat-unit"> %</span></div>
+      <div class="stat-delta" id="statHumidityDelta">-</div>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <h2>気圧の推移</h2>
+    <div class="chart-sub" id="pressureSub">過去24時間 → 今後24時間の予報</div>
+    <svg class="chart" id="chartPressure" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card chart-card">
+    <h2>気温の推移</h2>
+    <div class="chart-sub" id="tempSub">過去24時間 → 今後24時間の予報</div>
+    <svg class="chart" id="chartTemp" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card chart-card">
+    <h2>湿度の推移</h2>
+    <div class="chart-sub" id="humiditySub">過去24時間 → 今後24時間の予報</div>
+    <svg class="chart" id="chartHumidity" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card location-controls">
+    <div class="row">
+      <input type="text" id="geoInput" placeholder="都市名で検索（例：大阪市）">
+      <button id="geoSearchBtn" type="button">検索</button>
+    </div>
+    <ul class="geo-results hidden" id="geoResults"></ul>
+    <div class="status-line" id="statusLine"></div>
+  </div>
+
+  <footer class="disclaimer">
+    本ウィジェットは気圧・気温・湿度の変化をもとにした一般的な目安を表示するものであり、医学的診断や治療の代わりにはなりません。体調が優れない場合は無理をせず、症状が続く場合は医療機関にご相談ください。気象データ提供: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var REFRESH_MS = 30 * 60 * 1000;
+  var LOCATION_KEY = "wxwidget.location.v1";
+  var CACHE_KEY = "wxwidget.cache.v1";
+
+  var els = {
+    locationLine: document.getElementById("locationLine"),
+    refreshBtn: document.getElementById("refreshBtn"),
+    alarmBanner: document.getElementById("alarmBanner"),
+    alarmBadge: document.getElementById("alarmBadge"),
+    alarmTitle: document.getElementById("alarmTitle"),
+    alarmMsg: document.getElementById("alarmMsg"),
+    alarmReasons: document.getElementById("alarmReasons"),
+    statPressure: document.getElementById("statPressure"),
+    statPressureDelta: document.getElementById("statPressureDelta"),
+    statTemp: document.getElementById("statTemp"),
+    statTempDelta: document.getElementById("statTempDelta"),
+    statHumidity: document.getElementById("statHumidity"),
+    statHumidityDelta: document.getElementById("statHumidityDelta"),
+    pressureSub: document.getElementById("pressureSub"),
+    tempSub: document.getElementById("tempSub"),
+    humiditySub: document.getElementById("humiditySub"),
+    chartPressure: document.getElementById("chartPressure"),
+    chartTemp: document.getElementById("chartTemp"),
+    chartHumidity: document.getElementById("chartHumidity"),
+    geoInput: document.getElementById("geoInput"),
+    geoSearchBtn: document.getElementById("geoSearchBtn"),
+    geoResults: document.getElementById("geoResults"),
+    statusLine: document.getElementById("statusLine")
+  };
+
+  function setStatus(text){ els.statusLine.textContent = text || ""; }
+
+  // ---------- location ----------
+
+  function loadSavedLocation(){
+    try{
+      var raw = localStorage.getItem(LOCATION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveLocation(loc){
+    try{ localStorage.setItem(LOCATION_KEY, JSON.stringify(loc)); }catch(e){}
+  }
+
+  function getCurrentPosition(){
+    return new Promise(function(resolve, reject){
+      if(!("geolocation" in navigator)){ reject(new Error("no-geolocation")); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          resolve({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            name: "現在地"
+          });
+        },
+        function(err){ reject(err); },
+        { enableHighAccuracy:false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+      );
+    });
+  }
+
+  function geocodeSearch(query){
+    var url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+      encodeURIComponent(query) + "&count=5&language=ja&format=json";
+    return fetch(url).then(function(res){
+      if(!res.ok) throw new Error("geocode-http-" + res.status);
+      return res.json();
+    }).then(function(json){ return json.results || []; });
+  }
+
+  // ---------- weather fetch ----------
+
+  function fetchWeather(lat, lon){
+    var url = "https://api.open-meteo.com/v1/forecast" +
+      "?latitude=" + encodeURIComponent(lat) +
+      "&longitude=" + encodeURIComponent(lon) +
+      "&hourly=temperature_2m,relative_humidity_2m,pressure_msl" +
+      "&current=temperature_2m,relative_humidity_2m,pressure_msl" +
+      "&past_days=1&forecast_days=2&timezone=auto";
+    return fetch(url).then(function(res){
+      if(!res.ok) throw new Error("forecast-http-" + res.status);
+      return res.json();
+    }).then(function(json){
+      var times = json.hourly.time;
+      var nowIndex = json.current ? times.indexOf(json.current.time) : -1;
+      if(nowIndex < 0) nowIndex = Math.min(24, times.length - 1);
+      return {
+        timezoneName: json.timezone,
+        times: times,
+        pressure: json.hourly.pressure_msl,
+        temp: json.hourly.temperature_2m,
+        humidity: json.hourly.relative_humidity_2m,
+        nowIndex: nowIndex,
+        current: json.current
+      };
+    });
+  }
+
+  // ---------- alarm logic ----------
+  // 気圧の急な低下は、片頭痛や関節痛など「気象病」と呼ばれる不調と関連が指摘される。
+  // 過去3h/6hの実測降下と、今後6hの予報降下のうち最も重いレベルを採用する。
+  var THRESH = {
+    warning:  { past3:-2, past6:-3, future6:-3 },
+    serious:  { past3:-4, past6:-6, future6:-5 },
+    critical: { past3:-6, past6:-9, future6:-8 }
+  };
+  var LEVEL_META = {
+    good:     { badge:"✓", title:"問題なし",   order:0 },
+    warning:  { badge:"!", title:"注意",       order:1 },
+    serious:  { badge:"!", title:"警戒",       order:2 },
+    critical: { badge:"⚠", title:"厳重警戒",   order:3 }
+  };
+
+  function diffAt(arr, idx, back){
+    var i2 = idx - back;
+    if(i2 < 0 || idx >= arr.length || arr[i2] == null || arr[idx] == null) return null;
+    return arr[idx] - arr[i2];
+  }
+  function diffForward(arr, idx, fwd){
+    var i2 = idx + fwd;
+    if(i2 >= arr.length || arr[i2] == null || arr[idx] == null) return null;
+    return arr[i2] - arr[idx];
+  }
+
+  function levelFor(delta, key){
+    if(delta == null) return "good";
+    if(delta <= THRESH.critical[key]) return "critical";
+    if(delta <= THRESH.serious[key]) return "serious";
+    if(delta <= THRESH.warning[key]) return "warning";
+    return "good";
+  }
+
+  function computeAlarm(data){
+    var p = data.pressure, idx = data.nowIndex;
+    var d3 = diffAt(p, idx, 3);
+    var d6 = diffAt(p, idx, 6);
+    var f6 = diffForward(p, idx, 6);
+
+    var l3 = levelFor(d3, "past3");
+    var l6 = levelFor(d6, "past6");
+    var lf = levelFor(f6, "future6");
+
+    var levels = [l3, l6, lf];
+    var best = "good";
+    levels.forEach(function(l){
+      if(LEVEL_META[l].order > LEVEL_META[best].order) best = l;
+    });
+
+    var reasons = [];
+    if(LEVEL_META[l3].order > 0 && d3 != null) reasons.push("過去3時間で " + d3.toFixed(1) + " hPa 変化");
+    if(LEVEL_META[l6].order > 0 && d6 != null) reasons.push("過去6時間で " + d6.toFixed(1) + " hPa 変化");
+    if(LEVEL_META[lf].order > 0 && f6 != null) reasons.push("今後6時間でさらに " + f6.toFixed(1) + " hPa の予報");
+
+    var hum = data.humidity[idx];
+    if(best !== "good" && hum != null && hum >= 85){
+      reasons.push("湿度も高め（" + Math.round(hum) + "%）で不快感が強まりやすい状況");
+    }
+
+    var messages = {
+      good: "気圧は安定しています。体調への影響は少ないと考えられます。",
+      warning: "気圧がやや低下しています。頭痛や倦怠感が出やすい方は、水分補給や休息を心がけてください。",
+      serious: "気圧が大きく低下しています。頭痛・めまい・関節痛などの体調不良が出やすい状況です。無理のない行動を心がけてください。",
+      critical: "気圧が急激に低下しています（または急降下が予報されています）。強い体調不良に注意し、予定を詰め込みすぎないようにしてください。"
+    };
+
+    return {
+      level: best,
+      title: LEVEL_META[best].title,
+      badge: LEVEL_META[best].badge,
+      message: messages[best],
+      reasons: reasons
+    };
+  }
+
+  function renderAlarm(alarm){
+    els.alarmBanner.setAttribute("data-level", alarm.level);
+    els.alarmBadge.textContent = alarm.badge;
+    els.alarmTitle.textContent = alarm.title;
+    els.alarmMsg.textContent = alarm.message;
+    if(alarm.reasons.length){
+      els.alarmReasons.innerHTML = alarm.reasons.map(function(r){
+        return "<li>" + escapeHtml(r) + "</li>";
+      }).join("");
+      els.alarmReasons.classList.remove("hidden");
+    }else{
+      els.alarmReasons.classList.add("hidden");
+      els.alarmReasons.innerHTML = "";
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  // ---------- stat tiles ----------
+
+  function fmt(n, digits){
+    if(n == null || isNaN(n)) return "--";
+    return n.toFixed(digits);
+  }
+
+  function renderStats(data){
+    var idx = data.nowIndex;
+    els.statPressure.textContent = fmt(data.pressure[idx], 0);
+    els.statTemp.textContent = fmt(data.temp[idx], 1);
+    els.statHumidity.textContent = fmt(data.humidity[idx], 0);
+
+    setDelta(els.statPressureDelta, diffAt(data.pressure, idx, 3), "hPa", true);
+    setDelta(els.statTempDelta, diffAt(data.temp, idx, 3), "°C", false);
+    setDelta(els.statHumidityDelta, diffAt(data.humidity, idx, 3), "%", false);
+  }
+
+  function setDelta(el, delta, unit, colorGoodWhenUp){
+    if(delta == null){ el.textContent = "3h: --"; el.classList.remove("good"); return; }
+    var arrow = delta > 0.05 ? "▲" : (delta < -0.05 ? "▼" : "→");
+    var sign = delta > 0 ? "+" : "";
+    el.textContent = "3h: " + arrow + " " + sign + delta.toFixed(1) + unit;
+    var isGood = colorGoodWhenUp ? delta >= 0 : false;
+    el.classList.toggle("good", isGood && Math.abs(delta) > 0.05);
+  }
+
+  // ---------- charts ----------
+
+  function buildPath(points){
+    return points.map(function(pt, i){
+      return (i === 0 ? "M" : "L") + pt[0].toFixed(1) + "," + pt[1].toFixed(1);
+    }).join(" ");
+  }
+
+  function niceRange(min, max, minSpan){
+    var span = max - min;
+    if(span < minSpan){
+      var pad = (minSpan - span) / 2;
+      min -= pad; max += pad;
+    }else{
+      var extra = span * 0.12;
+      min -= extra; max += extra;
+    }
+    return [min, max];
+  }
+
+  function formatTick(iso){
+    // iso like "2026-08-12T08:00"
+    var d = iso.split("T")[0].split("-");
+    var t = iso.split("T")[1];
+    return d[1] + "/" + d[2] + " " + t;
+  }
+
+  function renderChart(svg, times, values, color, nowIndex, unit){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = 320, H = 120;
+    var padTop = 14, padBottom = 20, padLeft = 4, padRight = 4;
+    var plotW = W - padLeft - padRight;
+    var plotH = H - padTop - padBottom;
+
+    var valid = values.filter(function(v){ return v != null; });
+    if(!valid.length) return;
+    var min = Math.min.apply(null, valid);
+    var max = Math.max.apply(null, valid);
+    var span = unit === "hPa" ? 6 : (unit === "%" ? 20 : 4);
+    var range = niceRange(min, max, span);
+    min = range[0]; max = range[1];
+
+    function x(i){ return padLeft + (i / (values.length - 1)) * plotW; }
+    function y(v){ return padTop + (1 - (v - min) / (max - min)) * plotH; }
+
+    var ns = "http://www.w3.org/2000/svg";
+    function el(tag, attrs){
+      var n = document.createElementNS(ns, tag);
+      for(var k in attrs){ n.setAttribute(k, attrs[k]); }
+      return n;
+    }
+
+    // baseline + top hairlines
+    svg.appendChild(el("line", { x1:padLeft, x2:W-padRight, y1:padTop, y2:padTop, stroke:"var(--gridline)", "stroke-width":1 }));
+    svg.appendChild(el("line", { x1:padLeft, x2:W-padRight, y1:H-padBottom, y2:H-padBottom, stroke:"var(--baseline)", "stroke-width":1 }));
+
+    // now marker
+    var nowX = x(nowIndex);
+    svg.appendChild(el("line", { x1:nowX, x2:nowX, y1:padTop, y2:H-padBottom, stroke:"var(--gridline)", "stroke-width":1 }));
+    var nowLabel = el("text", { x:nowX, y:padTop-3, "text-anchor":"middle", class:"now-label" });
+    nowLabel.textContent = "現在";
+    svg.appendChild(nowLabel);
+
+    // split past (0..nowIndex) and forecast (nowIndex..end)
+    var pastPts = [], futurePts = [];
+    for(var i=0;i<values.length;i++){
+      if(values[i] == null) continue;
+      var pt = [x(i), y(values[i])];
+      if(i <= nowIndex) pastPts.push(pt);
+      if(i >= nowIndex) futurePts.push(pt);
+    }
+
+    if(pastPts.length > 1){
+      var areaD = buildPath(pastPts) + " L" + pastPts[pastPts.length-1][0].toFixed(1) + "," + (H-padBottom) +
+        " L" + pastPts[0][0].toFixed(1) + "," + (H-padBottom) + " Z";
+      svg.appendChild(el("path", { d:areaD, fill:color, opacity:0.10, stroke:"none" }));
+      svg.appendChild(el("path", { d:buildPath(pastPts), fill:"none", stroke:color, "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round" }));
+    }
+    if(futurePts.length > 1){
+      svg.appendChild(el("path", { d:buildPath(futurePts), fill:"none", stroke:color, "stroke-width":2, opacity:0.45, "stroke-linejoin":"round", "stroke-linecap":"round", "stroke-dasharray":"1,4" }));
+    }
+
+    // now dot + surface ring
+    if(values[nowIndex] != null){
+      var ny = y(values[nowIndex]);
+      svg.appendChild(el("circle", { cx:nowX, cy:ny, r:5, fill:"var(--surface-1)" }));
+      svg.appendChild(el("circle", { cx:nowX, cy:ny, r:4, fill:color }));
+      var valLabel = el("text", {
+        x: Math.min(Math.max(nowX, 26), W-30), y: Math.max(ny - 8, padTop + 8),
+        "text-anchor":"middle", class:"chart-value-label"
+      });
+      valLabel.textContent = values[nowIndex].toFixed(unit === "hPa" ? 0 : 1) + (unit === "hPa" ? "" : unit);
+      svg.appendChild(valLabel);
+    }
+
+    // x-axis ticks: start / now / end
+    [0, nowIndex, values.length-1].forEach(function(i, k){
+      var anchor = k === 0 ? "start" : (k === 2 ? "end" : "middle");
+      var tx = x(i);
+      var t = el("text", { x:tx, y:H-4, "text-anchor":anchor, class:"chart-tick-label" });
+      t.textContent = formatTick(times[i]);
+      svg.appendChild(t);
+    });
+
+    // y max/min labels
+    var maxLabel = el("text", { x:padLeft, y:padTop-3, class:"chart-tick-label" });
+    maxLabel.textContent = max.toFixed(unit === "hPa" ? 0 : 1);
+    var minLabel = el("text", { x:padLeft, y:H-padBottom-3, class:"chart-tick-label" });
+    minLabel.textContent = min.toFixed(unit === "hPa" ? 0 : 1);
+    // avoid clobbering the value label position at left edge
+    svg.appendChild(maxLabel);
+    svg.appendChild(minLabel);
+  }
+
+  function renderCharts(data){
+    renderChart(els.chartPressure, data.times, data.pressure, "var(--series-pressure)", data.nowIndex, "hPa");
+    renderChart(els.chartTemp, data.times, data.temp, "var(--series-temp)", data.nowIndex, "°C");
+    renderChart(els.chartHumidity, data.times, data.humidity, "var(--series-humidity)", data.nowIndex, "%");
+  }
+
+  // ---------- orchestration ----------
+
+  function renderAll(data){
+    renderStats(data);
+    renderCharts(data);
+    renderAlarm(computeAlarm(data));
+  }
+
+  function loadCache(){
+    try{
+      var raw = localStorage.getItem(CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveCache(payload){
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(payload)); }catch(e){}
+  }
+
+  var currentLocation = null;
+
+  function refresh(loc){
+    setStatus("更新しています…");
+    return fetchWeather(loc.lat, loc.lon).then(function(data){
+      renderAll(data);
+      saveCache({ location: loc, data: data, fetchedAt: Date.now() });
+      els.locationLine.textContent = loc.name + "（更新: " + new Date().toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"}) + "）";
+      setStatus("");
+    }).catch(function(err){
+      setStatus("データ取得に失敗しました。通信環境をご確認のうえ「更新」をお試しください。");
+      console.error(err);
+    });
+  }
+
+  function useLocation(loc){
+    currentLocation = loc;
+    saveLocation(loc);
+    return refresh(loc);
+  }
+
+  function init(){
+    var cached = loadCache();
+    if(cached && cached.data){
+      currentLocation = cached.location;
+      renderAll(cached.data);
+      els.locationLine.textContent = cached.location.name + "（キャッシュ: " +
+        new Date(cached.fetchedAt).toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"}) + "）";
+    }
+
+    var saved = loadSavedLocation();
+    if(saved){
+      useLocation(saved);
+    }else{
+      getCurrentPosition().then(useLocation).catch(function(){
+        els.locationLine.textContent = "位置情報が利用できません。下の検索欄から都市を選んでください。";
+      });
+    }
+
+    setInterval(function(){
+      if(currentLocation) refresh(currentLocation);
+    }, REFRESH_MS);
+
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible" && currentLocation){
+        var c = loadCache();
+        if(!c || Date.now() - c.fetchedAt > REFRESH_MS){
+          refresh(currentLocation);
+        }
+      }
+    });
+  }
+
+  els.refreshBtn.addEventListener("click", function(){
+    if(currentLocation){
+      refresh(currentLocation);
+    }else{
+      getCurrentPosition().then(useLocation).catch(function(){
+        setStatus("位置情報を取得できません。都市名で検索してください。");
+      });
+    }
+  });
+
+  els.geoSearchBtn.addEventListener("click", doSearch);
+  els.geoInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter") doSearch();
+  });
+
+  function doSearch(){
+    var q = els.geoInput.value.trim();
+    if(!q) return;
+    setStatus("検索中…");
+    geocodeSearch(q).then(function(results){
+      setStatus("");
+      if(!results.length){
+        els.geoResults.innerHTML = "<li>該当する都市が見つかりませんでした</li>";
+        els.geoResults.classList.remove("hidden");
+        return;
+      }
+      els.geoResults.innerHTML = results.map(function(r, i){
+        var label = [r.name, r.admin1, r.country].filter(Boolean).join(" / ");
+        return "<li data-i=\"" + i + "\">" + escapeHtml(label) + "</li>";
+      }).join("");
+      els.geoResults.classList.remove("hidden");
+      els.geoResults.querySelectorAll("li[data-i]").forEach(function(li){
+        li.addEventListener("click", function(){
+          var r = results[parseInt(li.getAttribute("data-i"), 10)];
+          els.geoResults.classList.add("hidden");
+          useLocation({ lat:r.latitude, lon:r.longitude, name:r.name });
+        });
+      });
+    }).catch(function(err){
+      setStatus("検索に失敗しました。通信環境をご確認ください。");
+      console.error(err);
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
