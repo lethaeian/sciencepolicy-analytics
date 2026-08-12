@@ -10,8 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="気圧・体調">
 <title>気圧・体調アラーム ウィジェット</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a78d6'/%3E%3Cpath d='M14 40 L24 26 L32 34 L50 16' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='white'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%232a78d6'/%3E%3Cpath d='M14 40 L24 26 L32 34 L50 16' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='16' r='4' fill='white'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
     color-scheme: light;
@@ -503,7 +504,10 @@
     };
   }
 
+  var lastAlarm = null;
+
   function renderAlarm(alarm){
+    lastAlarm = alarm;
     els.alarmBanner.setAttribute("data-level", alarm.level);
     els.alarmBadge.textContent = alarm.badge;
     els.alarmTitle.textContent = alarm.title;
@@ -701,6 +705,14 @@
       setStatus("");
     }).catch(function(err){
       setStatus("データ取得に失敗しました。通信環境をご確認のうえ「更新」をお試しください。");
+      // 取得に失敗した以上、画面に残っているのは前回のデータ。
+      // 古ければその旨を出し直す（起動後に時間が経ってから失敗した場合も拾う）。
+      var c = loadCache();
+      if(c && c.data){
+        els.locationLine.textContent = c.location.name +
+          "（キャッシュ: " + describeAge(c.fetchedAt) + "）";
+        markStale(c.fetchedAt);
+      }
       console.error(err);
     });
   }
@@ -711,13 +723,46 @@
     return refresh(loc);
   }
 
+  // キャッシュの古さは「何時何分」ではなく経過時間で示す。時刻だけだと
+  // 2日前のデータが直近のものに見えてしまい、体調判断を誤らせる。
+  function describeAge(fetchedAt){
+    var ms = Date.now() - fetchedAt;
+    var min = Math.floor(ms / 60000);
+    if(min < 1) return "たった今";
+    if(min < 60) return min + "分前";
+    var hours = Math.floor(min / 60);
+    if(hours < 24) return hours + "時間前";
+    return Math.floor(hours / 24) + "日前";
+  }
+
+  // 気圧は数時間で意味のある変化をするため、古いデータに基づく判定は
+  // 現在の状況を表さない旨をアラーム自体に明示する。
+  var STALE_MS = 3 * 60 * 60 * 1000;
+
+  // 追記ではなく直近のアラームから組み立て直す。初期表示と更新失敗の
+  // 両方から呼ばれるため、何度呼んでも同じ結果になる必要がある。
+  function markStale(fetchedAt){
+    if(!lastAlarm) return;
+    if(Date.now() - fetchedAt <= STALE_MS){
+      els.alarmTitle.textContent = lastAlarm.title;
+      els.alarmMsg.textContent = lastAlarm.message;
+      return;
+    }
+    var age = describeAge(fetchedAt);
+    els.alarmTitle.textContent = lastAlarm.title + "（" + age + "のデータ）";
+    els.alarmMsg.textContent =
+      age + "に取得したデータに基づく表示です。現在の気圧を反映していない可能性があります。" +
+      "通信できる状態で「更新」をタップしてください。";
+  }
+
   function init(){
     var cached = loadCache();
     if(cached && cached.data){
       currentLocation = cached.location;
       renderAll(cached.data);
-      els.locationLine.textContent = cached.location.name + "（キャッシュ: " +
-        new Date(cached.fetchedAt).toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"}) + "）";
+      els.locationLine.textContent = cached.location.name +
+        "（キャッシュ: " + describeAge(cached.fetchedAt) + "）";
+      markStale(cached.fetchedAt);
     }
 
     var saved = loadSavedLocation();
@@ -788,6 +833,17 @@
   }
 
   init();
+
+  // ホーム画面から起動したときに、オフラインでも画面が開くようにする。
+  // 登録は https（および localhost）でのみ成功する。file:// で開いた場合は
+  // 例外を握りつぶし、通常のページとして動作させる。
+  if("serviceWorker" in navigator && window.isSecureContext){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(err){
+        console.warn("service worker registration failed", err);
+      });
+    });
+  }
 })();
 </script>
 </body>
