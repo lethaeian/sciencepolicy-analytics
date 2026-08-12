@@ -23,7 +23,6 @@
     --ink-soft:  #556b66;
     --ink-faint: #93a49f;
     --rule:      #e6dfcf;
-    --seam:      rgba(22,48,44,.14);
     --shadow:
       0 1px 2px rgba(22,48,44,.05),
       0 6px 16px rgba(22,48,44,.06),
@@ -42,7 +41,6 @@
       --ink-soft:  #a6bcb6;
       --ink-faint: #6d8781;
       --rule:      #1f4741;
-      --seam:      rgba(0,0,0,.34);
       --shadow:
         0 1px 2px rgba(0,0,0,.30),
         0 6px 18px rgba(0,0,0,.28),
@@ -98,8 +96,8 @@
     text-align:center;
     margin-top: 4px;
   }
-  /* フリップ時計の継ぎ目。カード地の色で数字を切り、
-     その上に細い線を重ねて板の境目に見せる。 */
+  /* フリップ時計の継ぎ目。カード地と同じ色の帯で数字だけを切る。
+     線の色を足すと数字のない余白でも帯が見えてしまうため、色は乗せない。 */
   .flip{
     position: relative;
     display: block;
@@ -112,7 +110,6 @@
     height: 3px;
     margin-top: -1.5px;
     background: var(--card);
-    border-top: 1px solid var(--seam);
     pointer-events:none;
   }
   .hero-value{
@@ -419,7 +416,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v6";
+  var BUILD = "v7";
   var REFRESH_MS = 15 * 60 * 1000;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
