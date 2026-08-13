@@ -1,0 +1,51 @@
+{
+  "name": "宇宙技芸 打ち返し器",
+  "short_name": "宇宙技芸",
+  "description": "どんな書き込みも、宇宙技芸（コスモテクニクス）の八つの視角で読み替え、多角的に打ち返すウィジェット。端末の中だけで動く。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2efe6",
+  "theme_color": "#f2efe6",
+  "categories": ["education", "productivity", "utilities"],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "shortcuts": [
+    {
+      "name": "貼り付けて読み替える",
+      "short_name": "読み替える",
+      "url": "./?focus=1"
+    }
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
