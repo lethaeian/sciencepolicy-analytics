@@ -161,78 +161,75 @@
   }
 
 
-  /* ---------- otter ---------- */
-  /* 状態は表情ではなく「どのくらい元気に泳いでいるか」で示す。
-     元気さ 0〜3 が揺れ幅・傾き・速さ・波紋の強さを決める。 */
-  .otter-stage{
-    display:flex;
-    justify-content:center;
-    margin-bottom: 14px;
-  }
-  .otter-svg{
-    width: 132px;
+  /* ---------- カワウソ ---------- */
+  /* 状態は「どのくらい元気か」で示す。0〜4の目盛りが
+     跳ねる高さ・尾の振り・速さをまとめて決める。 */
+  .kw{
+    width: 48px;
     height: auto;
+    flex: none;
     overflow: visible;
     transform: translateY(var(--sink, 0px));
     transition: transform .6s ease;
   }
-  .otter-fill{ fill: var(--ink); }
-  .otter-cut{ fill: var(--card); }
-  .otter-cutline{ fill:none; stroke: var(--card); stroke-linecap:round; }
+  .kw-fill{ fill: var(--ink); }
+  .kw-cut{ fill: var(--card); }
+  .kw-cutline{ fill:none; stroke: var(--card); stroke-linecap:round; }
 
-  .otter{
-    transform-origin: 55% 62%;
-    animation: swim var(--dur, 3.2s) ease-in-out infinite;
+  .kw-all{
+    animation: kwHop var(--dur, 3s) ease-in-out infinite;
   }
-  @keyframes swim{
-    0%,100%{ transform: translateY(calc(var(--amp,2px) * -1)) rotate(calc(var(--tilt,2deg) * -1)); }
-    50%    { transform: translateY(var(--amp,2px))             rotate(var(--tilt,2deg)); }
+  @keyframes kwHop{
+    0%,100%{ transform: translateY(var(--amp, 1.2px)); }
+    50%    { transform: translateY(calc(var(--amp, 1.2px) * -1)); }
   }
-
-  .ripple{
-    fill:none;
-    stroke: var(--ink-faint);
-    stroke-width: 2;
-    stroke-linecap: round;
-    opacity: 0;
-    transform-origin: center;
-    animation: rip var(--dur, 3.2s) ease-out infinite;
+  .kw-tail{
+    transform-box: view-box;
+    transform-origin: 70px 21px;
+    animation: kwWag calc(var(--dur, 3s) * .5) ease-in-out infinite;
   }
-  .ripple.r2{ animation-delay: calc(var(--dur, 3.2s) * .33); }
-  .ripple.r3{ animation-delay: calc(var(--dur, 3.2s) * .66); }
-  @keyframes rip{
-    0%   { opacity: 0;                 transform: scaleX(.55); }
-    35%  { opacity: var(--rip, .55);   }
-    100% { opacity: 0;                 transform: scaleX(1.35); }
+  @keyframes kwWag{
+    0%,100%{ transform: rotate(calc(var(--tail, 3deg) * -1)); }
+    50%    { transform: rotate(var(--tail, 3deg)); }
   }
 
-  /* 元気さの目盛り */
-  [data-vigor="3"]{ --amp:3.2px; --tilt:4.5deg; --dur:2.1s; --rip:.75; --sink:0px; }
-  [data-vigor="2"]{ --amp:2px;   --tilt:2.4deg; --dur:3.3s; --rip:.5;  --sink:0px; }
-  [data-vigor="1"]{ --amp:1.1px; --tilt:1.1deg; --dur:4.8s; --rip:.28; --sink:2px; }
-  [data-vigor="0"]{ --amp:.5px;  --tilt:.4deg;  --dur:7s;   --rip:.14; --sink:4px; }
+  /* 元気さ 0〜4 */
+  [data-vigor="4"]{ --amp:2.6px; --tail:9deg;   --dur:1.5s; --sink:0px; }
+  [data-vigor="3"]{ --amp:1.9px; --tail:6.5deg; --dur:2.1s; --sink:0px; }
+  [data-vigor="2"]{ --amp:1.3px; --tail:4deg;   --dur:3.0s; --sink:1px; }
+  [data-vigor="1"]{ --amp:0.7px; --tail:2deg;   --dur:4.4s; --sink:2px; }
+  [data-vigor="0"]{ --amp:0.3px; --tail:0.8deg; --dur:6.5s; --sink:3px; }
 
   @media (prefers-reduced-motion: reduce){
-    .otter, .ripple{ animation: none; }
-    .ripple{ opacity: var(--rip, .4); }
+    .kw-all, .kw-tail{ animation: none; }
+  }
+
+  .status-left{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
   }
 
   /* ---------- status ---------- */
   /* 判定とmax/minを同じベースラインに載せ、1行として釣り合わせる */
   .status-row{
     display:flex;
-    align-items: baseline;
+    align-items: center;
     justify-content:space-between;
     gap: 6px 12px;
-    /* 狭い画面では語を折らず、max/minごと次の行に落とす */
     flex-wrap: wrap;
   }
+  .status-text{ min-width: 0; }
   /* 注記は行の外に置く。行の幅が注記の長さで決まると max/min が
      押し出されてしまうため。 */
+  /* 縦2段。カワウソのぶん幅が要るので、横1列だと判定文を押し出す。
+     ラベルと数値の横並びは保つ。 */
   .minmax{
     display:flex;
-    align-items: baseline;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
     flex: none;
     margin-left: auto;
     font-variant-numeric: tabular-nums;
@@ -275,7 +272,7 @@
     vertical-align: 2px;
   }
   .status-note{
-    margin-top: 9px;
+    margin-top: 4px;
     font-size: 12px;
     color: var(--ink-soft);
     line-height: 1.5;
@@ -492,43 +489,37 @@
 
   <div class="card">
     <div class="status" id="status" data-level="good">
-      <div class="otter-stage">
-        <svg class="otter-svg" viewBox="0 0 104 74" aria-hidden="true">
-          <g class="otter">
-            <g class="otter-fill">
-              <path d="M32 47C24 51 13 51 5 45c-2.4-1.8-1.4-4.6 1.6-4.4 4.4.3 6.6 3 11 3.2 3.6.2 7.6-1 11-2.6z"/>
-              <ellipse cx="36" cy="42" rx="14" ry="10" transform="rotate(-8 36 42)"/>
-              <ellipse cx="55" cy="37.5" rx="23" ry="12.5" transform="rotate(-14 55 37.5)"/>
-              <path d="M41 33c-2.4-6.4-6.4-11.6-4.2-15.4 1.2-2 4.2-1.8 5 1.2 1.4 5 2.6 10 3.6 14z"/>
-              <ellipse cx="70" cy="30.5" rx="12.5" ry="10.5" transform="rotate(-14 70 30.5)"/>
-              <circle cx="84" cy="20.5" r="10.5"/>
-              <ellipse cx="94.6" cy="23.6" rx="6.4" ry="4.8" transform="rotate(10 94.6 23.6)"/>
-              <circle cx="79.5" cy="10.8" r="2.9"/>
-              <path d="M70.5 22.6c2.6-1 5 .4 5.4 2.6.4 2.2-1.4 4-3.8 4-2.6 0-4.6-1.6-4.8-3.4-.2-1.6 1-2.6 3.2-3.2z"/>
-              <path d="M64.5 18.4c2.6-.8 4.8.8 5 3 .2 2.2-1.6 3.8-4 3.6-2.4-.2-4.2-1.8-4.2-3.6 0-1.6 1.2-2.6 3.2-3z"/>
-            </g>
-            <circle class="otter-cut" cx="87" cy="17.6" r="2.3"/>
-            <g class="otter-cutline">
-              <path d="M91.8 21a3.4 3.4 0 0 0 4.8 .8" stroke-width="1.5"/>
-              <path d="M67.6 25.6a4 4 0 0 0 4.4 1.4" stroke-width="1.3"/>
-              <path d="M61.8 21.4a3.8 3.8 0 0 0 4.2 1.2" stroke-width="1.3"/>
-            </g>
-          </g>
-          <g>
-            <path class="ripple"    d="M22 60h24"/>
-            <path class="ripple r2" d="M52 65h30"/>
-            <path class="ripple r3" d="M14 69h26"/>
-          </g>
-        </svg>
-      </div>
       <div class="status-row">
-        <div class="status-word" id="statusWord">読み込み中</div>
+        <div class="status-left">
+          <svg class="kw" viewBox="0 0 114 38" aria-hidden="true">
+            <g class="kw-all">
+              <g class="kw-tail">
+                <path class="kw-fill" d="M70 19.5c10-.6 21 1.6 33 6.4 3 1.2 5.6 2.4 8 3.6-3 .3-6.6-.2-10.6-1.2-9.6-2.4-19.4-4.2-30.4-4.4z"/>
+              </g>
+              <g class="kw-fill">
+                <path d="M20 15.4C33 9.6 58 9 72 15.2c6.4 2.8 7.4 6.6 2.6 8.8C63 29.2 34 29.6 22 24.6c-4-1.7-4.6-6.6-2-9.2z"/>
+                <path d="M27 25.2h4.2c.7 0 1.2.6 1.1 1.3l-.6 5.4c-.1.7-.7 1.2-1.4 1.2h-2c-.8 0-1.4-.6-1.4-1.4z"/>
+                <path d="M35.6 26h3.8c.7 0 1.2.6 1.1 1.3l-.5 4.6c-.1.7-.7 1.2-1.4 1.2h-1.8c-.8 0-1.4-.6-1.4-1.4z"/>
+                <path d="M58 25.6h4.4c.7 0 1.2.7 1.1 1.4l-.7 5c-.1.7-.7 1.2-1.4 1.2h-2c-.8 0-1.4-.6-1.4-1.4z"/>
+                <path d="M66.4 24.6h3.8c.7 0 1.2.7 1.1 1.4l-.6 4.4c-.1.7-.7 1.2-1.4 1.2h-1.7c-.8 0-1.4-.6-1.4-1.4z"/>
+                <ellipse cx="15.5" cy="16.5" rx="7.6" ry="6.2"/>
+                <ellipse cx="7.4" cy="18.8" rx="4.4" ry="3.1" transform="rotate(-10 7.4 18.8)"/>
+                <circle cx="18.6" cy="11" r="1.9"/>
+              </g>
+              <circle class="kw-cut" cx="12.8" cy="15.2" r="1.5"/>
+              <path class="kw-cutline" d="M4.2 19a2 2 0 0 0 2.8 .4" stroke-width="1"/>
+            </g>
+          </svg>
+          <div class="status-text">
+            <div class="status-word" id="statusWord">読み込み中</div>
+            <div class="status-note" id="statusNote"></div>
+          </div>
+        </div>
         <div class="minmax">
           <span><span class="k">max</span><span class="t"><span id="tMax">--</span><span class="u">°</span></span></span>
           <span><span class="k">min</span><span class="t"><span id="tMin">--</span><span class="u">°</span></span></span>
         </div>
       </div>
-      <div class="status-note" id="statusNote"></div>
     </div>
   </div>
 
@@ -593,7 +584,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v16";
+  var BUILD = "v17";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -795,12 +786,12 @@
   // どのくらい元気に泳いでいるかで示す。深刻さを土台に、
   // 体にこたえる天候が重なっていれば一段下げる。
   function vigorOf(level, notes){
-    var v = { good:3, warning:2, serious:1, critical:0 }[level];
+    var v = { good:4, warning:3, serious:2, critical:0 }[level];
     var k = notes.map(function(n){ return n.k; });
     var heavy = ["muggy","hot","cold","dry","tempFall","coolDown"];
     var hit = k.some(function(x){ return heavy.indexOf(x) >= 0; });
     if(hit) v -= 1;
-    return Math.max(0, Math.min(3, v));
+    return Math.max(0, Math.min(4, v));
   }
 
   function computeAlarm(d){
