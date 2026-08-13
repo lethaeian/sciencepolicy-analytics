@@ -173,8 +173,10 @@
   .minmax{
     display:flex;
     align-items: baseline;
-    gap: 15px;
+    gap: 12px;
     flex: none;
+    /* 判定文が長くて折り返したときも右端に揃える */
+    margin-left: auto;
     font-variant-numeric: tabular-nums;
   }
   .minmax > span{
@@ -184,13 +186,13 @@
     white-space: nowrap;
   }
   .minmax .k{
-    font-size: 10px;
-    letter-spacing: .12em;
+    font-size: 9.5px;
+    letter-spacing: .1em;
     color: var(--ink-faint);
     text-transform: uppercase;
   }
   .minmax .t{
-    font-size: 17px;
+    font-size: 15.5px;
     font-weight: 700;
     letter-spacing: -0.02em;
   }
@@ -200,7 +202,7 @@
   .status[data-level="serious"]  { --tone: var(--serious); }
   .status[data-level="critical"] { --tone: var(--critical); }
   .status-word{
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 500;
     letter-spacing: .02em;
     white-space: nowrap;
@@ -504,9 +506,10 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v12";
+  var BUILD = "v13";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
-  var REFRESH_MS = 15 * 60 * 1000;
+  var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
+  var REFRESH_MS = TICK_MS;
   var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
   var CACHE_KEY    = "wxwidget.cache.v2";
@@ -606,19 +609,28 @@
       "?latitude=" + encodeURIComponent(lat) +
       "&longitude=" + encodeURIComponent(lon) +
       "&hourly=temperature_2m,relative_humidity_2m,pressure_msl" +
+      // 毎時の値とは別に「現在値」も受け取る。毎時の刻みより短い間隔で
+      // 更新されるため、数分おきに見にきたときに実際の値が動く。
+      "&current=temperature_2m,relative_humidity_2m,pressure_msl" +
       "&past_days=1&forecast_days=2&timezone=auto", { cache:"no-store" }
     ).then(function(res){
       if(!res.ok) throw new Error("forecast-" + res.status);
       return res.json();
     }).then(function(json){
       var times = json.hourly.time;
+      var cur = json.current || null;
       return {
         times: times,
         pressure: json.hourly.pressure_msl,
         temp: json.hourly.temperature_2m,
         humidity: json.hourly.relative_humidity_2m,
         nowIndex: computeNowIndex(times, json.utc_offset_seconds),
-        utcOffset: json.utc_offset_seconds || 0
+        utcOffset: json.utc_offset_seconds || 0,
+        cur: cur ? {
+          pressure: cur.pressure_msl,
+          temp: cur.temperature_2m,
+          humidity: cur.relative_humidity_2m
+        } : null
       };
     });
   }
@@ -643,6 +655,56 @@
     return "good";
   }
 
+  // いま何が起きているかを、気圧の動き方そのもので言い表す。
+  function pastPhrase(r){
+    if(r == null)   return "確認中";
+    if(r <= -6)     return "急降下しています";
+    if(r <= -4)     return "大きく下降中";
+    if(r <= -2)     return "下降しています";
+    if(r <= -0.8)   return "ゆるやかに低下";
+    if(r <   0.8)   return "落ち着いています";
+    if(r <   2.5)   return "ゆるやかに回復";
+    return "上昇しています";
+  }
+  function futurePhrase(r){
+    if(r <= -8) return "まもなく急降下";
+    if(r <= -5) return "まもなく大きく下降";
+    return "これから下がります";
+  }
+
+  // 気圧以外の目立つ変化を拾う。体調に響きやすい順に並べる。
+  function weatherNotes(d){
+    var i=d.nowIndex, out=[];
+    var hum=d.humidity[i], tp=d.temp[i];
+    var dT3=back(d.temp,i,3), fT6=ahead(d.temp,i,6);
+    var day=dayRange(d);
+
+    if(dT3!=null && dT3<=-4) out.push({k:"tempFall", t:"3時間で気温が"+Math.abs(dT3).toFixed(1)+"度下がりました"});
+    if(dT3!=null && dT3>=5)  out.push({k:"tempRise", t:"3時間で気温が"+dT3.toFixed(1)+"度上がりました"});
+    if(hum!=null && tp!=null && hum>=80 && tp>=24) out.push({k:"muggy", t:"湿度"+Math.round(hum)+"%、蒸し暑くなっています"});
+    else if(hum!=null && hum>=85) out.push({k:"humid", t:"湿度"+Math.round(hum)+"%、空気が重く感じられます"});
+    else if(hum!=null && hum<=30) out.push({k:"dry",   t:"湿度"+Math.round(hum)+"%、空気が乾いています"});
+    if(day && day.hi!=null && day.lo!=null && (day.hi-day.lo)>=10)
+      out.push({k:"swing", t:"今日は気温差が"+Math.round(day.hi-day.lo)+"度あります"});
+    if(fT6!=null && fT6<=-5) out.push({k:"coolDown", t:"この先6時間で気温が"+Math.abs(fT6).toFixed(1)+"度下がる予報"});
+    if(tp!=null && tp<=5)  out.push({k:"cold", t:"冷え込んでいます"});
+    if(tp!=null && tp>=30) out.push({k:"hot",  t:"気温が高い状態です"});
+    return out;
+  }
+
+  function dayRange(d){
+    var today = new Date(Date.now() + (d.utcOffset||0)*1000).toISOString().slice(0,10);
+    var hi=null, lo=null;
+    for(var i=0;i<d.times.length;i++){
+      if(d.times[i].slice(0,10)!==today) continue;
+      var t=d.temp[i];
+      if(t==null) continue;
+      if(hi==null||t>hi) hi=t;
+      if(lo==null||t<lo) lo=t;
+    }
+    return { hi:hi, lo:lo };
+  }
+
   function computeAlarm(d){
     var p=d.pressure, i=d.nowIndex;
     var d3=back(p,i,3), d6=back(p,i,6), f6=ahead(p,i,6);
@@ -650,7 +712,12 @@
     var level="good";
     lv.forEach(function(l){ if(ORDER[l]>ORDER[level]) level=l; });
 
-    var note="";
+    // 先の下降のほうが重いときは、これから起きることを見出しにする
+    var futureLeads = ORDER[lv[2]] > Math.max(ORDER[lv[0]], ORDER[lv[1]]);
+    var word = futureLeads ? futurePhrase(f6) : pastPhrase(d3);
+
+    var notes = weatherNotes(d);
+    var note = "";
     if(level!=="good"){
       // 「低下」で向きは伝わるので数値の符号は外す
       var c=[];
@@ -659,40 +726,102 @@
       if(f6!=null&&ORDER[lv[2]]>0) c.push({v:f6,t:"この先6時間で"+Math.abs(f6).toFixed(1)+"hPa低下の予報"});
       c.sort(function(a,b){ return a.v-b.v; });
       if(c.length) note=c[0].t;
+      if(notes.length) note += "・" + notes[0].t;
+    }else{
+      // 穏やかなときこそ、気圧以外の変化を伝える
+      note = notes.length ? notes[0].t : "大きな変化はありません";
     }
-    return { level:level, word:WORD[level], note:note };
+    return { level:level, word:word, note:note, notes:notes,
+             d3:d3, d6:d6, f6:f6, hum:d.humidity[i], temp:d.temp[i] };
   }
 
   // ---------- self-care ----------
-  // 判定レベルごとの、その場でできる一般的なセルフケア。
-  // いずれも薬に頼らない範囲にとどめ、受診の判断は注記側に委ねる。
-  var CARE = {
-    good: [
-      { t:"こまめに水分をとる", w:"脱水は頭痛の引き金になりやすい" },
-      { t:"睡眠の時間帯を一定に保つ", w:"自律神経の乱れを防ぐ" }
-    ],
-    warning: [
-      { t:"水分をとる", w:"温かい飲み物だと体が冷えにくい" },
-      { t:"首と肩をゆっくり回す", w:"こわばりが頭痛につながりやすい" },
-      { t:"カフェインとアルコールは控えめに", w:"利尿で水分が失われる" }
-    ],
-    serious: [
-      { t:"耳を軽くつまんで、ゆっくり回す", w:"耳まわりの血流をうながす。1回1分ほど" },
-      { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい" },
-      { t:"温かい飲み物で水分をとる", w:"冷えると症状が強く出やすい" },
-      { t:"予定を詰め込まない", w:"低下が続く間は余裕をもって" }
-    ],
-    critical: [
-      { t:"横になれる場所で休む", w:"暗く静かな場所だとなお良い" },
-      { t:"耳と首の後ろを温める", w:"蒸しタオルや手のひらで十分" },
-      { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい" },
-      { t:"激しい運動と長時間の外出は避ける", w:"回復を優先する" }
-    ]
-  };
+  // その場でできる一般的なセルフケア。いずれも薬に頼らない範囲にとどめ、
+  // 受診の判断は注記側に委ねる。
+  //   must … その状況では必ず出す（安全に関わるもの）
+  //   when … 出せる状況かどうか
+  // must を先に並べ、残りの枠は時間で入れ替える。
+  var CARE_POOL = [
+    { t:"横になれる場所で休む", w:"暗く静かな場所だとなお良い",
+      when:function(c){ return c.level==="critical"; }, must:true },
+    { t:"激しい運動と長時間の外出は避ける", w:"回復を優先する",
+      when:function(c){ return c.level==="critical"; }, must:true },
+    { t:"耳と首の後ろを温める", w:"蒸しタオルや手のひらで十分",
+      when:function(c){ return c.level==="critical"||c.level==="serious"; } },
+    { t:"耳を軽くつまんで、ゆっくり回す", w:"耳まわりの血流をうながす。1回1分ほど",
+      when:function(c){ return c.level==="serious"||c.level==="warning"; } },
+    { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい",
+      when:function(c){ return c.level!=="good"; } },
+    { t:"予定を詰め込まない", w:"低下が続く間は余裕をもって",
+      when:function(c){ return c.level==="serious"||c.level==="critical"; } },
+    { t:"首と肩をゆっくり回す", w:"こわばりが頭痛につながりやすい",
+      when:function(){ return true; } },
+    { t:"カフェインとアルコールは控えめに", w:"利尿で水分が失われる",
+      when:function(c){ return c.level!=="good"; } },
 
-  function renderCare(level){
-    var items = CARE[level] || CARE.good;
-    els.careLabel.textContent = (level === "good") ? "整えておくこと" : "いまできること";
+    // 気温・湿度から出るもの
+    { t:"温かい飲み物で水分をとる", w:"冷えると症状が強く出やすい",
+      when:function(c){ return c.temp!=null && c.temp<=18; }, fit:true },
+    { t:"冷たすぎない水をこまめに", w:"汗で失う分を先回りして補う",
+      when:function(c){ return c.temp!=null && c.temp>=24; }, fit:true },
+    { t:"風を通すか除湿する", w:"蒸し暑さは寝つきにも響く",
+      when:function(c){ return c.hum!=null && c.hum>=80; }, fit:true },
+    { t:"のどと鼻を潤す", w:"乾いた空気は粘膜の負担になる",
+      when:function(c){ return c.hum!=null && c.hum<=30; }, fit:true },
+    { t:"羽織れるものを一枚持つ", w:"気温差が大きい日は体が消耗しやすい",
+      when:function(c){ return c.swing!=null && c.swing>=10; }, fit:true },
+    { t:"温度差の少ない場所で過ごす", w:"急な寒暖差は自律神経に響く",
+      when:function(c){ return c.tempFall; }, fit:true },
+
+    // 落ち着いているときの整え
+    { t:"こまめに水分をとる", w:"脱水は頭痛の引き金になりやすい",
+      when:function(){ return true; } },
+    { t:"睡眠の時間帯を一定に保つ", w:"自律神経の乱れを防ぐ",
+      when:function(c){ return c.level==="good"; } },
+    { t:"軽く体を動かしておく", w:"穏やかな日のうちに巡りを整える",
+      when:function(c){ return c.level==="good"; } },
+    { t:"入浴で体を温める", w:"寝る1〜2時間前だと眠りに入りやすい",
+      when:function(c){ return c.level==="good"; } }
+  ];
+
+  // 5分ごとに切り替わる番号。時計に紐づくので、開き直しても飛ばない。
+  function rotationSlot(){ return Math.floor(Date.now() / TICK_MS); }
+
+  function pickCare(ctx){
+    var pool = CARE_POOL.filter(function(it){ return it.when(ctx); });
+    var must = pool.filter(function(it){ return it.must; });
+    var fit  = pool.filter(function(it){ return !it.must && it.fit; });
+    var rest = pool.filter(function(it){ return !it.must && !it.fit; });
+    var n = (ctx.level==="good") ? 3 : 4;
+
+    var out = must.slice(0, n);
+    // いまの天候に紐づくものを先に置く。ただし最低1枠は入れ替え用に空ける。
+    var keep = Math.max(0, n - out.length - (rest.length ? 1 : 0));
+    out = out.concat(fit.slice(0, keep));
+
+    if(rest.length){
+      var slot = rotationSlot();
+      for(var k=0; out.length<n && k<rest.length; k++){
+        out.push(rest[(slot + k) % rest.length]);
+      }
+    }
+    for(var j=0; out.length<n && j<fit.length; j++){
+      if(out.indexOf(fit[j]) < 0) out.push(fit[j]);
+    }
+    return out;
+  }
+
+  function renderCare(alarm){
+    var day = state.data ? dayRange(state.data) : {hi:null,lo:null};
+    var ctx = {
+      level: alarm.level,
+      temp: alarm.temp,
+      hum: alarm.hum,
+      swing: (day.hi!=null && day.lo!=null) ? (day.hi-day.lo) : null,
+      tempFall: alarm.notes.some(function(x){ return x.k==="tempFall"||x.k==="coolDown"; })
+    };
+    var items = pickCare(ctx);
+    els.careLabel.textContent = (alarm.level === "good") ? "整えておくこと" : "いまできること";
     els.careList.innerHTML = "";
     items.forEach(function(it, i){
       var li = document.createElement("li");
@@ -936,12 +1065,16 @@
   function renderHero(animate){
     var d=state.data; if(!d) return;
     var i = (state.scrub==null) ? d.nowIndex : state.scrub;
-    var shown = d.pressure[i]==null ? "--" : String(Math.round(d.pressure[i]));
+    var live = (state.scrub==null && d.cur) ? d.cur : null;
+    var pv = live && live.pressure!=null ? live.pressure : d.pressure[i];
+    var shown = pv==null ? "--" : String(Math.round(pv));
     els.heroValue.textContent = shown;
     // なぞっている間は値が連続で変わるため、めくらずに差し替える
     renderFlips(shown, animate === true && state.scrub == null);
-    els.tempValue.textContent = d.temp[i]==null ? "--" : d.temp[i].toFixed(1);
-    els.humidityValue.textContent = d.humidity[i]==null ? "--" : Math.round(d.humidity[i]);
+    var tv = live && live.temp!=null ? live.temp : d.temp[i];
+    var hv = live && live.humidity!=null ? live.humidity : d.humidity[i];
+    els.tempValue.textContent = tv==null ? "--" : tv.toFixed(1);
+    els.humidityValue.textContent = hv==null ? "--" : Math.round(hv);
     els.plotMid.textContent = (state.scrub==null)
       ? "現在"
       : hhmm(d.times[i]) + (i<d.nowIndex ? "・過去" : (i>d.nowIndex ? "・予報" : "・現在"));
@@ -971,7 +1104,7 @@
     els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
       ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
       : a.note;
-    renderCare(a.level);
+    renderCare(a);
   }
 
   // 3時間ごとの気圧予報。Weat の時刻ストリップにあたる部分。
@@ -1202,8 +1335,11 @@
   });
   window.addEventListener("pageshow", function(e){ if(e.persisted) start(); });
   setInterval(function(){
-    if(document.visibilityState==="visible") start();
-  }, REFRESH_MS);
+    if(document.visibilityState!=="visible") return;
+    start();
+    // 取得が失敗しても、判定文と対策は時計に沿って入れ替える
+    if(state.data) renderStatus();
+  }, TICK_MS);
 
   var buildEl = document.getElementById("buildId");
   if(buildEl) buildEl.textContent = BUILD;
