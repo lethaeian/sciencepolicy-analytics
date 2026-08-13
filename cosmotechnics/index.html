@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f2efe6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101725" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="宇宙技芸">
+<meta name="description" content="どんな書き込みも、宇宙技芸（コスモテクニクス）の八つの視角で読み替え、多角的に打ち返すウィジェット。">
+<title>宇宙技芸 打ち返し器</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:        #f2efe6;
+    --card:      #fbf9f3;
+    --tile:      #ebe6d9;
+    --ink:       #1b2330;
+    --ink-soft:  #4e5a6b;
+    --ink-faint: #8a94a3;
+    --rule:      #e0dacb;
+    --rule-hair: #ece7da;
+    --indigo:    #2d5c86;   /* 多様・道家の側 */
+    --cinnabar:  #a4581f;   /* 単一・悲劇の側 */
+    --gold:      #9a7318;
+    --neutral:   #9aa0a8;
+    --shadow:
+      0 1px 2px rgba(27,35,48,.05),
+      0 6px 16px rgba(27,35,48,.06),
+      0 16px 40px rgba(27,35,48,.05);
+
+    --mincho:"Hiragino Mincho ProN","HiraMinProN-W3","Yu Mincho","YuMincho","Noto Serif JP",serif;
+    --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Noto Sans JP","Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:        #101725;
+      --card:      #18202f;
+      --tile:      #1e2738;
+      --ink:       #ece7da;
+      --ink-soft:  #a7b2c2;
+      --ink-faint: #718092;
+      --rule:      #2a3346;
+      --rule-hair: #222b3c;
+      --indigo:    #7cb0da;
+      --cinnabar:  #dd9a5b;
+      --gold:      #d7a24a;
+      --neutral:   #7d8794;
+      --shadow:
+        0 1px 2px rgba(0,0,0,.34),
+        0 6px 18px rgba(0,0,0,.30),
+        0 18px 44px rgba(0,0,0,.24);
+    }
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--gothic);
+    font-size:15px;
+    line-height:1.85;
+    font-feature-settings:"palt" 1;
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app{
+    max-width:460px;
+    margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 40px);
+  }
+
+  /* ── 見出し ───────────────────────────── */
+  .masthead{ text-align:center; padding:6px 0 2px; }
+  .masthead .en{
+    font-family:var(--mono);
+    font-size:10px; letter-spacing:.26em; text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .masthead h1{
+    font-family:var(--mincho);
+    font-size:23px; font-weight:600; letter-spacing:.06em;
+    margin:6px 0 4px;
+  }
+  .masthead p{
+    margin:0; font-size:12px; color:var(--ink-soft); line-height:1.7;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    padding:16px 15px;
+    margin-top:14px;
+  }
+
+  .band{
+    display:flex; align-items:baseline; gap:.6em;
+    margin:0 0 12px; padding-bottom:6px;
+    border-bottom:1.5px solid var(--ink);
+  }
+  .band .en{
+    font-family:var(--mono); font-size:9.5px;
+    letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft);
+  }
+  .band .ja{ font-family:var(--mincho); font-size:13px; letter-spacing:.08em; }
+  .band .tail{ margin-left:auto; font-size:10.5px; color:var(--ink-faint); font-family:var(--mono); }
+
+  /* ── 入力 ─────────────────────────────── */
+  textarea{
+    width:100%; min-height:112px; resize:vertical;
+    background:var(--bg); color:var(--ink);
+    border:1px solid var(--rule); border-radius:11px;
+    padding:11px 12px; font:inherit; line-height:1.8;
+  }
+  textarea:focus{ outline:2px solid var(--indigo); outline-offset:1px; }
+  textarea::placeholder{ color:var(--ink-faint); }
+
+  .row{ display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap; }
+  .count{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+
+  button{
+    font:inherit; cursor:pointer; border-radius:10px;
+    border:1px solid var(--rule); background:var(--tile); color:var(--ink);
+    padding:9px 13px; font-size:13.5px; letter-spacing:.04em;
+    min-height:40px;
+  }
+  button:active{ transform:translateY(1px); }
+  button.primary{
+    background:var(--ink); color:var(--card); border-color:var(--ink);
+    font-family:var(--mincho); letter-spacing:.14em; padding:9px 20px; font-size:14.5px;
+  }
+  button.ghost{ background:transparent; }
+  button:disabled{ opacity:.45; cursor:default; }
+
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .chip{
+    font-size:11.5px; padding:5px 9px; border-radius:999px;
+    border:1px dashed var(--rule); background:transparent; color:var(--ink-soft);
+    min-height:0;
+  }
+  .hint{ font-size:11.5px; color:var(--ink-faint); margin:8px 0 0; line-height:1.7; }
+
+  /* ── 見立て札 ─────────────────────────── */
+  .verdict{ text-align:center; padding:18px 15px 16px; }
+  .verdict .quad{
+    font-family:var(--mono); font-size:10px; letter-spacing:.22em;
+    color:var(--ink-faint); text-transform:uppercase;
+  }
+  .verdict h2{
+    font-family:var(--mincho); font-size:19px; font-weight:600;
+    margin:7px 0 8px; letter-spacing:.05em; line-height:1.6;
+  }
+  .verdict .sub{ font-size:12.5px; color:var(--ink-soft); margin:0; }
+  .aphorism{
+    margin:14px 0 0; padding:11px 12px;
+    border-left:2px solid var(--gold); background:var(--tile);
+    border-radius:0 8px 8px 0;
+    font-family:var(--mincho); font-size:13.5px; line-height:1.85; text-align:left;
+  }
+
+  /* ── 座標（発散メーター） ───────────────── */
+  .axis{ margin:14px 0 0; }
+  .axis:first-of-type{ margin-top:4px; }
+  .axis .lbl{
+    display:flex; justify-content:space-between;
+    font-size:11px; color:var(--ink-soft); margin-bottom:5px;
+  }
+  .axis .lbl .l{ color:var(--indigo); }
+  .axis .lbl .r{ color:var(--cinnabar); }
+  .axis .track{
+    position:relative; height:14px; border-radius:4px;
+    background:var(--tile); overflow:hidden;
+  }
+  .axis .mid{
+    position:absolute; left:50%; top:0; bottom:0; width:1px;
+    background:var(--neutral); opacity:.7;
+  }
+  .axis .fill{
+    position:absolute; top:2px; bottom:2px; border-radius:3px;
+  }
+  .axis .read{
+    font-family:var(--mono); font-size:10.5px; color:var(--ink-faint);
+    margin-top:4px; text-align:center;
+  }
+
+  /* ── 鍵語 ─────────────────────────────── */
+  .terms{ display:flex; gap:6px; flex-wrap:wrap; }
+  .term{
+    font-size:12px; padding:4px 9px; border-radius:5px;
+    background:var(--tile); color:var(--ink-soft);
+    font-family:var(--mono);
+  }
+
+  /* ── 視角カード ───────────────────────── */
+  .lens{
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow);
+    padding:15px 15px 14px; margin-top:12px;
+  }
+  .lens .top{ display:flex; align-items:baseline; gap:8px; }
+  .lens .no{
+    font-family:var(--mono); font-size:10px; color:var(--ink-faint);
+    letter-spacing:.12em; padding-top:2px;
+  }
+  .lens .name{ font-family:var(--mincho); font-size:16px; letter-spacing:.05em; }
+  .lens .en{
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.14em;
+    color:var(--ink-faint); text-transform:uppercase;
+  }
+  .lens .reso{ margin-left:auto; text-align:right; flex:0 0 84px; }
+  .lens .reso .v{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); }
+  .meter{ height:5px; border-radius:3px; background:var(--tile); overflow:hidden; margin-top:3px; }
+  .meter i{ display:block; height:100%; border-radius:3px; background:var(--indigo); }
+
+  .lens .head{
+    font-family:var(--mincho); font-size:15.5px; line-height:1.8;
+    margin:11px 0 0; letter-spacing:.02em;
+  }
+  .lens .body{ font-size:13.5px; color:var(--ink-soft); margin:8px 0 0; line-height:1.9; }
+  .lens .back{
+    margin:11px 0 0; padding:10px 11px; border-radius:9px;
+    background:var(--tile); font-size:13px; line-height:1.85;
+  }
+  .lens .back b{
+    display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:.18em;
+    color:var(--ink-faint); text-transform:uppercase; margin-bottom:3px; font-weight:400;
+  }
+
+  .counter{ font-size:13.5px; line-height:1.9; color:var(--ink-soft); margin:0; }
+  .counter strong{ color:var(--ink); font-weight:600; }
+
+  /* ── 履歴 ─────────────────────────────── */
+  .hist{ list-style:none; margin:0; padding:0; }
+  .hist li{ border-top:1px solid var(--rule-hair); }
+  .hist li:first-child{ border-top:none; }
+  .hist button{
+    width:100%; text-align:left; background:none; border:none; border-radius:0;
+    padding:9px 2px; font-size:12.5px; color:var(--ink-soft);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .hist button:hover{ color:var(--ink); }
+
+  footer{
+    margin-top:26px; text-align:center;
+    font-size:11px; color:var(--ink-faint); line-height:1.9;
+  }
+  footer a{ color:inherit; }
+
+  .hidden{ display:none !important; }
+  .sr-only{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+  .toast{
+    position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 22px);
+    transform:translateX(-50%) translateY(8px);
+    background:var(--ink); color:var(--card);
+    padding:9px 16px; border-radius:999px; font-size:12.5px;
+    opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;
+    z-index:9;
+  }
+  .toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <p class="en">Cosmotechnics · Technodiversity</p>
+    <h1>宇宙技芸 打ち返し器</h1>
+    <p>どんな書き込みも、器と道・用象・庖丁・再帰と偶然……<br>八つの視角で読み替えて、こちらから打ち返す。</p>
+  </header>
+
+  <!-- 入力 -->
+  <section class="card">
+    <div class="band"><span class="en">Input</span><span class="ja">書き込み</span><span class="tail" id="mode">local engine</span></div>
+    <label class="sr-only" for="src">読み替えたい文章</label>
+    <textarea id="src" placeholder="ここに貼り付ける。SNSの投稿、ニュースの見出し、会議のメモ、愚痴、政策文、なんでも。"></textarea>
+    <div class="row">
+      <button class="primary" id="go">読み替える</button>
+      <button class="ghost" id="paste">貼り付け</button>
+      <button class="ghost" id="clear">消す</button>
+      <span class="count" id="count">0字</span>
+    </div>
+    <div class="chips" id="samples"></div>
+    <p class="hint">端末の中だけで動く。文章はどこにも送らない。</p>
+  </section>
+
+  <!-- 結果 -->
+  <div id="out" class="hidden">
+
+    <section class="card verdict">
+      <p class="quad" id="quad"></p>
+      <h2 id="vtitle"></h2>
+      <p class="sub" id="vsub"></p>
+      <p class="aphorism" id="aphorism"></p>
+    </section>
+
+    <section class="card">
+      <div class="band"><span class="en">Coordinates</span><span class="ja">座標</span></div>
+      <div class="axis" id="axisA"></div>
+      <div class="axis" id="axisB"></div>
+      <p class="hint" id="axisNote"></p>
+    </section>
+
+    <section class="card">
+      <div class="band"><span class="en">Key terms</span><span class="ja">鍵語</span></div>
+      <div class="terms" id="terms"></div>
+    </section>
+
+    <div class="band" style="margin:26px 4px 2px">
+      <span class="en">Eight lenses</span><span class="ja">八つの視角</span>
+      <span class="tail">共鳴順</span>
+    </div>
+    <div id="lenses"></div>
+
+    <section class="card">
+      <div class="band"><span class="en">Counterblow</span><span class="ja">逆から</span></div>
+      <p class="counter" id="counter"></p>
+    </section>
+
+    <div class="row" style="margin-top:14px">
+      <button id="reroll">引き直す</button>
+      <button id="copy" class="ghost">写す</button>
+      <button id="again" class="ghost">別の文で</button>
+    </div>
+  </div>
+
+  <section class="card hidden" id="histcard">
+    <div class="band"><span class="en">Recent</span><span class="ja">最近の書き込み</span></div>
+    <ul class="hist" id="hist"></ul>
+  </section>
+
+  <footer>
+    ユク・ホイの宇宙技芸／技術多様性、ハイデガー、シモンドン、スティグレールの語彙を、<br>
+    端末内の規則で機械的に当てはめる装置。出力は解釈の種であって、答えではない。
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ══════════════════════════════════════════════════
+   0. 小道具
+   ══════════════════════════════════════════════════ */
+
+function $(id){ return document.getElementById(id); }
+
+function hash32(s){
+  var h = 2166136261 >>> 0;
+  for(var i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+/* 同じ文には同じ読みを返す。引き直すと種だけずらす。 */
+function rngFrom(seed){
+  var a = seed >>> 0;
+  return function(){
+    a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function pick(rng, arr){ return arr[Math.floor(rng() * arr.length) % arr.length]; }
+function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+
+function countOcc(hay, needle){
+  if(!needle) return 0;
+  var n = 0, i = 0;
+  while(true){
+    var j = hay.indexOf(needle, i);
+    if(j < 0) break;
+    n++; i = j + needle.length;
+  }
+  return n;
+}
+
+/* ══════════════════════════════════════════════════
+   1. 兆候（signals）— 語彙で文の傾きを測る
+   ══════════════════════════════════════════════════ */
+
+var SIGNALS = [
+  { id:"accel", ja:"加速", words:["加速","早く","はやく","急い","急ぐ","迅速","スピード","効率","最適化","自動","短縮","即座","すぐに","リアルタイム","スケジュール","締切","間に合","生産性","時短","納期"] },
+  { id:"scale", ja:"規模・普遍", words:["グローバル","世界","国際","標準","統一","全国","すべて","全て","あらゆる","誰でも","どこでも","スケール","普遍","一律","共通","展開","横展開","当たり前","常識","みんな"] },
+  { id:"local", ja:"局所",     words:["地域","地元","現場","土地","風土","郷土","方言","近所","町","村","畑","田んぼ","山","海","手仕事","職人","台所","部屋","うち","実家","身の回り","この街"] },
+  { id:"metric", ja:"計量",    words:["％","%","億","兆","万円","倍","KPI","目標","指標","順位","ランキング","データ","統計","スコア","評価","件","率","平均","予算","達成","水準"] },
+  { id:"control", ja:"統制・資源化", words:["管理","制御","統制","確保","動員","人材","資源","活用","供給","調達","効率化","運用","監視","規格","確立","整備","強化","推進","抜本","体制","仕組み"] },
+  { id:"inevit", ja:"不可避",  words:["不可避","当然","必然","しかない","もはや","避けられ","決まって","仕方が","宿命","いずれにせよ","取り残","遅れを","勝てない","必要不可欠","やむを得"] },
+  { id:"conting", ja:"偶然",   words:["偶然","たまたま","想定外","予想外","ゆらぎ","揺れ","気まぐれ","迷っ","ふと","なんとなく","気がつ","うっかり","思いがけ","ハプニング","事故","偶々"] },
+  { id:"affect", ja:"情動",    words:["疲れ","つらい","辛い","嬉し","楽し","悲し","腹立","怒り","好き","嫌い","泣","笑","草","しんど","眠い","不安","焦","むかつ","最高","無理","やばい","かわいい"] },
+  { id:"body", ja:"身体・暮らし", words:["寝","食べ","ご飯","飯","歩い","痛","風邪","体調","手が","目が","息","汗","布団","猫","犬","散歩","朝","夜中","洗濯","料理","掃除","風呂"] },
+  { id:"tech", ja:"技術対象",  words:["AI","ＡＩ","LLM","GPT","ロボット","半導体","クラウド","アプリ","スマホ","量子","アルゴリズム","自動化","デジタル","ネット","SNS","モデル","システム","プラットフォーム","機械","エンジン","チップ","コード","ソフト","端末","生成"] },
+  { id:"power", ja:"制度・権力", words:["政府","国家","法律","規制","制度","会社","企業","上司","学校","契約","予算","政策","省庁","委員会","経営","組織","責任","義務","許可","申請","会議","部長"] },
+  { id:"future", ja:"未来",    words:["未来","将来","今後","これから","年後","展望","予測","ビジョン","戦略","計画","目指","実現","見込","構想","202","203"] },
+  { id:"past", ja:"過去",      words:["昔","かつて","歴史","伝統","古い","江戸","世代","記憶","懐かし","当時","以前","もともと","元々","戦後"] },
+  { id:"conflict", ja:"対立",  words:["反対","批判","敵","争","対立","勝つ","負け","競争","戦","叩か","炎上","論破","対抗","攻撃","守る","脅威"] },
+  { id:"loop", ja:"反復",      words:["繰り返","また","いつも","毎日","毎回","毎年","ループ","慣れ","相変わらず","ずっと","続け","結局","恒例","定例"] },
+  { id:"rupture", ja:"断絶・革新", words:["新し","革新","破壊","転換","リセット","変革","イノベーション","断絶","初めて","刷新","突破","一新","ブレイクスルー","ゲームチェンジ"] },
+  { id:"quest", ja:"問い",     words:["なぜ","どうして","どうやって","だろうか","のだろう","のか","かな","？","?","わからない","分からない"] }
+];
+
+function measure(text){
+  var lower = text.toLowerCase();
+  var s = {};
+  for(var i=0;i<SIGNALS.length;i++){
+    var sig = SIGNALS[i], raw = 0;
+    for(var j=0;j<sig.words.length;j++){
+      var w = sig.words[j];
+      var n = countOcc(/[A-Za-z]/.test(w) ? lower : text, /[A-Za-z]/.test(w) ? w.toLowerCase() : w);
+      if(n) raw += Math.min(n, 3) * (w.length >= 3 ? 1.15 : 1);
+    }
+    s[sig.id] = 1 - Math.exp(-raw / 2.0);
+  }
+  /* 数字そのものは計量の兆候 */
+  var digits = (text.match(/[0-9０-９]+/g) || []).length;
+  s.metric = clamp(s.metric + Math.min(digits, 5) * 0.09, 0, 1);
+  /* 疑問符と一人称 */
+  if(/[？?]/.test(text)) s.quest = clamp(s.quest + 0.2, 0, 1);
+  return s;
+}
+
+/* ══════════════════════════════════════════════════
+   2. 鍵語の抽出（形態素解析なしの粗い方法）
+   ══════════════════════════════════════════════════ */
+
+/* URL・メンション・RT の頭は、書き込みの「地の文」ではないので落とす。
+   落とす前の原文は、共有元を残すために画面側で保持している。 */
+function bodyText(text){
+  return text
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/^RT\s+@\S+:?/i, " ")
+    .replace(/@[A-Za-z0-9_]{2,}/g, " ")
+    .replace(/[#＃]/g, "")
+    .trim();
+}
+
+var LATIN_STOP = ["http","https","www","com","net","org","jp","co","html","php","rt","amp","utm"];
+
+var STOP = ["こと","もの","ため","よう","これ","それ","あれ","ここ","そこ","場合","本当","感じ",
+            "今日","今回","以上","以下","自分","内容","状況","状態","結果","方法","部分","一部",
+            "程度","実際","現在","最近","今年","昨日","明日","時間","そう","でも","的な","次第",
+            "全部","全然","一番","結構","沢山","以外","当然","普通","相当","多少","一応"];
+
+/* 「確保」「推進」のような動作名詞は、話題の名前としては弱いので順位を下げる */
+var WEAK = ["確保","実現","推進","活用","強化","整備","対応","実施","検討","管理","構築","導入",
+            "促進","向上","展開","提供","支援","取組","必要","可能","重要"];
+
+/* 数字のうしろに来る助数詞。「20万人確保」から「万人確保」を作らないため */
+var COUNTER = "万億兆年月日人件回倍割個台歳円時分秒名度点";
+
+function extractTerms(text){
+  var found = {};
+  function add(w, kind){
+    if(!w || w.length < 2) return;
+    if(STOP.indexOf(w) >= 0) return;
+    if(kind === "latin" && LATIN_STOP.indexOf(w.toLowerCase()) >= 0) return;
+    if(/^[0-9０-９]+$/.test(w)) return;
+    if(!found[w]) found[w] = { w:w, n:0, kind:kind };
+    found[w].n++;
+  }
+
+  var re = /[一-龥々]{2,8}/g, m;
+  while((m = re.exec(text)) !== null){
+    var w = m[0];
+    /* 直前が数字なら、先頭の助数詞を落とす */
+    var prev = m.index > 0 ? text.charAt(m.index - 1) : "";
+    if(/[0-9０-９]/.test(prev)){
+      while(w.length > 1 && COUNTER.indexOf(w.charAt(0)) >= 0) w = w.slice(1);
+    }
+    add(w, "kanji");
+  }
+  (text.match(/[ァ-ヴー]{3,12}/g) || []).forEach(function(x){ add(x, "kana"); });
+  (text.match(/[A-Za-z][A-Za-z0-9.+#\-]{1,14}/g) || []).forEach(function(x){ add(x, "latin"); });
+
+  var list = [];
+  for(var k in found){
+    if(!Object.prototype.hasOwnProperty.call(found, k)) continue;
+    var e = found[k];
+    var len = Math.min(e.w.length, 8);
+    /* 二〜五字あたりを話題の名前として好む。長すぎる連結は少し下げる */
+    var shape = len <= 5 ? (1 + 0.20 * len) : (2.0 - 0.10 * (len - 5));
+    e.score = e.n * shape + (e.kind === "kana" ? 0.3 : 0);
+    if(WEAK.indexOf(e.w) >= 0) e.score *= 0.45;
+    list.push(e);
+  }
+  list.sort(function(a,b){ return b.score - a.score || b.w.length - a.w.length; });
+  return list.slice(0, 8).map(function(e){ return e.w; });
+}
+
+function firstClause(text){
+  var t = text.replace(/\s+/g, " ").trim();
+  var m = t.split(/[。．.!！?？\n]/).filter(function(x){ return x.trim().length > 0; })[0] || t;
+  m = m.trim();
+  return m.length > 26 ? m.slice(0, 26) + "…" : m;
+}
+
+/* ══════════════════════════════════════════════════
+   3. 八つの視角
+      weights: どの兆候に反応して共鳴が上がるか
+      head / body / back: 差し込み語を含む型
+   ══════════════════════════════════════════════════ */
+
+var LENSES = [
+{
+  id:"qidao", name:"器と道", en:"Qi / Dao",
+  weights:{ tech:1.0, control:.6, body:.5, power:.4, local:.4, accel:.3 },
+  head:[
+    "{t1}は器（き）である。問われているのは性能ではなく、その器がどんな道（みち）を稽古させるかだ。",
+    "道具は目的に仕える顔をしながら、実際には作法を配っている。{t1}も例外ではない。",
+    "{t1}の握り方は、そのまま世界の握り方になる。ここではその握り方が更新されつつある。"
+  ],
+  body:[
+    "宇宙技芸の見方では、器（道具）と道（生き方の筋）は別々に存在しない。{t1}を使うとは、そこに畳み込まれた段取り・速度・良し悪しの基準を、身体に少しずつ移すことでもある。この書き込みが議論しているのは{t2}の是非だが、すでに静かに決まりかけているのは、どの作法で日々を過ごすかの方だ。",
+    "「{q}」という言い方は、器を中立な手段として扱っている。だが手段には稽古がついてくる。{t1}に慣れた手は、{t1}に向いた仕事を先に見つけるようになる。仕事の側が道具に合わせて選ばれ直す——この順序の入れ替わりは、たいてい気づかれないまま起きる。",
+    "器は使う者を作り替えるが、その速度は遅く、快い。{t1}をめぐるこの文には、便利さの記述はあっても、身につきつつある作法の記述がない。技術は使用のたびに、こちらの型を一段ずつ書き換えている。"
+  ],
+  back:[
+    "{t1}を三年使い続けたあとの自分の手つきを、いま言葉にできるか。その変化は、望んで選んだものか。",
+    "この器を使わない日を、一日だけ作れるか。作れないなら、それはもう器ではなく環境だ。",
+    "{t1}が上手くなることと、{t2}が上手くなることは、同じか。違うなら、いまどちらを稽古しているか。"
+  ]
+},
+{
+  id:"gestell", name:"用象と総駆り立て", en:"Standing-reserve",
+  weights:{ control:1.0, metric:.9, power:.6, scale:.5, accel:.4 },
+  head:[
+    "{t1}は、いつのまにか「引き出せる在庫」の欄へ移されていないか。",
+    "ここでは{t1}が、それ自体としてではなく、取り出せる量として数えられている。",
+    "「{q}」——この言い方は、対象を待機させる語彙の家族に属している。"
+  ],
+  body:[
+    "ハイデガーの言う総駆り立て体制（ゲシュテル）は、川を川としてではなく水力として、人を人としてではなく人材として立てる。この文の{t2}という語も、対象を「必要なときに引き出せる状態」に置いている。危ういのは搾取ではなく、それ以外の現れ方が見えなくなることの方だ。",
+    "在庫として数え始めた瞬間、{t1}は「足りている／足りていない」の二値に痩せる。豊かさも固有さも、その二値には乗らない。この書き込みが{t2}を語る語彙には、量の言葉はあるが、質の言葉が見当たらない。",
+    "資源化の文法は、たいてい善意の顔をしてやってくる。活用、確保、整備、推進。どれも{t1}を丁寧に扱う語に見えて、実際には{t1}を「いつでも呼び出せるもの」の位置に固定する。"
+  ],
+  back:[
+    "{t1}を在庫として数えるのをやめたら、この主張のどこが崩れるか。崩れないなら、その数え方は要らなかったのでは。",
+    "ここで数えられている{t1}が、数えられることを拒んだらどうなるか。その拒否を許す余地は設計に入っているか。",
+    "「活用」の主語は誰で、活用されている側は何と呼ばれているか。呼び名を入れ替えても同じ文が書けるか。"
+  ]
+},
+{
+  id:"tragist", name:"悲劇と庖丁", en:"Prometheus / Cook Ding",
+  weights:{ conflict:.9, rupture:.9, accel:.6, power:.5, inevit:.5 },
+  head:[
+    "解き方には二系統ある。奪って作るプロメテウス型か、隙間に沿う庖丁型か。この文は{lean}に寄っている。",
+    "壁を割る話をしているが、そもそもそれは壁か。{lean}の構えが、この一文の底に敷かれている。",
+    "力で通すか、位置を変えるか。{t1}をめぐるこの詰まりは、{lean}の作法で扱われようとしている。"
+  ],
+  body:[
+    "悲劇的論理は、対立を正面から突破し、代償を払って新しい秩序を建てる。道家的論理は、骨と骨のあいだの空きに刃を通し、力を使わずに事を終える（庖丁解牛）。{t1}の詰まりは、刃を研いで断つ問題なのか、それとも刃を入れる位置を間違えているだけの問題なのか。この文はそこを問わずに、片方の作法を選んでいる。",
+    "プロメテウスは火を盗み、その罰として毎日肝を啄まれる。突破の物語には必ず後始末がついてくるが、この書き込みでは{t2}をめぐる後始末の担当が書かれていない。誰の肝が啄まれるのかを空欄にしたまま、突破だけが語られていないか。",
+    "庖丁は十九年、刃を研がずに牛を解いた。硬いところを避け続けたからだ。ここで「必要な痛み」とされているものは、本当に地形の硬さから来ているのか。それとも、急いだせいで刃を骨に当てているだけなのか。"
+  ],
+  back:[
+    "この件で「突破すべき壁」とされているものは、本当に壁か。回り道が用意されていないのは、地形のせいか、急いでいるせいか。",
+    "力を一切使わずに同じ結果に届く筋道を、ひとつだけ書けるか。書けないとしたら、それは不可能だからか、面倒だからか。",
+    "突破の代価は誰が払うのか。その人の名前を、この文に書き足せるか。"
+  ]
+},
+{
+  id:"recursive", name:"再帰と偶然", en:"Recursivity / Contingency",
+  weights:{ loop:1.0, conting:.9, affect:.4, past:.4, future:.3 },
+  head:[
+    "同じ輪がまた回っている。輪を壊すのは、たいてい計画ではなく偶然の方だ。",
+    "「{q}」——この言い回し自体が、以前も書かれた形をしている。ループは内容ではなく形式に宿る。",
+    "系は自分の出力を入力に戻して自分を保つ。{t1}はその輪のどのあたりにいるか。"
+  ],
+  body:[
+    "再帰的な系は、自分の出したものを材料にして自分を維持する。だから内側からは変化が見えにくい。{t1}をめぐる話が「また同じ」に感じられるとしたら、それは怠慢ではなく、系が正常に回っている証拠でもある。",
+    "偶然性は雑音ではない。ユク・ホイの言い方では、偶然こそが再帰的な系にとって、自分を作り替えるための唯一の材料になる。この書き込みの中で、予定になかったのに起きてしまったこと——{t2}のような引っかかり——は、失敗として片づけられていないか。",
+    "計画は輪をなめらかに回すが、輪の直径を変えるのはたいてい事故の方だ。{t1}について完璧な段取りを整えるほど、系は自分を強く再生産する。強い再生産は、方向を間違えたときの取り返しを難しくする。"
+  ],
+  back:[
+    "この件で、予定になかったのに起きた小さな出来事は何だったか。それを失敗として処理したか、材料として拾ったか。",
+    "同じ話を前に書いたのはいつか。前と今で、変わったのは事実の方か、言い方の方か。",
+    "この輪を一周止めたら、何が壊れるか。壊れないものは、たぶん輪の一部ではない。"
+  ]
+},
+{
+  id:"diversity", name:"技術多様性", en:"Technodiversity",
+  weights:{ scale:1.0, inevit:.9, tech:.6, metric:.5, conflict:.3 },
+  head:[
+    "選択肢はいくつある。答えが一つに見えるとき、たいてい数えるのをやめている。",
+    "{t1}をめぐる話が「追いつく／追い越す」の一直線になっていないか。直線は速いが、分岐がない。",
+    "普遍的に見える技術は、たいてい他の技術が忘れられたあとの姿だ。"
+  ],
+  body:[
+    "技術多様性とは、性能の優劣を競う手前で、別の宇宙論に根ざした技術のあり方を複数保っておくこと。{t1}の議論は、同じ物差しの上での順位の話になっていないか。物差しを疑う声は、遅れているのではなく、別の軸にいる可能性がある。",
+    "単一技術は速い。全員が同じ道を進むので調整の費用がかからないからだ。その代わり、方向を間違えたときは全員で一緒に転ぶ。{t2}に賭ける度合いが上がるほど、賭けを外したときの逃げ場が減る——この文はその逃げ場について沈黙している。",
+    "「{q}」の裏には、他のやり方はもう存在しないという前提がある。だが消えたのではなく、採算に合わないという理由で棚に置かれただけの技術は多い。棚に置くことと、失うことは違う。棚は、誰かが維持していないと腐る。"
+  ],
+  back:[
+    "同じ目的をまったく別の作法で果たしている例を、この分野の外から一つ挙げられるか。",
+    "この道が行き止まりだったと分かるのは何年後か。そのとき戻れる分岐点は、まだ残っているか。",
+    "「他に選択肢がない」と書くとき、選択肢を数えた人は誰か。その人は数え直す動機を持っているか。"
+  ]
+},
+{
+  id:"locality", name:"局所性と宇宙論", en:"Locality / Cosmology",
+  weights:{ local:1.0, scale:.7, past:.6, body:.4, power:.3 },
+  head:[
+    "この文は、どの土地の空の下で書かれたのか。",
+    "{t1}という語は、どこでも同じに使える顔をしている。その顔は借り物ではないか。",
+    "普遍語で書かれているが、足はどこかの地面に着いている。その地面の名前は。"
+  ],
+  body:[
+    "宇宙技芸とは、宇宙の秩序と道徳の秩序を、技術的な営みのなかで一つに結ぶこと。近代化はその多様な結び方を、一つの普遍技術へ畳んでしまった。{t1}をめぐるこの書き込みは、どの結び方を前提にしているか。前提が見えないときは、たいてい自分の宇宙論を普遍だと思っている。",
+    "技術は人類学的に普遍ではない。同じ道具でも、雨の降り方、作物、葬いの作法が違えば、意味が変わる。{t2}という語がここでは自明に響くのは、この土地の事情がその語を支えているからだ。事情を書き添えないと、輸出したときに壊れる。",
+    "「{q}」を、気候も相続の仕方も違う土地に置いてみる。何が最初に壊れるか。壊れる部分こそ、この技術がひそかに抱えている宇宙論だ。"
+  ],
+  back:[
+    "これを別の土地（気候・作物・葬い方の違う場所）に置いたら、何が最初に壊れるか。",
+    "この主張を、自分の祖母の語彙で言い直せるか。言い直せない部分は、内容か、それとも借りてきた衣か。",
+    "ここでの「先進」は、どの土地の時計に合わせた語か。その時計は誰が巻いているか。"
+  ]
+},
+{
+  id:"individuation", name:"個体化と余白", en:"Individuation / Indetermination",
+  weights:{ tech:.9, control:.7, accel:.5, body:.5, conting:.5 },
+  head:[
+    "人が技術を使うのではない。人と技術が、まだ途中まで一緒に形になりつつある。",
+    "{t1}は完成品ではなく、具体化の途中にある。途中であることが、関係を結ぶ余地を作る。",
+    "余白（未確定の幅）がどれだけ残っているか。それがこの技術の生きている度合いだ。"
+  ],
+  body:[
+    "シモンドンによれば、技術的対象は「完璧に閉じた」ときにではなく、未確定の幅を残したときにこそ、他のものと関係を結べる。{t1}をめぐるこの書き込みには、まだ決めていない部分——遊び——がどれだけ残されているか。全部を決めきる設計は、強そうに見えて、外との接続を失う。",
+    "人と道具は、どちらが先にあるのでもなく、互いに形になっていく（共個体化）。{t2}を自動化するとき、消えるのは手間だけではない。手間の中で身についていた判断も一緒に消える。この文は前者だけを利得として数えている。",
+    "使い手の側にも未完了の部分がある。だからこそ道具に応じて変われる。「{q}」という書き方は、使い手をすでに完成した主体として扱っているが、実際には{t1}と一緒に作られている途中の何かだ。"
+  ],
+  back:[
+    "ここで完全に自動化したら、誰の学習が止まるか。その学習は、あとで買い戻せるか。",
+    "この設計に残された「まだ決めていない部分」を、一つ挙げられるか。挙げられないなら、それは完成ではなく硬直かもしれない。",
+    "{t1}が壊れたとき、代わりに手が動くか。動かないなら、手の側の何が譲り渡されたのか。"
+  ]
+},
+{
+  id:"pharmakon", name:"薬にして毒", en:"Pharmakon",
+  weights:{ affect:.8, tech:.7, conflict:.6, power:.5, quest:.4 },
+  head:[
+    "{t1}は薬であり毒である。切り離せない。問題は用量と作法の方だ。",
+    "良いか悪いかを決めようとする限り、この議論は終わらない。両方だからだ。",
+    "毒でなくす方法はない。毒であることを扱う作法なら、作れる。"
+  ],
+  body:[
+    "スティグレールの言うパルマコンは、薬と毒を同時に意味する。{t1}もそうで、支えると同時に何かを萎えさせる。この書き込みの対立が噛み合わないのは、片方が薬の側面を、もう片方が毒の側面を、それぞれ全体として語っているからだ。",
+    "問題は{t1}の善悪ではなく、用量・速度・誰にとってか、の三つ。「{q}」はこの三つを言わずに結論だけを述べている。閾値のない賛否は、どちらの側でも同じ強さで言えてしまう。",
+    "薬として使うには療法（作法）が要る。作法とは、いつ止めるか、誰が止めるか、止めたことをどう確かめるかの取り決めのこと。{t2}をめぐる議論に、この「止め方」は書かれているか。"
+  ],
+  back:[
+    "{t1}が毒に転ぶのは、どの量・どの速さ・誰にとってか。その閾値を言葉にできるか。",
+    "止め方を決めずに始められるものと、そうでないものの線引きは、この件のどちら側か。",
+    "この便益を最も受け取る人と、この毒を最も受ける人は、同じ人か。違うなら、その差は誰が埋めるか。"
+  ]
+}
+];
+
+/* ══════════════════════════════════════════════════
+   4. 見立て（四象限）・一句・逆から
+   ══════════════════════════════════════════════════ */
+
+var QUADRANTS = {
+  "mono-trag": {
+    quad:"Monotechnical · Tragist",
+    title:"突破の語り — 一本道を、速く",
+    sub:"単一の物差しの上で、力を使って前へ出ようとしている。分岐と後始末が書かれていない。",
+    counter:[
+      "だが逆から見れば、この一本道は<strong>すでに誰かが敷いたもの</strong>だ。速く走るほど、敷いた者の宇宙論を強化することになる。ここで問うべきは走り方ではなく、線路の勾配が誰の都合で決まっているかの方かもしれない。",
+      "とはいえ、突破が必要な局面は実在する。問題は突破そのものではなく、<strong>突破のあとに残る地形</strong>を誰も描いていないことだ。割ったあとに何が生えるかを書けば、この語りは急に強くなる。"
+    ]
+  },
+  "mono-dao": {
+    quad:"Monotechnical · Daoist",
+    title:"静かな一元化 — 抵抗なく畳まれていく",
+    sub:"摩擦のなさが、選択肢の消滅を見えにくくしている。滑らかさは同意の証拠ではない。",
+    counter:[
+      "逆から見れば、この滑らかさは美徳でもある。摩擦のない道具は身体に馴染み、余計な力を要らなくする。危ういのは滑らかさではなく、<strong>滑らかだから疑わずに済む</strong>という副作用の方だ。",
+      "沿うことと、流されることは形が似ている。ここで沿っている相手は地形か、それとも<strong>誰かの設計した傾斜</strong>か。庖丁は牛の理に沿ったが、肉屋の都合に沿ったわけではない。"
+    ]
+  },
+  "multi-trag": {
+    quad:"Diverse · Tragist",
+    title:"分岐のための衝突 — 割って、増やす",
+    sub:"対立を通じて選択肢を増やそうとしている。増やした先を維持する担い手が要る。",
+    counter:[
+      "逆から見れば、割ること自体は多様性ではない。破片は<strong>放っておけば消える</strong>。分岐が定着するには、採算に合わない側を誰かが日常的に世話し続ける必要がある。その担い手がここには書かれていない。",
+      "衝突は選択肢を生むが、生まれた選択肢の数だけ<strong>維持の費用</strong>がかかる。多様性は自由の別名ではなく、面倒を引き受ける約束のことだ。その面倒を引き受ける気があるかが、ここでの本当の分かれ目になる。"
+    ]
+  },
+  "multi-dao": {
+    quad:"Diverse · Daoist",
+    title:"沿いながら増やす — 手つきの側の話",
+    sub:"地形に沿って選択肢を保っている。速さでは負けるが、転んだときに全滅しない。",
+    counter:[
+      "逆から見れば、沿うだけでは<strong>間に合わない事柄</strong>もある。ゆっくり分岐を保つ構えは、締切のある問題の前では無力に見える。この構えが有効なのは、時間が味方する領域に限られるという条件を書き添える必要がある。",
+      "多様さを保つ姿勢は、しばしば<strong>何も決めないこと</strong>と区別がつかなくなる。保つ側にも決断が要る——どの選択肢を、誰の費用で、いつまで生かしておくのか。それを言わない多様性擁護は、優しい先送りになる。"
+    ]
+  },
+  "mono-only": {
+    quad:"Monotechnical · Undecided stance",
+    title:"物差しは一本に寄っている",
+    sub:"評価の軸は畳まれつつあるが、それを押し通す構えまでは書かれていない。",
+    counter:[
+      "逆から見れば、物差しが一本であること自体は悪ではない。<strong>比べられる</strong>という利得は本物だ。問題は、比べられないものが議論から静かに落ちるところにある。落ちた側の名前を一つ書き足すだけで、この文の射程は変わる。",
+      "構えが見えないのは、まだ<strong>決めていないから</strong>かもしれない。決める前のこの段階でこそ、どの物差しを採るかを選び直せる。走り出したあとでは、走り方の話しかできなくなる。"
+    ]
+  },
+  "multi-only": {
+    quad:"Diverse · Undecided stance",
+    title:"複数を残す側に寄っている",
+    sub:"物差しを一本に畳んでいない。ただし、その多様さを誰がどう保つかは書かれていない。",
+    counter:[
+      "逆から見れば、<strong>保たれていない多様性は在庫ではない</strong>。放っておけば消える。ここに書かれていない「誰が世話をするのか」が、この構えの弱いところであり、同時に本題でもある。",
+      "複数あることと、選べることは違う。選ぶには比べる手立てが要り、比べるにはある程度の共通の物差しが要る。<strong>物差しを全部捨てる</strong>と、多様性は選択肢ではなく風景になる。"
+    ]
+  },
+  "trag-only": {
+    quad:"Tragist · Scale undecided",
+    title:"突破の構え — 物差しの数は不明",
+    sub:"正面から割る構えは出ているが、それが一本道を強めるのか分岐を生むのかは、まだ決まっていない。",
+    counter:[
+      "同じ衝突でも、行き着く先は二つある。<strong>一本道の順位を入れ替えるだけの衝突</strong>と、道そのものを増やす衝突。この文はまだどちらにも転べる。転ぶ先を決めるのは、割ったあとに何を育てるかの計画の方だ。",
+      "逆から見れば、突破の言葉づかいは<strong>疲れを隠す</strong>ことがある。力で通すという判断は、多くの場合、迂回路を探す時間がなかったという事実の言い換えでもある。時間の話に戻すと、選択肢は増える。"
+    ]
+  },
+  "dao-only": {
+    quad:"Daoist · Scale undecided",
+    title:"沿う構え — 物差しの数は不明",
+    sub:"力で割らずに地形に沿っている。ただし、沿った先が一本道なのか分岐なのかは書かれていない。",
+    counter:[
+      "沿うことは巧みだが、<strong>沿う相手を選んでいない</strong>と、いつのまにか一番強い傾斜に沿うことになる。庖丁が沿ったのは牛の理であって、注文の多さではない。ここで沿っている相手の名前を確かめたい。",
+      "逆から見れば、この静けさは<strong>すでに決着がついている</strong>印かもしれない。抵抗が要らないのは、選択肢が残っていないからでもある。摩擦のなさは、合意の証拠にも、消滅の証拠にもなる。"
+    ]
+  },
+  "balance": {
+    quad:"Undecided · Too few signals",
+    title:"まだ測りかねている",
+    sub:"どちらの軸にも傾きが出ていない。手がかりが少ないか、いくつもの構えが同居している。",
+    counter:[
+      "傾きが出ないこと自体が一つの所見だ。短い書き込みには、まだ<strong>作法が現れていない</strong>。もう少し長い文——理由や段取りが書かれた文——を入れると、器の形が見えてくる。",
+      "拮抗は中立ではない。いくつもの構えが<strong>まだ分かれずに同居している</strong>状態でもある。以下の八つは、そのどれが芽になりうるかを片端から当ててみたものと読んでほしい。"
+    ]
+  }
+};
+
+var APHORISMS = [
+  "技術は人類学的に普遍ではない。普遍に見えるのは、他の技術が忘れられたからだ。",
+  "速さは一種類しかないが、遅さには何通りもある。",
+  "単一技術は世界を一枚の紙にする。多様性とは、その紙をまだ折れる余地のことだ。",
+  "終わりを語る声が大きいときほど、分岐は静かに増えている。",
+  "刃が欠けるのは硬さのせいではなく、刃を入れる場所のせいだ。",
+  "道具を選ぶとは、明日の手つきを選ぶことだ。",
+  "在庫として数えられたものは、数えられ方の外では姿を失う。",
+  "偶然を事故として片づけるたび、系は少しずつ自分を作り替える機会を失う。",
+  "普遍語で書かれた文にも、必ずどこかの地面の匂いがついている。",
+  "余白のない機械は、強いのではなく、関係を結べないだけだ。",
+  "毒を薬に変えるのは成分ではなく、いつ止めるかの取り決めである。",
+  "誰も守っていない選択肢は、存在していないのと同じ速さで消える。",
+  "追いつくという言い方は、走る前から順位を認めている。",
+  "器の使い方を覚えることは、その器が想定した世界に住み始めることだ。"
+];
+
+/* ══════════════════════════════════════════════════
+   5. 読み替えの実行
+   ══════════════════════════════════════════════════ */
+
+function fill(tpl, ctx){
+  return tpl.replace(/\{(\w+)\}/g, function(_, k){
+    return (ctx[k] !== undefined && ctx[k] !== "") ? ctx[k] : "この件";
+  });
+}
+
+function interpret(raw, roll){
+  var text = bodyText(raw) || raw;
+  var s = measure(text);
+  var terms = extractTerms(text);
+  var rng = rngFrom((hash32(raw) + roll * 0x9E3779B1) >>> 0);
+
+  /* 座標 */
+  var mono = s.accel + s.scale + s.metric + s.control + s.inevit + s.tech * 0.5;
+  var multi = s.local + s.conting + s.affect + s.body + s.past + s.quest * 0.5;
+  var trag = s.rupture + s.conflict + s.accel * 0.7 + s.control * 0.7 + s.power * 0.4;
+  var dao  = s.loop + s.conting + s.body * 0.8 + s.local * 0.6 + s.past * 0.4;
+
+  var axisA = (mono - multi) / (mono + multi + 0.35);   /* + = 単一化 */
+  var axisB = (trag - dao)  / (trag + dao  + 0.35);     /* + = 悲劇 */
+
+  /* ほぼ中央の軸で断定しない。丸め誤差が見立てを決めてしまうので、
+     拮抗している軸は名指しを避け、傾いている軸だけで見立てる。 */
+  var flatA = Math.abs(axisA) < 0.10, flatB = Math.abs(axisB) < 0.10;
+  var quadKey =
+      (flatA && flatB) ? "balance"
+    : flatB ? (axisA >= 0 ? "mono-only" : "multi-only")
+    : flatA ? (axisB >= 0 ? "trag-only" : "dao-only")
+    : (axisA >= 0 ? "mono" : "multi") + "-" + (axisB >= 0 ? "trag" : "dao");
+  var quad = QUADRANTS[quadKey];
+
+  var lean = axisB > 0.12 ? "プロメテウスの側" : (axisB < -0.12 ? "庖丁の側" : "どちらとも決めきらない中間");
+  var q = firstClause(text);
+
+  /* 視角ごとに焦点の語をずらす。同じ語を八回いじるより、
+     八つの角度がそれぞれ別のところを掴んだ方が打ち返しになる。 */
+  var offset = Math.floor(rng() * 4);
+  function ctxFor(i){
+    var n = terms.length;
+    function at(k){ return n ? terms[((i + offset + k) % Math.min(n, 5) + n) % n] : ""; }
+    return {
+      t1: at(0) || "この一言",
+      t2: at(1) || at(0) || "ここで語られていること",
+      t3: at(2) || at(0) || "その周辺",
+      q: q, lean: lean
+    };
+  }
+
+  /* 各視角の共鳴 */
+  var lenses = LENSES.map(function(L, li){
+    var ctx = ctxFor(li);
+    var num = 0, den = 0;
+    for(var k in L.weights){
+      if(!Object.prototype.hasOwnProperty.call(L.weights, k)) continue;
+      num += L.weights[k] * (s[k] || 0);
+      den += L.weights[k];
+    }
+    var raw = den ? num / den : 0;
+    var score = clamp(Math.round(20 + 76 * Math.pow(raw, 0.82)), 12, 98);
+    return {
+      id:L.id, name:L.name, en:L.en, score:score,
+      head: fill(pick(rng, L.head), ctx),
+      body: fill(pick(rng, L.body), ctx),
+      back: fill(pick(rng, L.back), ctx)
+    };
+  });
+  lenses.sort(function(a,b){ return b.score - a.score; });
+
+  return {
+    terms: terms,
+    axisA: axisA, axisB: axisB,
+    quad: quad,
+    counter: pick(rng, quad.counter),
+    aphorism: pick(rng, APHORISMS),
+    lenses: lenses
+  };
+}
+
+/* ══════════════════════════════════════════════════
+   6. 表示
+   ══════════════════════════════════════════════════ */
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
+  });
+}
+
+function renderAxis(el, label, value, leftName, rightName, leftWord, rightWord){
+  var pct = Math.round(Math.abs(value) * 50);
+  var toward = (pct * 2 < 10) ? "ほぼ拮抗" : (value >= 0 ? rightWord : leftWord);
+  var color = value >= 0 ? "var(--cinnabar)" : "var(--indigo)";
+  var style = value >= 0
+    ? "left:50%;width:" + pct + "%;"
+    : "right:50%;width:" + pct + "%;";
+  el.innerHTML =
+    '<div class="lbl"><span class="l">' + esc(leftName) + '</span>' +
+    '<span class="r">' + esc(rightName) + '</span></div>' +
+    '<div class="track" role="img" aria-label="' +
+      esc(label + "：" + toward + (toward === "ほぼ拮抗" ? "" : "へ " + pct * 2)) + '">' +
+      '<div class="mid"></div>' +
+      '<div class="fill" style="' + style + 'background:' + color + '"></div>' +
+    '</div>' +
+    '<div class="read">' + esc(label) + " — " + esc(toward) +
+      (toward === "ほぼ拮抗" ? "" : "へ " + (pct * 2)) + "</div>";
+}
+
+function render(res){
+  $("quad").textContent = res.quad.quad;
+  $("vtitle").textContent = res.quad.title;
+  $("vsub").textContent = res.quad.sub;
+  $("aphorism").textContent = "「" + res.aphorism + "」";
+
+  renderAxis($("axisA"), "軸A", res.axisA, "多様化", "単一化", "多様化", "単一化");
+  renderAxis($("axisB"), "軸B", res.axisB, "道家（沿う）", "悲劇（突破）", "道家", "悲劇");
+
+  var note = "軸A＝物差しを一本に畳む力と、複数保とうとする力の差。軸B＝正面から割る構えと、隙間に沿う構えの差。";
+  var flat = [];
+  if(Math.abs(res.axisA) < 0.10) flat.push("軸A");
+  if(Math.abs(res.axisB) < 0.10) flat.push("軸B");
+  note += flat.length === 2
+    ? "どちらの軸も拮抗している。傾きを出すには材料が足りない。"
+    : (flat.length === 1
+        ? flat[0] + "はほぼ拮抗しているので、見立てはもう一方の軸が決めている。"
+        : "中央からの離れ方が、そのまま構えの強さ。");
+  $("axisNote").textContent = note;
+
+  $("terms").innerHTML = res.terms.length
+    ? res.terms.map(function(t){ return '<span class="term">' + esc(t) + "</span>"; }).join("")
+    : '<span class="term">語らしい語が見つからない</span>';
+
+  $("lenses").innerHTML = res.lenses.map(function(L, i){
+    return '<article class="lens">' +
+      '<div class="top">' +
+        '<span class="no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+        '<div><div class="name">' + esc(L.name) + "</div>" +
+        '<div class="en">' + esc(L.en) + "</div></div>" +
+        '<div class="reso"><div class="v">共鳴 ' + L.score + "</div>" +
+        '<div class="meter"><i style="width:' + L.score + '%"></i></div></div>' +
+      "</div>" +
+      '<p class="head">' + esc(L.head) + "</p>" +
+      '<p class="body">' + esc(L.body) + "</p>" +
+      '<div class="back"><b>打ち返し</b>' + esc(L.back) + "</div>" +
+    "</article>";
+  }).join("");
+
+  $("counter").innerHTML = res.counter;
+  $("out").classList.remove("hidden");
+}
+
+function asText(src, res){
+  var out = [];
+  out.push("── 宇宙技芸 打ち返し器 ──");
+  out.push("");
+  out.push("【原文】" + src.replace(/\s+/g, " ").slice(0, 120));
+  out.push("");
+  out.push("【見立て】" + res.quad.title);
+  out.push(res.quad.sub);
+  out.push("座標：" + (res.axisA >= 0 ? "単一化" : "多様化") + " " + Math.abs(Math.round(res.axisA * 100)) +
+           " ／ " + (res.axisB >= 0 ? "悲劇" : "道家") + " " + Math.abs(Math.round(res.axisB * 100)));
+  out.push("");
+  res.lenses.forEach(function(L, i){
+    out.push(("0" + (i + 1)).slice(-2) + " " + L.name + "（共鳴 " + L.score + "）");
+    out.push(L.head);
+    out.push(L.body);
+    out.push("→ " + L.back);
+    out.push("");
+  });
+  out.push("【逆から】" + res.counter.replace(/<[^>]+>/g, ""));
+  out.push("");
+  out.push("「" + res.aphorism + "」");
+  return out.join("\n");
+}
+
+/* ══════════════════════════════════════════════════
+   7. 画面まわり
+   ══════════════════════════════════════════════════ */
+
+var SAMPLES = [
+  "AI人材を5年で20万人確保し、世界最高水準の研究環境を実現する。遅れは許されない。",
+  "会議、また同じ議題で3時間。決まらないのに資料だけ増える。もう慣れた。",
+  "疲れた。ずっと通知が鳴ってる。夜中に猫が起こしに来て、それでちょっと救われた。",
+  "全自動の農機を入れれば、担い手不足はすべて解決する。導入率がKPI。",
+  "この技術に反対する人はイノベーションの敵だ。競争に負けたら終わりなのだから。"
+];
+
+var state = { text:"", roll:0, res:null };
+var HKEY = "cosmotechnics.history.v1";
+
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.classList.remove("on"); }, 1600);
+}
+
+function updateCount(){
+  var n = $("src").value.length;
+  $("count").textContent = n + "字";
+  $("go").disabled = n === 0;
+}
+
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(HKEY) || "[]"); }catch(e){ return []; }
+}
+function saveHistory(list){
+  try{ localStorage.setItem(HKEY, JSON.stringify(list.slice(0, 12))); }catch(e){}
+}
+function pushHistory(text){
+  var list = loadHistory().filter(function(x){ return x !== text; });
+  list.unshift(text);
+  saveHistory(list);
+  renderHistory();
+}
+function renderHistory(){
+  var list = loadHistory();
+  if(!list.length){ $("histcard").classList.add("hidden"); return; }
+  $("histcard").classList.remove("hidden");
+  $("hist").innerHTML = list.map(function(t, i){
+    return "<li><button data-h='" + i + "'>" + esc(t.replace(/\s+/g, " ").slice(0, 40)) + "</button></li>";
+  }).join("");
+  Array.prototype.forEach.call($("hist").querySelectorAll("button"), function(b){
+    b.addEventListener("click", function(){
+      $("src").value = loadHistory()[+b.getAttribute("data-h")] || "";
+      updateCount();
+      run();
+    });
+  });
+}
+
+function run(){
+  var text = $("src").value.trim();
+  if(!text){ toast("何か書き込みを入れてほしい"); return; }
+  state.text = text;
+  state.roll = 0;
+  state.res = interpret(text, 0);
+  render(state.res);
+  pushHistory(text);
+  $("out").scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+$("go").addEventListener("click", run);
+$("src").addEventListener("input", updateCount);
+$("src").addEventListener("keydown", function(e){
+  if((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+});
+
+$("reroll").addEventListener("click", function(){
+  if(!state.text) return;
+  state.roll++;
+  state.res = interpret(state.text, state.roll);
+  render(state.res);
+  toast("別の角度から引き直した");
+});
+
+$("copy").addEventListener("click", function(){
+  if(!state.res) return;
+  var txt = asText(state.text, state.res);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast("写した"); },
+                                            function(){ toast("写せなかった"); });
+  }else{
+    toast("この環境では写せない");
+  }
+});
+
+$("again").addEventListener("click", function(){
+  $("src").value = "";
+  updateCount();
+  $("out").classList.add("hidden");
+  $("src").focus();
+  window.scrollTo({ top:0, behavior:"smooth" });
+});
+
+$("clear").addEventListener("click", function(){
+  $("src").value = "";
+  updateCount();
+  $("src").focus();
+});
+
+$("paste").addEventListener("click", function(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){
+      if(!t){ toast("クリップボードが空"); return; }
+      $("src").value = t;
+      updateCount();
+      run();
+    }, function(){ toast("貼り付けを許可してほしい"); });
+  }else{
+    toast("長押しで貼り付けてほしい");
+    $("src").focus();
+  }
+});
+
+$("samples").innerHTML = SAMPLES.map(function(s, i){
+  return '<button class="chip" data-s="' + i + '">' + esc(s.slice(0, 9)) + "…</button>";
+}).join("");
+Array.prototype.forEach.call($("samples").querySelectorAll("button"), function(b){
+  b.addEventListener("click", function(){
+    $("src").value = SAMPLES[+b.getAttribute("data-s")];
+    updateCount();
+    run();
+  });
+});
+
+/* 共有シートから飛んできた文章／?text= を拾う */
+(function(){
+  var p = new URLSearchParams(location.search);
+  var parts = [p.get("title"), p.get("text"), p.get("url")].filter(Boolean);
+  if(parts.length){
+    $("src").value = parts.join("\n");
+    updateCount();
+    setTimeout(run, 60);
+    if(history.replaceState) history.replaceState(null, "", location.pathname);
+  }
+})();
+
+updateCount();
+renderHistory();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+})();
+</script>
+</body>
+</html>
