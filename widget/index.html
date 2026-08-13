@@ -164,14 +164,19 @@
   /* ---------- mascot ---------- */
   /* 状態は動きで見せる。文字は数値だけに絞る。 */
   .mascot{
-    width: 54px; height: 54px;
+    width: 64px; height: 64px;
     flex: none;
     display:block;
     overflow: visible;
   }
-  .mascot .ink{ fill:none; stroke: var(--ink); stroke-width:2.4;
-                stroke-linecap:round; stroke-linejoin:round; }
+  /* 面は地の色で塗り、重なりを隠す。輪郭だけを見せる。 */
+  .mascot .sh{ fill: var(--card); stroke: var(--ink); stroke-width:2.4;
+               stroke-linejoin:round; }
+  .mascot .ln{ fill:none; stroke: var(--ink); stroke-width:2.4;
+               stroke-linecap:round; stroke-linejoin:round; }
   .mascot .solid{ fill: var(--ink); stroke:none; }
+  .mascot .whisker{ fill:none; stroke: var(--ink-soft); stroke-width:1.7;
+                    stroke-linecap:round; }
   /* 付属物は色を持たせない。色は判定の点だけが担う。 */
   .mascot .fxline{ fill:none; stroke: var(--ink-soft); stroke-width:2.2;
                    stroke-linecap:round; stroke-linejoin:round; }
@@ -528,25 +533,38 @@
         <div class="status-main">
           <svg class="mascot" viewBox="0 0 64 64" aria-hidden="true">
             <g class="m-body">
-              <circle class="ink" cx="32" cy="34" r="19"/>
+              <!-- あごの下で合わせた手。体は描かず、頭を主役にする -->
+              <circle class="sh" cx="28.4" cy="47" r="4"/>
+              <circle class="sh" cx="35.6" cy="47" r="4"/>
+              <!-- 耳。小さく、頭の横に低めに付ける -->
+              <circle class="sh" cx="14" cy="21" r="4"/>
+              <circle class="sh" cx="50" cy="21" r="4"/>
+              <!-- 頭。縦より横に広い -->
+              <ellipse class="sh" cx="32" cy="25" rx="19" ry="16"/>
+              <!-- ひげ。鼻づらの外から左右に伸ばす -->
+              <path class="whisker" d="M18.5 29L9.5 27M19 32.5L10.5 34.5M45.5 29L54.5 27M45 32.5L53.5 34.5"/>
+              <!-- 鼻づら -->
+              <ellipse class="sh" cx="32" cy="31.5" rx="11.5" ry="7.4"/>
+              <!-- 鼻。ラッコらしく横に広い -->
+              <path class="solid" d="M27.6 26.8h8.8c1.5 0 2.2 1.1 1.6 2.3l-1.5 2.6c-.5.9-1.4 1.4-2.4 1.4h-4.2c-1 0-1.9-.5-2.4-1.4L26 29.1c-.6-1.2.1-2.3 1.6-2.3z"/>
               <g class="eyes e-dot">
-                <circle class="solid" cx="25" cy="30" r="2.5"/>
-                <circle class="solid" cx="39" cy="30" r="2.5"/>
+                <circle class="solid" cx="23.5" cy="20" r="2.6"/>
+                <circle class="solid" cx="40.5" cy="20" r="2.6"/>
               </g>
               <g class="eyes e-droop">
-                <path class="ink" d="M21.5 31.5q3.5 -4 7 0"/>
-                <path class="ink" d="M35.5 31.5q3.5 -4 7 0"/>
+                <path class="ln" d="M20.3 21.6q3.2 -3.8 6.4 0"/>
+                <path class="ln" d="M37.3 21.6q3.2 -3.8 6.4 0"/>
               </g>
-              <path class="mouth m-smile ink" d="M26 39q6 5.5 12 0"/>
-              <path class="mouth m-flat  ink" d="M26.5 41h11"/>
-              <path class="mouth m-frown ink" d="M26 43q6 -5.5 12 0"/>
+              <path class="mouth m-smile ln" d="M28.4 34.2q3.6 3.2 7.2 0"/>
+              <path class="mouth m-flat  ln" d="M28.8 35h6.4"/>
+              <path class="mouth m-frown ln" d="M28.4 36.6q3.6 -3.2 7.2 0"/>
             </g>
-            <g class="fx fx-drop"><path class="fxline" d="M50 22q3 4 3 6a3 3 0 0 1-6 0q0-2 3-6"/></g>
+            <g class="fx fx-drop"><path class="fxline" d="M56 14q3 4 3 6a3 3 0 0 1-6 0q0-2 3-6"/></g>
             <g class="fx fx-chill">
-              <path class="fxline" d="M8 28h5M8 34h5M51 28h5M51 34h5"/>
+              <path class="fxline" d="M2 18h5M2 25h5M57 18h5M57 25h5"/>
             </g>
-            <g class="fx fx-up"><path class="fxline" d="M32 10v7M28.5 13.5L32 10l3.5 3.5"/></g>
-            <g class="fx fx-down"><path class="fxline" d="M32 50v7M28.5 53.5L32 57l3.5-3.5"/></g>
+            <g class="fx fx-up"><path class="fxline" d="M32 12V3M28.5 6.5L32 3l3.5 3.5"/></g>
+            <g class="fx fx-down"><path class="fxline" d="M56 44v8M52.5 48.5L56 52l3.5-3.5"/></g>
           </svg>
           <div>
             <div class="status-word" id="statusWord">読み込み中</div>
@@ -622,7 +640,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v14";
+  var BUILD = "v15";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
