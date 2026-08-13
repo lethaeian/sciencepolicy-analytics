@@ -170,7 +170,7 @@
   /* 5段のゲージ。左が穏やか、右へ行くほど気圧の影響が大きい。
      色はこの目盛りだけが持ち、他はモノクロのまま。 */
   .gauge{
-    width: 84px;
+    width: 104px;
     height: auto;
     flex: none;
     overflow: visible;
@@ -225,22 +225,24 @@
     .g-needle{ transition: none; }
   }
 
-  /* ゲージ・注記・最高最低で幅を分け合い、間が空かないようにする */
+  /* ゲージ・注記・最高最低を縦に積み、同じ中心線にそろえる。
+     上の気圧の数字も中央にあるので、カード全体で軸が一本になる。 */
   .status-left{
     display:flex;
+    flex-direction: column;
     align-items:center;
-    gap: 12px;
+    gap: 6px;
     min-width: 0;
-    flex: 1;
   }
-  .status-text{ flex: 1; min-width: 0; }
+  /* 上の気圧の数字が中央にあるので、注記も最高最低もその中心にそろえる */
+  .status-text{ min-width: 0; text-align: center; }
 
   /* ---------- status ---------- */
-  /* 判定とmax/minを同じベースラインに載せ、1行として釣り合わせる */
+  /* ゲージと数字をひとかたまりとして、カードの中央に置く */
   .status-row{
     display:flex;
     align-items: center;
-    justify-content:space-between;
+    justify-content: center;
     gap: 6px 12px;
     flex-wrap: wrap;
   }
@@ -250,6 +252,7 @@
      ラベルと数値の横並びは保つ。 */
   .minmax{
     display:flex;
+    justify-content: center;
     align-items: baseline;
     gap: 14px;
     margin-top: 3px;
@@ -584,7 +587,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v22";
+  var BUILD = "v23";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
