@@ -33,11 +33,9 @@
     --warning:   #c07f07;
     --serious:   #d9663a;
     --critical:  #c62f2f;
-    --lv0: #0b8f4a;   /* 穏やか */
-    --lv1: #7d9c14;
-    --lv2: #c9a10a;
-    --lv3: #d9663a;
-    --lv4: #c62f2f;   /* 強い */
+    /* ゲージ10段：穏やか→強い */
+    --g0:#0b8f4a; --g1:#3e9532; --g2:#709b1a; --g3:#969e11; --g4:#b8a00c;
+    --g5:#cd9415; --g6:#d47a2a; --g7:#d76039; --g8:#ce4734; --g9:#c62f2f;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -58,11 +56,8 @@
       --warning:   #e0aa32;
       --serious:   #ef8f63;
       --critical:  #f2706e;
-      --lv0: #45c07a;
-      --lv1: #9dc247;
-      --lv2: #e0b93a;
-      --lv3: #ef8f63;
-      --lv4: #f2706e;
+      --g0:#45c07a; --g1:#6cc163; --g2:#93c24d; --g3:#b3bf43; --g4:#d1bb3d;
+      --g5:#e3b043; --g6:#ea9d55; --g7:#ef8c64; --g8:#f17e69; --g9:#f2706e;
     }
   }
 
@@ -175,7 +170,7 @@
   /* 5段のゲージ。左が穏やか、右へ行くほど気圧の影響が大きい。
      色はこの目盛りだけが持ち、他はモノクロのまま。 */
   .gauge{
-    width: 58px;
+    width: 66px;
     height: auto;
     flex: none;
     overflow: visible;
@@ -184,16 +179,26 @@
     opacity: .22;
     transition: opacity .5s ease;
   }
-  .g0{ fill: var(--lv0); }
-  .g1{ fill: var(--lv1); }
-  .g2{ fill: var(--lv2); }
-  .g3{ fill: var(--lv3); }
-  .g4{ fill: var(--lv4); }
+  .g0{ fill: var(--g0); }
+  .g1{ fill: var(--g1); }
+  .g2{ fill: var(--g2); }
+  .g3{ fill: var(--g3); }
+  .g4{ fill: var(--g4); }
+  .g5{ fill: var(--g5); }
+  .g6{ fill: var(--g6); }
+  .g7{ fill: var(--g7); }
+  .g8{ fill: var(--g8); }
+  .g9{ fill: var(--g9); }
   [data-risk="0"] .g0,
   [data-risk="1"] .g1,
   [data-risk="2"] .g2,
   [data-risk="3"] .g3,
-  [data-risk="4"] .g4{ opacity: 1; }
+  [data-risk="4"] .g4,
+  [data-risk="5"] .g5,
+  [data-risk="6"] .g6,
+  [data-risk="7"] .g7,
+  [data-risk="8"] .g8,
+  [data-risk="9"] .g9{ opacity: 1; }
 
   .g-needle{
     transform-box: view-box;
@@ -205,11 +210,16 @@
   .g-needle path{ fill: var(--ink); }
   .g-pivot{ fill: var(--ink); }
 
-  [data-risk="0"]{ --deg:-72deg; }
-  [data-risk="1"]{ --deg:-36deg; }
-  [data-risk="2"]{ --deg:0deg;   }
-  [data-risk="3"]{ --deg:36deg;  }
-  [data-risk="4"]{ --deg:72deg;  }
+  [data-risk="0"]{ --deg:-81deg; }
+  [data-risk="1"]{ --deg:-63deg; }
+  [data-risk="2"]{ --deg:-45deg; }
+  [data-risk="3"]{ --deg:-27deg; }
+  [data-risk="4"]{ --deg:-9deg; }
+  [data-risk="5"]{ --deg:9deg; }
+  [data-risk="6"]{ --deg:27deg; }
+  [data-risk="7"]{ --deg:45deg; }
+  [data-risk="8"]{ --deg:63deg; }
+  [data-risk="9"]{ --deg:81deg; }
 
   @media (prefers-reduced-motion: reduce){
     .g-needle{ transition: none; }
@@ -487,11 +497,16 @@
       <div class="status-row">
         <div class="status-left">
           <svg class="gauge" viewBox="0 0 100 56" aria-hidden="true">
-            <path class="g-seg g0" d="M6.0 46.8A44.0 44.0 0 0 1 13.7 23.1L27.7 32.7A27.0 27.0 0 0 0 23.0 47.2Z"/>
-            <path class="g-seg g1" d="M15.1 21.2A44.0 44.0 0 0 1 35.2 6.5L40.9 22.6A27.0 27.0 0 0 0 28.6 31.5Z"/>
-            <path class="g-seg g2" d="M37.6 5.8A44.0 44.0 0 0 1 62.4 5.8L57.6 22.1A27.0 27.0 0 0 0 42.4 22.1Z"/>
-            <path class="g-seg g3" d="M64.8 6.5A44.0 44.0 0 0 1 84.9 21.2L71.4 31.5A27.0 27.0 0 0 0 59.1 22.6Z"/>
-            <path class="g-seg g4" d="M86.3 23.1A44.0 44.0 0 0 1 94.0 46.8L77.0 47.2A27.0 27.0 0 0 0 72.3 32.7Z"/>
+            <path class="g-seg g0" d="M6.0 47.3A44.0 44.0 0 0 1 7.9 35.1L23.2 39.8A28.0 28.0 0 0 0 22.0 47.6Z"/>
+            <path class="g-seg g1" d="M8.4 33.7A44.0 44.0 0 0 1 14.0 22.7L27.1 31.9A28.0 28.0 0 0 0 23.5 38.9Z"/>
+            <path class="g-seg g2" d="M14.8 21.6A44.0 44.0 0 0 1 23.6 12.8L33.2 25.6A28.0 28.0 0 0 0 27.6 31.2Z"/>
+            <path class="g-seg g3" d="M24.7 12.0A44.0 44.0 0 0 1 35.7 6.4L40.9 21.5A28.0 28.0 0 0 0 33.9 25.1Z"/>
+            <path class="g-seg g4" d="M37.1 5.9A44.0 44.0 0 0 1 49.3 4.0L49.6 20.0A28.0 28.0 0 0 0 41.8 21.2Z"/>
+            <path class="g-seg g5" d="M50.7 4.0A44.0 44.0 0 0 1 62.9 5.9L58.2 21.2A28.0 28.0 0 0 0 50.4 20.0Z"/>
+            <path class="g-seg g6" d="M64.3 6.4A44.0 44.0 0 0 1 75.3 12.0L66.1 25.1A28.0 28.0 0 0 0 59.1 21.5Z"/>
+            <path class="g-seg g7" d="M76.4 12.8A44.0 44.0 0 0 1 85.2 21.6L72.4 31.2A28.0 28.0 0 0 0 66.8 25.6Z"/>
+            <path class="g-seg g8" d="M86.0 22.7A44.0 44.0 0 0 1 91.6 33.7L76.5 38.9A28.0 28.0 0 0 0 72.9 31.9Z"/>
+            <path class="g-seg g9" d="M92.1 35.1A44.0 44.0 0 0 1 94.0 47.3L78.0 47.6A28.0 28.0 0 0 0 76.8 39.8Z"/>
             <g class="g-needle"><path d="M47.6 48L50 12l2.4 36z"/></g>
             <circle class="g-pivot" cx="50" cy="48" r="6"/>
           </svg>
@@ -569,7 +584,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v19";
+  var BUILD = "v20";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -768,15 +783,39 @@
     return { hi:hi, lo:lo };
   }
 
-  // ゲージの目盛り。0が穏やか、4が最も影響が大きい。
-  // 深刻さを土台に、体にこたえる天候が重なっていれば一段上げる。
-  function riskOf(level, notes){
-    var v = { good:0, warning:1, serious:2, critical:4 }[level];
-    var k = notes.map(function(n){ return n.k; });
-    var heavy = ["muggy","hot","cold","dry","tempFall","coolDown"];
-    var hit = k.some(function(x){ return heavy.indexOf(x) >= 0; });
-    if(hit) v += 1;
-    return Math.max(0, Math.min(4, v));
+  // ゲージの目盛り 0〜9。気圧の下がり方を主軸に、湿度と気温を上乗せする。
+  //   気圧 … 0.5hPa/3時間 ごとに1点。6時間と予報も同じ重みに揃えて最大を採る
+  //   湿度 … 60%を超えたぶんを10で割る。蒸し暑さは別に上乗せ（最大3点）
+  //   気温 … 3時間の下がり幅と、極端な暑さ寒さ（最大2点）
+  // 数時間で数hPa下がる程度でも中盤まで振れるよう、意図的に敏感にしている。
+  function riskOf(d){
+    var p = d.pressure, i = d.nowIndex;
+    var d3 = back(p,i,3), d6 = back(p,i,6), f6 = ahead(p,i,6);
+    function fall(x){ return (x == null) ? 0 : Math.max(0, -x); }
+
+    var sp = Math.max(
+      fall(d3) / 0.5,     // -2hPa/3時間 で 4点
+      fall(d6) / 0.9,
+      fall(f6) / 1.1
+    );
+
+    var hum = d.humidity[i], tp = d.temp[i];
+    var sh = 0;
+    if(hum != null){
+      if(hum > 60) sh += (hum - 60) / 10;        // 80%で2点、90%で3点
+      if(hum <= 30) sh += (30 - hum) / 12;       // 乾燥も負荷とみなす
+      if(hum >= 70 && tp != null && tp >= 24) sh += 1;   // 蒸し暑さ
+    }
+    sh = Math.min(3, sh);
+
+    var st = 0;
+    var dT3 = back(d.temp, i, 3), fT6 = ahead(d.temp, i, 6);
+    st += fall(dT3) / 3;
+    st += fall(fT6) / 5;
+    if(tp != null && (tp <= 5 || tp >= 31)) st += 1;
+    st = Math.min(2, st);
+
+    return Math.max(0, Math.min(9, Math.round(sp + sh + st)));
   }
 
   function computeAlarm(d){
@@ -791,6 +830,7 @@
     var word = futureLeads ? futurePhrase(f6) : pastPhrase(d3);
 
     var notes = weatherNotes(d);
+    var lines = [];
     var note = "";
     if(level!=="good"){
       // 「低下」で向きは伝わるので数値の符号は外す
@@ -799,14 +839,16 @@
       if(d6!=null&&ORDER[lv[1]]>0) c.push({v:d6,t:"6時間 "+d6.toFixed(1)+"hPa"});
       if(f6!=null&&ORDER[lv[2]]>0) c.push({v:f6,t:"この先6時間 "+f6.toFixed(1)+"hPa"});
       c.sort(function(a,b){ return a.v-b.v; });
-      if(c.length) note=c[0].t;
-      if(notes.length) note += " · " + notes[0].t;
+      if(c.length) lines.push(c[0].t);
+      if(notes.length) lines.push(notes[0].t);
     }else{
       // 穏やかなときこそ、気圧以外の変化を伝える
-      note = notes.length ? notes[0].t : "";
+      if(notes.length) lines.push(notes[0].t);
+      if(notes.length > 1) lines.push(notes[1].t);
     }
-    return { level:level, word:word, note:note, notes:notes,
-             risk: riskOf(level, notes),
+    note = lines.join(" · ");
+    return { level:level, word:word, note:note, lines:lines, notes:notes,
+             risk: riskOf(d),
              d3:d3, d6:d6, f6:f6, hum:d.humidity[i], temp:d.temp[i] };
   }
 
@@ -1177,9 +1219,14 @@
     els.status.setAttribute("data-level", a.level);
     els.status.setAttribute("data-risk", a.risk);
     els.statusWord.textContent = a.word;
-    els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
-      ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
-      : a.note;
+    var stale = Date.now()-state.fetchedAt > STALE_MS;
+    var rows = stale ? [describeAge(state.fetchedAt)+"のデータです。更新してください。"] : a.lines;
+    els.statusNote.innerHTML = "";
+    rows.forEach(function(t){
+      var el = document.createElement("div");
+      el.textContent = t;
+      els.statusNote.appendChild(el);
+    });
     renderCare(a);
   }
 
