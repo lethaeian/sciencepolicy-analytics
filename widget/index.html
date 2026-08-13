@@ -267,15 +267,8 @@
   .status[data-level="warning"]  { --tone: var(--warning); }
   .status[data-level="serious"]  { --tone: var(--serious); }
   .status[data-level="critical"] { --tone: var(--critical); }
-  .status-word{
-    font-size: 16px;
-    font-weight: 500;
-    letter-spacing: .02em;
-    white-space: nowrap;
-  }
   .status-note{
-    margin-top: 4px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-soft);
     line-height: 1.5;
   }
@@ -503,7 +496,7 @@
             <circle class="g-pivot" cx="50" cy="48" r="6"/>
           </svg>
           <div class="status-text">
-            <div class="status-word" id="statusWord">読み込み中</div>
+            <div class="sr-only" id="statusWord">読み込み中</div>
             <div class="status-note" id="statusNote"></div>
           </div>
         </div>
@@ -576,7 +569,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v18";
+  var BUILD = "v19";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
