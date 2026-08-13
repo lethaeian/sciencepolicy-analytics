@@ -250,11 +250,9 @@
      ラベルと数値の横並びは保つ。 */
   .minmax{
     display:flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-    flex: none;
-    margin-left: auto;
+    align-items: baseline;
+    gap: 14px;
+    margin-top: 3px;
     font-variant-numeric: tabular-nums;
   }
   .minmax > span{
@@ -515,11 +513,11 @@
           <div class="status-text">
             <div class="sr-only" id="statusWord">読み込み中</div>
             <div class="status-note" id="statusNote"></div>
+            <div class="minmax">
+              <span><span class="k">max</span><span class="t"><span id="tMax">--</span><span class="u">°</span></span></span>
+              <span><span class="k">min</span><span class="t"><span id="tMin">--</span><span class="u">°</span></span></span>
+            </div>
           </div>
-        </div>
-        <div class="minmax">
-          <span><span class="k">max</span><span class="t"><span id="tMax">--</span><span class="u">°</span></span></span>
-          <span><span class="k">min</span><span class="t"><span id="tMin">--</span><span class="u">°</span></span></span>
         </div>
       </div>
     </div>
@@ -586,7 +584,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v21";
+  var BUILD = "v22";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -1220,14 +1218,9 @@
     els.status.setAttribute("data-level", a.level);
     els.status.setAttribute("data-risk", a.risk);
     els.statusWord.textContent = a.word;
-    var stale = Date.now()-state.fetchedAt > STALE_MS;
-    var rows = stale ? [describeAge(state.fetchedAt)+"のデータです。更新してください。"] : a.lines;
-    els.statusNote.innerHTML = "";
-    rows.forEach(function(t){
-      var el = document.createElement("div");
-      el.textContent = t;
-      els.statusNote.appendChild(el);
-    });
+    els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
+      ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
+      : a.lines.join(" · ");
     renderCare(a);
   }
 
