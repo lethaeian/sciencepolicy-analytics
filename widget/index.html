@@ -170,7 +170,7 @@
   /* 5段のゲージ。左が穏やか、右へ行くほど気圧の影響が大きい。
      色はこの目盛りだけが持ち、他はモノクロのまま。 */
   .gauge{
-    width: 66px;
+    width: 84px;
     height: auto;
     flex: none;
     overflow: visible;
@@ -225,12 +225,15 @@
     .g-needle{ transition: none; }
   }
 
+  /* ゲージ・注記・最高最低で幅を分け合い、間が空かないようにする */
   .status-left{
     display:flex;
     align-items:center;
     gap: 12px;
     min-width: 0;
+    flex: 1;
   }
+  .status-text{ flex: 1; min-width: 0; }
 
   /* ---------- status ---------- */
   /* 判定とmax/minを同じベースラインに載せ、1行として釣り合わせる */
@@ -241,7 +244,6 @@
     gap: 6px 12px;
     flex-wrap: wrap;
   }
-  .status-text{ min-width: 0; }
   /* 注記は行の外に置く。行の幅が注記の長さで決まると max/min が
      押し出されてしまうため。 */
   /* 縦2段。カワウソのぶん幅が要るので、横1列だと判定文を押し出す。
@@ -584,7 +586,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v20";
+  var BUILD = "v21";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -784,36 +786,35 @@
   }
 
   // ゲージの目盛り 0〜9。気圧の下がり方を主軸に、湿度と気温を上乗せする。
-  //   気圧 … 0.5hPa/3時間 ごとに1点。6時間と予報も同じ重みに揃えて最大を採る
-  //   湿度 … 60%を超えたぶんを10で割る。蒸し暑さは別に上乗せ（最大3点）
-  //   気温 … 3時間の下がり幅と、極端な暑さ寒さ（最大2点）
-  // 数時間で数hPa下がる程度でも中盤まで振れるよう、意図的に敏感にしている。
+  //   気圧 … 0.7hPa/3時間 ごとに1点。6時間と予報も同じ重みに揃えて最大を採る
+  //   湿度 … 65%を超えたぶんを12で割る。蒸し暑さは別に上乗せ（最大2.5点）
+  //   気温 … 下がり幅と、極端な暑さ寒さ（最大1.5点）
   function riskOf(d){
     var p = d.pressure, i = d.nowIndex;
     var d3 = back(p,i,3), d6 = back(p,i,6), f6 = ahead(p,i,6);
     function fall(x){ return (x == null) ? 0 : Math.max(0, -x); }
 
     var sp = Math.max(
-      fall(d3) / 0.5,     // -2hPa/3時間 で 4点
-      fall(d6) / 0.9,
-      fall(f6) / 1.1
+      fall(d3) / 0.7,     // -2hPa/3時間 で 3点
+      fall(d6) / 1.25,
+      fall(f6) / 1.5
     );
 
     var hum = d.humidity[i], tp = d.temp[i];
     var sh = 0;
     if(hum != null){
-      if(hum > 60) sh += (hum - 60) / 10;        // 80%で2点、90%で3点
-      if(hum <= 30) sh += (30 - hum) / 12;       // 乾燥も負荷とみなす
-      if(hum >= 70 && tp != null && tp >= 24) sh += 1;   // 蒸し暑さ
+      if(hum > 65) sh += (hum - 65) / 12;        // 85%で約1.7点、95%で2.5点
+      if(hum <= 30) sh += (30 - hum) / 14;       // 乾燥も負荷とみなす
+      if(hum >= 72 && tp != null && tp >= 25) sh += 0.8;  // 蒸し暑さ
     }
-    sh = Math.min(3, sh);
+    sh = Math.min(2.5, sh);
 
     var st = 0;
     var dT3 = back(d.temp, i, 3), fT6 = ahead(d.temp, i, 6);
-    st += fall(dT3) / 3;
-    st += fall(fT6) / 5;
-    if(tp != null && (tp <= 5 || tp >= 31)) st += 1;
-    st = Math.min(2, st);
+    st += fall(dT3) / 4;
+    st += fall(fT6) / 6;
+    if(tp != null && (tp <= 5 || tp >= 31)) st += 0.8;
+    st = Math.min(1.5, st);
 
     return Math.max(0, Math.min(9, Math.round(sp + sh + st)));
   }
