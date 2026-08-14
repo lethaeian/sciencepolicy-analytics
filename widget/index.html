@@ -445,7 +445,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v35";
+  var BUILD = "v36";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -824,11 +824,14 @@
     // 下降（負）を下へ振る
     function dev(r){ return -(r/lim)*amp; }
 
-    // 下敷きは時間の罫。3時間ごとに縦線を引く。
-    var h3;
-    for(h3 = w.s + ((3 - (w.s % 3)) % 3); h3 <= w.e; h3 += 3){
-      svg.appendChild(mk("line",{ x1:X(h3), x2:X(h3), y1:0, y2:H,
-        stroke:"var(--rule)", "stroke-width":0.7, opacity:.6 }));
+    // 下敷きは時間の罫。1時間ごとに引き、3時間ごと（上の列と同じ刻み）
+    // を少し濃くする。
+    var hr;
+    for(hr = w.s; hr <= w.e; hr++){
+      var strong = ((hr - now) % 3) === 0;
+      svg.appendChild(mk("line",{ x1:X(hr), x2:X(hr), y1:0, y2:H,
+        stroke:"var(--ink)", "stroke-width": strong ? 0.8 : 0.6,
+        opacity: strong ? .20 : .10 }));
     }
 
     // 要注意の時間帯。判定は全期間で行い、映す範囲に切り詰める。
