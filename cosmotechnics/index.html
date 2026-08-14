@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="宇宙技芸">
 <meta name="description" content="どんな書き込みも、宇宙技芸（コスモテクニクス）の八つの視角で読み替え、多角的に打ち返すウィジェット。">
-<title>宇宙技芸 打ち返し器</title>
+<title>宇宙技芸 八稜鏡</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -359,7 +359,7 @@
 
   <header class="masthead">
     <p class="en">Cosmotechnics · Technodiversity</p>
-    <h1>宇宙技芸 打ち返し器</h1>
+    <h1>宇宙技芸 八稜鏡</h1>
     <p>どんな書き込みも、器と道・用象・庖丁・再帰と偶然……<br>八つの視角で読み替えて、こちらから打ち返す。</p>
   </header>
 
@@ -476,7 +476,8 @@
 
   <footer>
     ユク・ホイの宇宙技芸／技術多様性、ハイデガー、シモンドン、スティグレールの語彙を、<br>
-    端末内の規則で機械的に当てはめる装置。出力は解釈の種であって、答えではない。
+    端末内の規則で機械的に当てはめる装置。出力は解釈の種であって、答えではない。<br>
+    八稜鏡（はちりょうきょう）は八角の唐鏡。八つの面から映し返す器。
     <p class="ver">
       <span id="ver">版 —</span>
       <button id="check" class="linky">更新を確認</button>
@@ -495,7 +496,7 @@
    ══════════════════════════════════════════════════ */
 
 /* この版の名前。version.json と sw.js の VERSION と揃えること。 */
-var VERSION = "2026.08.14-2";
+var VERSION = "2026.08.14-3";
 
 function $(id){ return document.getElementById(id); }
 
@@ -1291,7 +1292,7 @@ function render(res){
 
 function asText(src, res){
   var out = [];
-  out.push("── 宇宙技芸 打ち返し器 ──");
+  out.push("── 宇宙技芸 八稜鏡 ──");
   out.push(res.by === "claude" ? "読み手：" + LLM.model : "読み手：端末内エンジン");
   out.push("");
   out.push("【原文】" + src.replace(/\s+/g, " ").slice(0, 120));

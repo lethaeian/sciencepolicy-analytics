@@ -1,4 +1,4 @@
-/* 宇宙技芸 打ち返し器 — Service Worker
+/* 宇宙技芸 八稜鏡 — Service Worker
  *
  * スコープは /cosmotechnics/ 配下のみ。サイト本体（政策分析ページ）にも
  * /widget/ の気圧ウィジェットにも一切干渉しない。
@@ -8,7 +8,7 @@
  */
 
 /* index.html の VERSION と version.json に揃えること。 */
-var VERSION = "2026.08.14-2";
+var VERSION = "2026.08.14-3";
 var CACHE = "cosmotechnics-shell-" + VERSION;
 
 var SHELL = [
