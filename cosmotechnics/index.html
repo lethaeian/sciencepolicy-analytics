@@ -177,6 +177,19 @@
     background:var(--bg); color:var(--ink);
     border:1px solid var(--rule); border-radius:9px;
   }
+  .keyrow{ display:flex; gap:8px; }
+  .keyrow input{ flex:1 1 auto; min-width:0; }
+  .keyrow button{ flex:0 0 auto; padding:9px 12px; font-size:12.5px; }
+  .keystate{
+    margin:6px 0 0; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.06em; color:var(--ink-faint);
+  }
+  .keystate.ok{ color:var(--gold); }
+  .settings code{
+    font-family:var(--mono); font-size:10.5px;
+    background:var(--tile); padding:1px 4px; border-radius:4px;
+    word-break:break-all;
+  }
   .warn{
     margin:12px 0 0; padding:10px 11px; border-radius:9px;
     background:var(--tile); border-left:2px solid var(--cinnabar);
@@ -376,7 +389,11 @@
 
       <div id="llmFields" class="hidden">
         <label class="fld" for="apikey">APIキー</label>
-        <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+        <div class="keyrow">
+          <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+          <button id="pasteKey">貼り付け</button>
+        </div>
+        <p class="keystate" id="keystate">まだ入っていない</p>
 
         <label class="fld" for="model">モデル</label>
         <select id="model">
@@ -386,9 +403,15 @@
         </select>
 
         <div class="row">
-          <button id="saveKey">この端末に保存</button>
           <button id="forgetKey" class="ghost">鍵を消す</button>
         </div>
+
+        <p class="hint">
+          打ち込むのが面倒なら、パソコンで
+          <code>…/cosmotechnics/#key=sk-ant-…</code>
+          という形のリンクを作って自分宛てに送り、この端末で一度開く。
+          鍵を取り込んだ時点でリンクの残りは消える（送った側の履歴は自分で消すこと）。
+        </p>
 
         <p class="warn">
           <b>鍵はこの端末の localStorage に平文で置かれる。</b>
@@ -472,7 +495,7 @@
    ══════════════════════════════════════════════════ */
 
 /* この版の名前。version.json と sw.js の VERSION と揃えること。 */
-var VERSION = "2026.08.14-1";
+var VERSION = "2026.08.14-2";
 
 function $(id){ return document.getElementById(id); }
 
@@ -1649,12 +1672,40 @@ function syncLLMUI(){
   var radios = document.getElementsByName("engine");
   for(var i=0;i<radios.length;i++) radios[i].checked = (radios[i].value === (LLM.on ? "claude" : "local"));
   $("llmFields").classList.toggle("hidden", !LLM.on);
-  $("apikey").value = LLM.key;
+  if($("apikey").value !== LLM.key) $("apikey").value = LLM.key;
   $("model").value = LLM.model;
   $("mode").textContent = llmReady() ? LLM.model : "local engine";
   $("privacy").textContent = llmReady()
     ? "枠は端末内で測り、本文は Claude が書く。文章は Anthropic に送られる。"
     : "端末の中だけで動く。文章はどこにも送らない。";
+
+  /* 入れ直す手間を省くため、打った時点でこの端末に残す。
+     入っているかどうかは末尾4字だけ見せて確かめられるようにする。 */
+  var st = $("keystate");
+  if(LLM.key.length > 10){
+    st.className = "keystate ok";
+    st.textContent = "この端末に保存済み ····" + LLM.key.slice(-4);
+  }else if(LLM.key){
+    st.className = "keystate";
+    st.textContent = "短すぎる。鍵が切れていないか。";
+  }else{
+    st.className = "keystate";
+    st.textContent = "まだ入っていない";
+  }
+}
+
+/* リンクから取り込む。#key= はサーバへ送られないが、
+   リンク自体は秘密なので、取り込んだ時点でURLから消す。 */
+function importKeyFromLink(){
+  var m = /[#&?]key=([^&]+)/.exec(location.hash) || /[?&]key=([^&]+)/.exec(location.search);
+  if(!m) return false;
+  var k = "";
+  try{ k = decodeURIComponent(m[1]).trim(); }catch(e){ k = m[1].trim(); }
+  if(k.length < 10) return false;
+  LLM.key = k; LLM.on = true; saveLLM();
+  if(history.replaceState) history.replaceState(null, "", location.pathname);
+  else location.hash = "";
+  return true;
 }
 
 Array.prototype.forEach.call(document.getElementsByName("engine"), function(r){
@@ -1664,12 +1715,24 @@ Array.prototype.forEach.call(document.getElementsByName("engine"), function(r){
     if(LLM.on && !LLM.key) $("apikey").focus();
   });
 });
-$("apikey").addEventListener("input", function(){ LLM.key = $("apikey").value.trim(); syncLLMUI(); });
-$("model").addEventListener("change", function(){ LLM.model = $("model").value; saveLLM(); syncLLMUI(); });
-$("saveKey").addEventListener("click", function(){
+$("apikey").addEventListener("input", function(){
   LLM.key = $("apikey").value.trim();
-  saveLLM(); syncLLMUI();
-  toast(LLM.key ? "この端末に保存した" : "鍵が空のまま");
+  saveLLM();                       /* 打った時点で残す。保存ボタンは要らない。 */
+  syncLLMUI();
+});
+$("model").addEventListener("change", function(){ LLM.model = $("model").value; saveLLM(); syncLLMUI(); });
+$("pasteKey").addEventListener("click", function(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){
+      t = (t || "").trim();
+      if(!t){ toast("クリップボードが空"); return; }
+      LLM.key = t; saveLLM(); syncLLMUI();
+      toast("貼り付けて保存した");
+    }, function(){ toast("貼り付けを許可してほしい"); });
+  }else{
+    toast("入力欄を長押しして貼り付けてほしい");
+    $("apikey").focus();
+  }
 });
 $("forgetKey").addEventListener("click", function(){
   LLM.key = ""; LLM.on = false;
@@ -1776,7 +1839,12 @@ $("check").addEventListener("click", function(){
 });
 
 loadLLM();
+var imported = importKeyFromLink();
 syncLLMUI();
+if(imported){
+  $("settings").open = true;
+  setTimeout(function(){ toast("リンクから鍵を取り込んだ。送ったリンクは消しておくこと。"); }, 400);
+}
 updateCount();
 renderHistory();
 showVersion();
