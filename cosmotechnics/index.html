@@ -309,6 +309,17 @@
     font-size:11px; color:var(--ink-faint); line-height:1.9;
   }
   footer a{ color:inherit; }
+  .ver{
+    margin:12px 0 0; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.08em; color:var(--ink-faint);
+    display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;
+  }
+  .ver.fresh #ver{ color:var(--gold); }
+  .linky{
+    background:none; border:none; padding:0; min-height:0;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    color:var(--ink-soft); text-decoration:underline; text-underline-offset:3px;
+  }
 
   .hidden{ display:none !important; }
   .sr-only{
@@ -443,6 +454,10 @@
   <footer>
     ユク・ホイの宇宙技芸／技術多様性、ハイデガー、シモンドン、スティグレールの語彙を、<br>
     端末内の規則で機械的に当てはめる装置。出力は解釈の種であって、答えではない。
+    <p class="ver">
+      <span id="ver">版 —</span>
+      <button id="check" class="linky">更新を確認</button>
+    </p>
   </footer>
 </div>
 
@@ -455,6 +470,9 @@
 /* ══════════════════════════════════════════════════
    0. 小道具
    ══════════════════════════════════════════════════ */
+
+/* この版の名前。version.json と sw.js の VERSION と揃えること。 */
+var VERSION = "2026.08.14-1";
 
 function $(id){ return document.getElementById(id); }
 
@@ -1721,10 +1739,48 @@ Array.prototype.forEach.call($("samples").querySelectorAll("button"), function(b
   }
 })();
 
+/* ── 版と更新の確認 ───────────────────────
+   配信側の version.json と、この版に焼き込んだ VERSION を突き合わせる。
+   ナビゲーションは network-first なので、開き直せば新しい版に入れ替わる。 */
+var updateReady = false;
+
+function showVersion(note){
+  $("ver").textContent = "版 " + VERSION + (note ? " · " + note : "");
+}
+
+function checkUpdate(manual){
+  if(manual) showVersion("確認中");
+  return fetch("version.json?t=" + Date.now(), { cache:"no-store" })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(v){
+      if(v.version && v.version !== VERSION){
+        updateReady = true;
+        document.querySelector(".ver").classList.add("fresh");
+        $("ver").textContent = "版 " + VERSION + " → 新しい版 " + v.version;
+        $("check").textContent = "開き直して入れ替える";
+        if(manual) toast("新しい版がある。開き直すと入れ替わる。");
+      }else{
+        showVersion("最新");
+        if(manual) toast("これが最新の版");
+      }
+    })
+    .catch(function(){
+      showVersion("確認できない");
+      if(manual) toast("更新を確認できない。オフラインかもしれない。");
+    });
+}
+
+$("check").addEventListener("click", function(){
+  if(updateReady) location.reload();
+  else checkUpdate(true);
+});
+
 loadLLM();
 syncLLMUI();
 updateCount();
 renderHistory();
+showVersion();
+setTimeout(function(){ checkUpdate(false); }, 900);
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){
