@@ -111,8 +111,7 @@
   .minmax  { order: 3; }
   .strip   { order: 4; }
   .plot    { order: 5; }
-  .row-temp{ order: 6; }
-  .row-hum { order: 7; }
+  .metrics { order: 6; }
   .foot-row{ order: 8; }
   .msg     { order: 9; }
   details.note{ order: 10; }
@@ -199,22 +198,31 @@
 
   /* ---------- 気温・湿度 ---------- */
   /* 単位そのものが見出しになるので、言葉は置かない。 */
-  .row{
+  /* 気圧のグラフの下に、湿度と気温を左右に並べる。
+     それぞれ 数字が左、推移が右。 */
+  .metrics{
     flex:none;
     display:flex;
-    align-items:center;
     gap: 14px;
-    padding: 8px 0;
+    margin-top: 8px;
     border-top: 1px solid var(--rule);
   }
-  .row-temp{ margin-top: 8px; }
+  .metric{
+    flex: 1 1 0;
+    min-width: 0;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 9px 0;
+  }
+  .metric + .metric{ border-left: 1px solid var(--rule); padding-left: 14px; }
   .row-value{
     font-size: 21px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-    width: 3.6em;
     flex: none;
     letter-spacing: -0.03em;
+    white-space: nowrap;
   }
   .row-value .u{ font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-left: 1px; }
   .row-spark{ flex: 1; min-width: 0; touch-action: pan-y; }
@@ -390,8 +398,10 @@
     .side{
       display: flex;
       flex-direction: column;
-      flex: 0 1 40%;
-      min-width: 120px;
+      justify-content: center;
+      flex: 0 1 38%;
+      /* 円が縦にはみ出さない幅に抑える。最高最低のぶんを残す。 */
+      max-width: 78vh;
       min-width: 0;
     }
     .pane{
@@ -402,19 +412,29 @@
       min-width: 0;
     }
     .risk{
-      /* 残りの高さをすべて引き受ける */
-      flex: 1 1 auto;
-      min-height: 90px;
+      /* 円の大きさそのものが箱になる。最高最低がすぐ下に付く。 */
+      flex: 0 1 auto;
+      min-height: 0;
       max-height: none;
       margin: 0;
     }
+    .risk svg{ height: auto; }
     .minmax{ margin-top: 10px; }
-    .row-hum{ margin-top: 10px; }
-    .row-temp{ margin-top: 10px; }
+    .metrics{ margin-top: 8px; }
     .status{ margin-top: 0; }
     .strip{ margin-top: 8px; }
-    .foot-row{ padding-top: 12px; gap: 8px; }
     details.note{ margin-top: 8px; }
+    /* 更新と検索は右端に縦に積む。時刻はそのあいだ。 */
+    .foot-row{
+      flex: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      padding-top: 0;
+      margin-left: 4px;
+    }
+    .foot-row .t{ flex: none; }
   }
 
   /* 横向きでも幅の小さい端末。列が細くなるので文字を一段落とす。 */
@@ -424,9 +444,9 @@
     .plot{ margin-top: 5px; }
     .plot-foot{ margin-top: 4px; }
     .plot-note{ margin-top: 4px; min-height: 10px; }
-    .row-temp, .row-hum, .minmax{ margin-top: 6px; }
-    .row{ padding: 6px 0; }
-    .foot-row{ padding-top: 8px; }
+    .metrics, .minmax{ margin-top: 6px; }
+    .metric{ padding: 6px 0; }
+    .foot-row{ gap: 10px; }
     details.note{ margin-top: 5px; }
   }
 
@@ -457,12 +477,6 @@
     <span><span class="k">max</span><span id="tMax">--</span><span class="u">°</span></span>
     <span><span class="k">min</span><span id="tMin">--</span><span class="u">°</span></span>
   </div>
-
-  <div class="row row-hum">
-    <div class="row-value"><span id="humidityValue">--</span><span class="u">%</span></div>
-    <div class="row-spark"><svg id="chartHumidity" viewBox="0 0 160 24" preserveAspectRatio="none"
-      role="img" aria-label="湿度の推移"></svg></div>
-  </div>
  </div>
 
  <div class="pane">
@@ -487,22 +501,17 @@
     <div class="plot-note" id="plotNote"></div>
   </div>
 
-  <div class="row row-temp">
-    <div class="row-value"><span id="tempValue">--</span><span class="u">°C</span></div>
-    <div class="row-spark"><svg id="chartTemp" viewBox="0 0 160 24" preserveAspectRatio="none"
-      role="img" aria-label="気温の推移"></svg></div>
-  </div>
-
-  <div class="foot-row">
-    <button class="dot" id="refreshBtn" type="button" aria-label="更新"></button>
-    <span class="t" id="footTime"></span>
-    <button class="glyph" id="placeBtn" type="button" aria-label="地名を変える">
-      <span class="sr-only" id="placeName">…</span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/>
-      </svg>
-    </button>
+  <div class="metrics">
+    <div class="metric">
+      <div class="row-value"><span id="humidityValue">--</span><span class="u">%</span></div>
+      <div class="row-spark"><svg id="chartHumidity" viewBox="0 0 100 24" preserveAspectRatio="none"
+        role="img" aria-label="湿度の推移"></svg></div>
+    </div>
+    <div class="metric">
+      <div class="row-value"><span id="tempValue">--</span><span class="u">°C</span></div>
+      <div class="row-spark"><svg id="chartTemp" viewBox="0 0 100 24" preserveAspectRatio="none"
+        role="img" aria-label="気温の推移"></svg></div>
+    </div>
   </div>
 
   <div class="msg" id="msg"></div>
@@ -513,6 +522,18 @@
     <p>気象データ: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
     <p>表示中のバージョン: <span id="buildId">-</span></p>
   </details>
+ </div>
+
+ <div class="foot-row">
+   <button class="dot" id="refreshBtn" type="button" aria-label="更新"></button>
+   <span class="t" id="footTime"></span>
+   <button class="glyph" id="placeBtn" type="button" aria-label="地名を変える">
+     <span class="sr-only" id="placeName">…</span>
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+       <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/>
+     </svg>
+   </button>
  </div>
 
   <div class="search sheet hidden" id="search">
@@ -529,7 +550,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v39";
+  var BUILD = "v40";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -1009,7 +1030,7 @@
 
   function drawSpark(svg, vals, now, focus){
     clear(svg);
-    var W=160,H=24,pad=3.5;
+    var W=100,H=24,pad=3.5;
     var w=win(), span=w.e-w.s;
     var sc=scaleOf(vals.slice(w.s, w.e+1), 4); if(!sc || span<1) return;
     function X(i){ return ((i-w.s)/span)*W; }
