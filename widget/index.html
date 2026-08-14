@@ -101,14 +101,11 @@
   }
 
   /* ---------- 状態のひとこと ---------- */
-  .status{
-    flex: 1 1 auto;
-    min-height: 0;
-    display:flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    text-align:center;
-  }
+  .status{ flex:none; text-align:center; }
+
+  /* 円の下に積む側。横向きのときは右半分になる。 */
+  .pane{ flex:none; display:flex; flex-direction:column; min-width:0; }
+  .col{ display:flex; flex-direction:column; min-width:0; }
   .status-note{ margin-top: 9px; }
   .status-note{
     font-size: 13px;
@@ -364,16 +361,72 @@
     .msg{ margin-top: 6px; }
     details.note{ margin-top: 6px; }
   }
+
+  /* ---------- 横向き ---------- */
+  /* 円を左に、それ以外を右半分に。右半分は縦に積むと入りきらないので、
+     横向きで増えた幅を使って2列に分ける。 */
+  @media (orientation: landscape) and (max-height: 620px){
+    .app{
+      flex-direction: row;
+      align-items: stretch;
+      gap: 20px;
+      max-width: 1000px;
+      padding: calc(env(safe-area-inset-top) + 12px)
+               max(env(safe-area-inset-right), 18px)
+               calc(env(safe-area-inset-bottom) + 12px)
+               max(env(safe-area-inset-left), 18px);
+    }
+    .risk{
+      /* 高さいっぱいまで大きくする。右の列が詰まってきたら譲る。 */
+      flex: 0 1 40%;
+      min-width: 110px;
+      min-height: 0;
+      max-height: none;
+      margin: 0;
+    }
+    .pane{
+      flex: 1 1 0;
+      flex-direction: row;
+      align-items: center;
+      gap: 20px;
+      min-width: 0;
+    }
+    .col-a{ flex: 1.25 1 0; min-width: 130px; }
+    .col-b{ flex: 1 1 0; min-width: 148px; }
+    .foot-row{ gap: 8px; }
+    .status{ margin-top: 0; }
+    .strip{ margin-top: 10px; }
+    .rows{ margin-top: 0; border-top: none; }
+    .row:first-child{ border-top: 1px solid var(--rule); }
+    .foot-row{ padding-top: 14px; }
+    details.note{ margin-top: 10px; }
+  }
+
+  /* 横向きでも幅の小さい端末。列が細くなるので文字を一段落とす。 */
+  @media (orientation: landscape) and (max-height: 620px) and (max-width: 780px){
+    .risk{ flex: 0 1 32%; }
+    .status-note{ font-size: 12px; }
+    .minmax{ font-size: 14px; gap: 12px; }
+    .strip .h{ font-size: 9px; }
+    .strip{ column-gap: 4px; }
+    .strip .v{ font-size: 12px; letter-spacing: -0.04em; }
+    .strip .now .v{ font-size: 15px; }
+    .row-value{ font-size: 18px; width: 3.3em; }
+    .foot-row .t{ font-size: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
 
+  <div class="risk">
+    <svg id="riskCircle" viewBox="0 0 200 200" role="img"
+         aria-labelledby="statusWord"></svg>
+  </div>
+
+  <div class="pane">
+   <div class="col col-a">
   <div class="status" id="status" data-level="good">
-    <div class="risk">
-      <svg id="riskCircle" viewBox="0 0 200 200" role="img"
-           aria-labelledby="statusWord"></svg>
-    </div>
     <div class="sr-only" id="statusWord">読み込み中</div>
     <div class="sr-only" id="heroValue">--</div>
     <div class="status-note" id="statusNote"></div>
@@ -398,6 +451,9 @@
     <div class="plot-note" id="plotNote"></div>
   </div>
 
+   </div>
+
+   <div class="col col-b">
   <div class="rows">
     <div class="row">
       <div class="row-value"><span id="tempValue">--</span><span class="u">°C</span></div>
@@ -425,18 +481,21 @@
 
   <div class="msg" id="msg"></div>
 
-  <div class="search sheet hidden" id="search">
-    <input type="text" id="geoInput" placeholder="地名で検索" autocomplete="off"
-           autocorrect="off" spellcheck="false" enterkeyhint="search">
-    <ul id="geoResults"></ul>
-  </div>
-
   <details class="note">
     <summary>体調の目安について</summary>
     <p>気圧・気温・湿度の変化にもとづく一般的な目安です。医学的な診断ではありません。体調がすぐれないときは無理をせず、症状が続く場合は医療機関にご相談ください。</p>
     <p>気象データ: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
     <p>表示中のバージョン: <span id="buildId">-</span></p>
   </details>
+   </div>
+  </div>
+
+  <div class="search sheet hidden" id="search">
+    <input type="text" id="geoInput" placeholder="地名で検索" autocomplete="off"
+           autocorrect="off" spellcheck="false" enterkeyhint="search">
+    <ul id="geoResults"></ul>
+  </div>
+
 
 </div>
 
@@ -445,7 +504,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v37";
+  var BUILD = "v38";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
