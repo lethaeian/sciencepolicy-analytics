@@ -11,7 +11,7 @@
  *     「キャッシュ」と明示したうえで取得時刻とともに表示される。
  */
 
-var VERSION = "v41";
+var VERSION = "v42";
 var CACHE = "wxwidget-shell-" + VERSION;
 
 var SHELL = [
