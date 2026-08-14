@@ -435,7 +435,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v30";
+  var BUILD = "v31";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -791,8 +791,7 @@
   // 音の波形の振幅がエネルギーであるのと同じで、大きく振れているほど
   // 気圧が速く動いている。赤い横線が「変化なし」。
   // 下に振れていれば下降中、上なら上昇中。値のある側を長く、反対側を
-  // 0.45倍で取り、音の波形の非対称さに合わせる。
-  var PLOT_COLS = 104;
+  // 0.45倍で取り、音の波形の非対称さに合わせる。塗りつぶしの面で描く。
   var MIRROR = 0.45;
   var RATE_FLOOR = 1.0;   // 目盛りの下限 hPa/時。穏やかな日を煽らない
   function drawMain(svg, d, focus){
@@ -836,44 +835,29 @@
     svg.appendChild(mk("line",{ x1:0, x2:W, y1:yb, y2:yb,
       stroke:"var(--accent)", "stroke-width":1.3 }));
 
-    // 1時間ごとの変化量のあいだを補間し、細かい柱で上下に振る。
-    var bw = (W/PLOT_COLS)*0.46;
-    for(var c=0;c<PLOT_COLS;c++){
-      var t  = c/(PLOT_COLS-1);
-      var fi = w.s + t*span;
-      var i0 = Math.floor(fi), i1 = Math.min(w.e, i0+1);
-      if(rate[i0]==null || rate[i1]==null) continue;
-      var r  = rate[i0] + (rate[i1]-rate[i0])*(fi-i0);
-      var dv = dev(r);
-      var yA = yb + dv;                   // 変化のある側
-      var yB = yb - dv*MIRROR;            // 反対側の控えめな鏡
-      svg.appendChild(mk("rect",{
-        x: (t*W)-bw/2, y: Math.min(yA,yB), width: bw,
-        height: Math.max(Math.abs(yA-yB), 1.6),
-        fill: "var(--ink)",
-        // これから先はうすく。参考画像の灰色の波形にあたる。
-        opacity: (fi > now) ? .34 : 1
-      }));
+    // 波形は面で塗る。参考画像と同じく、これまでを濃く、この先をうすく。
+    function areaOf(A, B){
+      if(A.length < 2) return null;
+      var d = pathOf(A), k;
+      for(k = B.length - 1; k >= 0; k--){
+        d += "L" + B[k][0].toFixed(1) + "," + B[k][1].toFixed(1);
+      }
+      return d + "Z";
     }
-
-    // 波形の輪郭。角を尖らせて、ジグザグをそのまま出す。
     var pastA=[], pastB=[], futA=[], futB=[];
     for(i=w.s;i<=w.e;i++){
       if(rate[i]==null) continue;
       var x=X(i), q=dev(rate[i]);
-      if(i<=now){ pastA.push([x, yb+q]); pastB.push([x, yb-q*MIRROR]); }
-      if(i>=now){ futA.push([x, yb+q]);  futB.push([x, yb-q*MIRROR]); }
+      var yA=yb+q, yB=yb-q*MIRROR;
+      // 動きのない時間帯でも一本の帯として見えるだけの厚みは残す
+      if(Math.abs(yA-yB) < 1.8){ yA = yb+0.9; yB = yb-0.9; }
+      if(i<=now){ pastA.push([x,yA]); pastB.push([x,yB]); }
+      if(i>=now){ futA.push([x,yA]);  futB.push([x,yB]); }
     }
-    function edge(pts, dim, weight){
-      if(pts.length<2) return;
-      svg.appendChild(mk("path",{ d:pathOf(pts), fill:"none", stroke:"var(--ink)",
-        "stroke-width":weight, "stroke-linejoin":"miter", "stroke-miterlimit":3,
-        "stroke-linecap":"butt", opacity:dim }));
-    }
-    edge(pastA, 1,   2.0);
-    edge(pastB, .55, 1.2);
-    edge(futA,  .42, 2.0);
-    edge(futB,  .24, 1.2);
+    var dFut = areaOf(futA, futB);
+    if(dFut) svg.appendChild(mk("path",{ d:dFut, fill:"var(--ink)", opacity:.34 }));
+    var dPast = areaOf(pastA, pastB);
+    if(dPast) svg.appendChild(mk("path",{ d:dPast, fill:"var(--ink)" }));
 
     // 縦軸が気圧そのものでないことがわかるよう、単位だけ添える
     var unit = mk("text",{ x:2, y:9, "font-size":7.5, fill:"var(--ink-faint)",
