@@ -151,6 +151,50 @@
   }
   .hint{ font-size:11.5px; color:var(--ink-faint); margin:8px 0 0; line-height:1.7; }
 
+  /* ── 読み手の設定 ─────────────────────── */
+  .settings{ margin-top:12px; border-top:1px solid var(--rule-hair); padding-top:10px; }
+  .settings summary{
+    cursor:pointer; font-size:12px; color:var(--ink-soft);
+    letter-spacing:.06em; list-style:none;
+  }
+  .settings summary::-webkit-details-marker{ display:none; }
+  .settings summary::before{ content:"＋ "; color:var(--ink-faint); }
+  .settings[open] summary::before{ content:"− "; }
+  .settings .opt{ margin-top:10px; }
+  .settings .opt label{
+    display:block; margin-top:8px; font-size:12.5px; line-height:1.7;
+    padding:9px 10px; border:1px solid var(--rule); border-radius:10px;
+  }
+  .settings .opt b{ font-weight:600; margin-left:4px; }
+  .settings .opt span{ display:block; color:var(--ink-faint); font-size:11.5px; margin-left:22px; }
+  .settings .fld{
+    display:block; margin:12px 0 4px; font-size:11px;
+    letter-spacing:.14em; color:var(--ink-faint); text-transform:uppercase;
+    font-family:var(--mono);
+  }
+  .settings input[type="password"], .settings select{
+    width:100%; padding:9px 10px; font:inherit; font-size:13px;
+    background:var(--bg); color:var(--ink);
+    border:1px solid var(--rule); border-radius:9px;
+  }
+  .warn{
+    margin:12px 0 0; padding:10px 11px; border-radius:9px;
+    background:var(--tile); border-left:2px solid var(--cinnabar);
+    font-size:11.5px; line-height:1.8; color:var(--ink-soft);
+  }
+  .warn b, .warn strong{ color:var(--ink); font-weight:600; }
+
+  /* 読み手の札（見立てカードの上） */
+  .by{
+    display:inline-block; margin-bottom:9px;
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.16em;
+    text-transform:uppercase; padding:3px 8px; border-radius:999px;
+    border:1px solid var(--rule); color:var(--ink-faint);
+  }
+  .by.claude{ border-color:var(--gold); color:var(--gold); }
+  .by.working::after{ content:" ·"; animation:blink 1s steps(3) infinite; }
+  @keyframes blink{ 50%{ opacity:.25; } }
+
   /* ── 見立て札 ─────────────────────────── */
   .verdict{ text-align:center; padding:18px 15px 16px; }
   .verdict .quad{
@@ -265,6 +309,17 @@
     font-size:11px; color:var(--ink-faint); line-height:1.9;
   }
   footer a{ color:inherit; }
+  .ver{
+    margin:12px 0 0; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.08em; color:var(--ink-faint);
+    display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;
+  }
+  .ver.fresh #ver{ color:var(--gold); }
+  .linky{
+    background:none; border:none; padding:0; min-height:0;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    color:var(--ink-soft); text-decoration:underline; text-underline-offset:3px;
+  }
 
   .hidden{ display:none !important; }
   .sr-only{
@@ -307,13 +362,48 @@
       <span class="count" id="count">0字</span>
     </div>
     <div class="chips" id="samples"></div>
-    <p class="hint">端末の中だけで動く。文章はどこにも送らない。</p>
+    <p class="hint" id="privacy">端末の中だけで動く。文章はどこにも送らない。</p>
+
+    <details class="settings" id="settings">
+      <summary>読み手を選ぶ</summary>
+
+      <div class="opt">
+        <label><input type="radio" name="engine" value="local" checked>
+          <b>端末内エンジン</b><span>規則で機械的に当てはめる。速い。文章は送らない。オフラインでも動く。</span></label>
+        <label><input type="radio" name="engine" value="claude">
+          <b>Claude に読ませる</b><span>八つの視角の枠は端末側で測り、本文を Claude が書く。APIキーと通信が要る。</span></label>
+      </div>
+
+      <div id="llmFields" class="hidden">
+        <label class="fld" for="apikey">APIキー</label>
+        <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+
+        <label class="fld" for="model">モデル</label>
+        <select id="model">
+          <option value="claude-opus-5">Claude Opus 5 — いちばん読みが深い</option>
+          <option value="claude-sonnet-5">Claude Sonnet 5 — 速くて安い</option>
+          <option value="claude-haiku-4-5">Claude Haiku 4.5 — 最速・最安</option>
+        </select>
+
+        <div class="row">
+          <button id="saveKey">この端末に保存</button>
+          <button id="forgetKey" class="ghost">鍵を消す</button>
+        </div>
+
+        <p class="warn">
+          <b>鍵はこの端末の localStorage に平文で置かれる。</b>
+          端末を触れる人は読み出せる。使う鍵は<strong>この用途専用に作り、上限額を設定しておく</strong>こと。
+          入力した文章と、端末側で測った兆候は Anthropic に送られる。オフラインでは端末内エンジンに戻る。
+        </p>
+      </div>
+    </details>
   </section>
 
   <!-- 結果 -->
   <div id="out" class="hidden">
 
     <section class="card verdict">
+      <p><span class="by" id="by">local engine</span></p>
       <p class="quad" id="quad"></p>
       <h2 id="vtitle"></h2>
       <p class="sub" id="vsub"></p>
@@ -364,6 +454,10 @@
   <footer>
     ユク・ホイの宇宙技芸／技術多様性、ハイデガー、シモンドン、スティグレールの語彙を、<br>
     端末内の規則で機械的に当てはめる装置。出力は解釈の種であって、答えではない。
+    <p class="ver">
+      <span id="ver">版 —</span>
+      <button id="check" class="linky">更新を確認</button>
+    </p>
   </footer>
 </div>
 
@@ -376,6 +470,9 @@
 /* ══════════════════════════════════════════════════
    0. 小道具
    ══════════════════════════════════════════════════ */
+
+/* この版の名前。version.json と sw.js の VERSION と揃えること。 */
+var VERSION = "2026.08.14-1";
 
 function $(id){ return document.getElementById(id); }
 
@@ -789,6 +886,14 @@ var LENSES = [
 }
 ];
 
+/* 番外の視角の主題。端末内エンジンと Claude の双方が同じ枠で書く。 */
+var THEMES_RARE = {
+  noodiversity:"技術多様性が減ると思考の多様性（ノオディバーシティ）も減る。順番は技術が先。",
+  trace:"郭象の迹と所以迹。模写できるのは跡の形だけで、跡を生んだ条件は写せない。",
+  tempo:"時間の刻み方は複数ある。どの時計に合わせて急いでいるのか。",
+  unity:"天人合一。効率と安全の外側で、ふさわしさ・慎み・時機の語彙を取り戻す。"
+};
+
 /* 八つの外に置く、当たれば強いが外れやすい視角。
    共鳴の高いものを一つだけ「番外」として添える。 */
 var RARE = [
@@ -1051,6 +1156,7 @@ function interpret(raw, roll){
   var rare = {
     name: extra.R.name, en: extra.R.en,
     score: clamp(Math.round(18 + 78 * Math.pow(extra.raw, 0.82)), 10, 96),
+    brief: THEMES_RARE[extra.R.id] || "",
     head: fill(pick(rng, extra.R.head), rctx),
     body: fill(pick(rng, extra.R.body), rctx),
     back: fill(pick(rng, extra.R.back), rctx)
@@ -1097,6 +1203,12 @@ function renderAxis(el, label, value, leftName, rightName, leftWord, rightWord){
 }
 
 function render(res){
+  var by = $("by");
+  by.className = "by" + (res.by === "claude" ? " claude" : "") + (res.working ? " working" : "");
+  by.textContent = res.by === "claude" ? ("read by " + LLM.model)
+                 : (res.working ? "claude が読んでいる" + (res.tick ? "（" + res.tick + "字）" : "")
+                                : "local engine");
+
   $("quad").textContent = res.quad.quad;
   $("vtitle").textContent = res.quad.title;
   $("vsub").textContent = res.quad.sub;
@@ -1157,6 +1269,7 @@ function render(res){
 function asText(src, res){
   var out = [];
   out.push("── 宇宙技芸 打ち返し器 ──");
+  out.push(res.by === "claude" ? "読み手：" + LLM.model : "読み手：端末内エンジン");
   out.push("");
   out.push("【原文】" + src.replace(/\s+/g, " ").slice(0, 120));
   out.push("");
@@ -1181,6 +1294,240 @@ function asText(src, res){
   out.push("");
   out.push("「" + res.aphorism + "」");
   return out.join("\n");
+}
+
+/* ══════════════════════════════════════════════════
+   6.5 Claude に読ませる（任意）
+
+   端末内エンジンは「測る」役に徹し、本文だけを Claude に書かせる。
+   軸・共鳴・鍵語は測定値のままなので、図と数字は根拠を失わない。
+   鍵はこの端末の localStorage にしか置かない。送り先は Anthropic だけ。
+   ══════════════════════════════════════════════════ */
+
+var LKEY = "cosmotechnics.llm.v1";
+var LLM = { on:false, key:"", model:"claude-opus-5" };
+
+function loadLLM(){
+  try{
+    var v = JSON.parse(localStorage.getItem(LKEY) || "{}");
+    LLM.on = !!v.on; LLM.key = v.key || ""; LLM.model = v.model || "claude-opus-5";
+  }catch(e){}
+}
+function saveLLM(){
+  try{ localStorage.setItem(LKEY, JSON.stringify(LLM)); }catch(e){}
+}
+function llmReady(){ return LLM.on && LLM.key.length > 10; }
+
+/* 視角ごとの主題。Claude にはこの枠の中で書いてもらう。 */
+var THEMES = {
+  qidao:"器（道具）と道（生き方の筋）は切り離せない。使うことは作法を身につけること。",
+  gestell:"ハイデガーの用象・総駆り立て体制。対象が「引き出せる在庫」に立てられていないか。",
+  tragist:"プロメテウス的な突破と、庖丁解牛的に隙間へ刃を通す解き方の対比。",
+  recursive:"再帰的な系は自分の出力で自分を保つ。偶然だけがループを作り替える材料になる。",
+  diversity:"技術多様性。別の宇宙論に根ざした解き方を複数保つこと。単一化は速いが一緒に転ぶ。",
+  locality:"技術は人類学的に普遍ではない。どの土地の宇宙論の上に立っているか。",
+  individuation:"シモンドンの個体化と未確定の余白。人と技術は共に形になっていく途中。",
+  pharmakon:"スティグレールのパルマコン。薬であり毒。用量・速度・誰にとってか、と止め方。"
+};
+
+var SCHEMA = {
+  type:"object",
+  properties:{
+    verdict:{
+      type:"object",
+      properties:{ title:{type:"string"}, sub:{type:"string"} },
+      required:["title","sub"], additionalProperties:false
+    },
+    aphorism:{ type:"string" },
+    counter:{ type:"string" },
+    lenses:{
+      type:"array",
+      items:{
+        type:"object",
+        properties:{
+          id:{ type:"string", enum:["qidao","gestell","tragist","recursive",
+                                    "diversity","locality","individuation","pharmakon"] },
+          head:{type:"string"}, body:{type:"string"}, back:{type:"string"}
+        },
+        required:["id","head","body","back"], additionalProperties:false
+      }
+    },
+    rare:{
+      type:"object",
+      properties:{ head:{type:"string"}, body:{type:"string"}, back:{type:"string"} },
+      required:["head","body","back"], additionalProperties:false
+    }
+  },
+  required:["verdict","aphorism","counter","lenses","rare"],
+  additionalProperties:false
+};
+
+var SYSTEM_PROMPT = [
+"あなたは宇宙技芸（コスモテクニクス）の語彙で、任意の書き込みを読み替える装置の書き手である。",
+"ユク・ホイの宇宙技芸／技術多様性を軸に、ハイデガー（用象・総駆り立て体制）、シモンドン（個体化・未確定の余白）、",
+"スティグレール（パルマコン）、荘子・郭象（庖丁解牛、迹と所以迹）の語彙を使う。",
+"",
+"書き方の決まり:",
+"・日本語。です・ます調は使わない。短い断定と、具体を一つ含んだ地の文で書く。",
+"・入力された文そのものに触れること。一般論だけで済ませない。ただし要約はしない——読み替える。",
+"・説教しない。相手を裁かない。読み手が自分で気づくための角度を差し出す。",
+"・専門用語は使ってよいが、使ったら必ずその場で意味が立ち上がるように書く。註釈調にしない。",
+"・「〜ではないだろうか」「〜と言えるでしょう」のような薄い結びを避ける。言い切って止める。",
+"・head は一行の見立て（40〜70字）。body は本文（150〜260字）。back は書き手に向けて投げ返す問い（40〜80字、疑問形で終える）。",
+"・八つの視角すべてについて書く。id は指定されたものをそのまま使う。",
+"",
+"渡される「測定」は端末内の規則で機械的に数えた値である。参考にしてよいが、測定それ自体を解説しない。",
+"数値や軸の名前を本文にそのまま書き写さないこと。"
+].join("\n");
+
+function buildUserPrompt(text, res, roll){
+  var L = res.lenses.map(function(x){
+    return "- " + x.id + "（" + x.name + " / " + x.en + "）共鳴" + x.score + "：" + THEMES[x.id];
+  }).join("\n");
+
+  return [
+    "【読み替える書き込み】",
+    "「" + text + "」",
+    "",
+    "【端末内エンジンの測定】",
+    "鍵語：" + (res.terms.length ? res.terms.join("、") : "（語らしい語なし）"),
+    "軸A（＋単一化／−多様化）：" + res.axisA.toFixed(2),
+    "軸B（＋悲劇・突破／−道家・沿う）：" + res.axisB.toFixed(2),
+    "",
+    "【八つの視角】共鳴の高い順。この順で、この id で書く。",
+    L,
+    "",
+    "【番外の視角】" + res.rare.name + "（" + res.rare.en + "）",
+    res.rare.brief || "",
+    "",
+    "【ほかに書くもの】",
+    "verdict.title：この書き込み全体の見立て。20字前後の名づけ（例「突破の語り — 一本道を、速く」）。",
+    "verdict.sub：その一行の説明（50〜80字）。",
+    "counter：ここまでの読みを逆から崩す一段（120〜200字）。自分の見立てを自分で疑う。",
+    "aphorism：この書き込みに寄り添った一句（30〜60字）。格言の形で、既存の引用ではなく新しく書く。",
+    roll > 0 ? "\n※ 同じ文の読み直し（" + (roll + 1) + "回目）。前回とは別の切り口から入ること。" : ""
+  ].join("\n");
+}
+
+/* SSE を読みながら本文を組み立てる。長い出力でも途中で切れないよう stream を使う。 */
+function askClaude(text, res, roll, onTick){
+  var body = {
+    model: LLM.model,
+    max_tokens: 16000,
+    stream: true,
+    system: SYSTEM_PROMPT,
+    messages: [{ role:"user", content: buildUserPrompt(text, res, roll) }],
+    output_config: { format: { type:"json_schema", schema: SCHEMA } }
+  };
+  /* effort は Haiku 4.5 では受け付けられない */
+  if(LLM.model !== "claude-haiku-4-5") body.output_config.effort = "medium";
+
+  var headers = {
+    "content-type": "application/json",
+    "x-api-key": LLM.key,
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true"
+  };
+  /* 安全側の分類器が断ったときに、別のモデルで同じ要求を通す */
+  var useFallback = (LLM.model === "claude-opus-5");
+  if(useFallback){
+    headers["anthropic-beta"] = "server-side-fallback-2026-07-01";
+    body.fallbacks = "default";
+  }
+
+  function send(withFallback){
+    var h = {}, b = JSON.parse(JSON.stringify(body));
+    for(var k in headers){ if(k !== "anthropic-beta" || withFallback) h[k] = headers[k]; }
+    if(!withFallback) delete b.fallbacks;
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:h, body: JSON.stringify(b)
+    }).catch(function(){
+      throw new Error("Anthropic につながらない。オフラインかもしれない。");
+    });
+  }
+
+  return send(useFallback).then(function(r){
+    if(r.ok || !useFallback) return r;
+    /* フォールバック指定自体が弾かれた版では、外して一度だけ試し直す */
+    if(r.status === 400) return send(false);
+    return r;
+  }).then(function(r){
+    if(!r.ok){
+      return r.text().then(function(t){
+        var msg = "";
+        try{ msg = (JSON.parse(t).error || {}).message || ""; }catch(e){ msg = t.slice(0, 160); }
+        if(r.status === 401 || r.status === 403) throw new Error("鍵が通らない（" + r.status + "）");
+        if(r.status === 429) throw new Error("いまは混んでいる（429）。少し置いて。");
+        if(r.status >= 500) throw new Error("Anthropic 側で失敗（" + r.status + "）");
+        throw new Error(msg || ("失敗（" + r.status + "）"));
+      });
+    }
+    return readStream(r, onTick);
+  });
+}
+
+function readStream(r, onTick){
+  var reader = r.body.getReader(), dec = new TextDecoder();
+  var buf = "", out = "", stop = null;
+
+  function pump(){
+    return reader.read().then(function(step){
+      if(step.done) return finish();
+      buf += dec.decode(step.value, { stream:true });
+      var parts = buf.split("\n\n");
+      buf = parts.pop();
+      for(var i=0;i<parts.length;i++){
+        var lines = parts[i].split("\n");
+        for(var j=0;j<lines.length;j++){
+          if(lines[j].indexOf("data:") !== 0) continue;
+          var ev;
+          try{ ev = JSON.parse(lines[j].slice(5).trim()); }catch(e){ continue; }
+          if(ev.type === "content_block_delta" && ev.delta && ev.delta.type === "text_delta"){
+            out += ev.delta.text;
+            if(onTick) onTick(out.length);
+          }else if(ev.type === "message_delta" && ev.delta && ev.delta.stop_reason){
+            stop = ev.delta.stop_reason;
+          }else if(ev.type === "error"){
+            throw new Error((ev.error && ev.error.message) || "途中で切れた");
+          }
+        }
+      }
+      return pump();
+    });
+  }
+
+  function finish(){
+    if(stop === "refusal") throw new Error("Claude がこの文への回答を控えた。端末内エンジンの読みを残す。");
+    if(stop === "max_tokens") throw new Error("出力が長すぎて切れた");
+    var parsed;
+    try{ parsed = JSON.parse(out); }
+    catch(e){ throw new Error("返ってきた形が読めなかった"); }
+    return parsed;
+  }
+
+  return pump();
+}
+
+/* Claude の本文を、測定済みの結果に差し込む */
+function applyClaude(res, got){
+  var byId = {};
+  (got.lenses || []).forEach(function(x){ if(x && x.id) byId[x.id] = x; });
+
+  res.lenses.forEach(function(L){
+    var g = byId[L.id];
+    if(!g) return;                       /* 欠けた視角は端末内の文を残す */
+    L.head = g.head; L.body = g.body; L.back = g.back;
+  });
+  if(got.rare){
+    res.rare.head = got.rare.head; res.rare.body = got.rare.body; res.rare.back = got.rare.back;
+  }
+  if(got.verdict){
+    res.quad = { quad: res.quad.quad, title: got.verdict.title, sub: got.verdict.sub };
+  }
+  if(got.counter) res.counter = esc(got.counter);
+  if(got.aphorism) res.aphorism = got.aphorism;
+  res.by = "claude";
+  return res;
 }
 
 /* ══════════════════════════════════════════════════
@@ -1249,6 +1596,37 @@ function run(){
   render(state.res);
   pushHistory(text);
   $("out").scrollIntoView({ behavior:"smooth", block:"start" });
+  if(llmReady()) enhance();
+}
+
+/* 端末内の読みを先に出しておき、Claude の読みが届いたら差し替える。
+   失敗しても端末内の読みはそのまま残る。 */
+function enhance(){
+  var res = state.res, myRoll = state.roll, myText = state.text;
+  res.working = true; res.tick = 0;
+  render(res);
+  $("go").disabled = true;
+  $("reroll").disabled = true;
+
+  askClaude(myText, res, myRoll, function(n){
+    if(state.res !== res) return;
+    res.tick = n;
+    var by = $("by");
+    by.textContent = "claude が読んでいる（" + n + "字）";
+  }).then(function(got){
+    if(state.res !== res) return;              /* 待つ間に別の文へ移っていたら捨てる */
+    res.working = false;
+    render(applyClaude(res, got));
+    toast("Claude が読み替えた");
+  }).catch(function(err){
+    if(state.res !== res) return;
+    res.working = false;
+    render(res);
+    toast(String(err.message || err));
+  }).then(function(){
+    $("go").disabled = $("src").value.length === 0;
+    $("reroll").disabled = false;
+  });
 }
 
 $("go").addEventListener("click", run);
@@ -1262,7 +1640,41 @@ $("reroll").addEventListener("click", function(){
   state.roll++;
   state.res = interpret(state.text, state.roll);
   render(state.res);
-  toast("別の角度から引き直した");
+  if(llmReady()){ enhance(); }
+  else{ toast("別の角度から引き直した"); }
+});
+
+/* ── 読み手の設定 ─────────────────────── */
+function syncLLMUI(){
+  var radios = document.getElementsByName("engine");
+  for(var i=0;i<radios.length;i++) radios[i].checked = (radios[i].value === (LLM.on ? "claude" : "local"));
+  $("llmFields").classList.toggle("hidden", !LLM.on);
+  $("apikey").value = LLM.key;
+  $("model").value = LLM.model;
+  $("mode").textContent = llmReady() ? LLM.model : "local engine";
+  $("privacy").textContent = llmReady()
+    ? "枠は端末内で測り、本文は Claude が書く。文章は Anthropic に送られる。"
+    : "端末の中だけで動く。文章はどこにも送らない。";
+}
+
+Array.prototype.forEach.call(document.getElementsByName("engine"), function(r){
+  r.addEventListener("change", function(){
+    LLM.on = (r.value === "claude");
+    saveLLM(); syncLLMUI();
+    if(LLM.on && !LLM.key) $("apikey").focus();
+  });
+});
+$("apikey").addEventListener("input", function(){ LLM.key = $("apikey").value.trim(); syncLLMUI(); });
+$("model").addEventListener("change", function(){ LLM.model = $("model").value; saveLLM(); syncLLMUI(); });
+$("saveKey").addEventListener("click", function(){
+  LLM.key = $("apikey").value.trim();
+  saveLLM(); syncLLMUI();
+  toast(LLM.key ? "この端末に保存した" : "鍵が空のまま");
+});
+$("forgetKey").addEventListener("click", function(){
+  LLM.key = ""; LLM.on = false;
+  saveLLM(); syncLLMUI();
+  toast("鍵を消した。端末内エンジンに戻る。");
 });
 
 $("copy").addEventListener("click", function(){
@@ -1327,8 +1739,48 @@ Array.prototype.forEach.call($("samples").querySelectorAll("button"), function(b
   }
 })();
 
+/* ── 版と更新の確認 ───────────────────────
+   配信側の version.json と、この版に焼き込んだ VERSION を突き合わせる。
+   ナビゲーションは network-first なので、開き直せば新しい版に入れ替わる。 */
+var updateReady = false;
+
+function showVersion(note){
+  $("ver").textContent = "版 " + VERSION + (note ? " · " + note : "");
+}
+
+function checkUpdate(manual){
+  if(manual) showVersion("確認中");
+  return fetch("version.json?t=" + Date.now(), { cache:"no-store" })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(v){
+      if(v.version && v.version !== VERSION){
+        updateReady = true;
+        document.querySelector(".ver").classList.add("fresh");
+        $("ver").textContent = "版 " + VERSION + " → 新しい版 " + v.version;
+        $("check").textContent = "開き直して入れ替える";
+        if(manual) toast("新しい版がある。開き直すと入れ替わる。");
+      }else{
+        showVersion("最新");
+        if(manual) toast("これが最新の版");
+      }
+    })
+    .catch(function(){
+      showVersion("確認できない");
+      if(manual) toast("更新を確認できない。オフラインかもしれない。");
+    });
+}
+
+$("check").addEventListener("click", function(){
+  if(updateReady) location.reload();
+  else checkUpdate(true);
+});
+
+loadLLM();
+syncLLMUI();
 updateCount();
 renderHistory();
+showVersion();
+setTimeout(function(){ checkUpdate(false); }, 900);
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){

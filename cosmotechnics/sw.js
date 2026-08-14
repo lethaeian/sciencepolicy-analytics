@@ -7,7 +7,8 @@
  * シェルを事前キャッシュしておけば、以後は完全にオフラインで動く。
  */
 
-var VERSION = "v1";
+/* index.html の VERSION と version.json に揃えること。 */
+var VERSION = "2026.08.14-1";
 var CACHE = "cosmotechnics-shell-" + VERSION;
 
 var SHELL = [
@@ -51,8 +52,11 @@ self.addEventListener("fetch", function(event){
   var url;
   try{ url = new URL(req.url); }catch(e){ return; }
 
-  // 自分のスコープ外には介入しない。
+  // 自分のスコープ外には介入しない（Anthropic API もここで素通しになる）。
   if(url.origin !== self.location.origin) return;
+
+  // 版の確認は常にネットワークへ。キャッシュすると更新が見えなくなる。
+  if(url.pathname.indexOf("version.json") !== -1) return;
   if(url.pathname.indexOf(new URL("./", self.location.href).pathname) !== 0) return;
 
   // ナビゲーションは network-first。更新版があれば取りに行き、
