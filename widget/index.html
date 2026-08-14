@@ -378,7 +378,7 @@
   <div class="strip" id="strip"></div>
 
   <div class="plot" id="plot">
-    <svg id="chartPressure" viewBox="0 0 320 78" preserveAspectRatio="none"
+    <svg id="chartPressure" viewBox="0 0 320 104" preserveAspectRatio="none"
          role="img" aria-label="気圧の推移"></svg>
     <div class="plot-foot">
       <span>−12h</span>
@@ -435,7 +435,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v31";
+  var BUILD = "v32";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -796,7 +796,7 @@
   var RATE_FLOOR = 1.0;   // 目盛りの下限 hPa/時。穏やかな日を煽らない
   function drawMain(svg, d, focus){
     clear(svg);
-    var v=d.pressure, now=d.nowIndex, W=320, H=78, top=4, bot=4;
+    var v=d.pressure, now=d.nowIndex, W=320, H=104, top=5, bot=5;
     var w=win(), span=w.e-w.s;
     if(span<1) return;
     var ph=H-top-bot, yb=top+ph/2;
