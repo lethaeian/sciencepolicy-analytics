@@ -435,7 +435,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v28";
+  var BUILD = "v29";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -754,13 +754,15 @@
   var NS="http://www.w3.org/2000/svg";
   function mk(tag,a){ var n=document.createElementNS(NS,tag); for(var k in a) n.setAttribute(k,a[k]); return n; }
   function clear(s){ while(s.firstChild) s.removeChild(s.firstChild); }
-  function scaleOf(vals,minSpan){
+  function scaleOf(vals,minSpan,edgePad){
     var v=vals.filter(function(x){ return x!=null; });
     if(!v.length) return null;
     var lo=Math.min.apply(null,v), hi=Math.max.apply(null,v), span=hi-lo;
     if(span<minSpan){ var pad=(minSpan-span)/2; lo-=pad; hi+=pad; }
-    else { var e=span*0.15; lo-=e; hi+=e; }
-    return {lo:lo,hi:hi};
+    else { var e=span*(edgePad==null ? 0.15 : edgePad); lo-=e; hi+=e; }
+    // ゼロ線を真ん中に置くため、上下の振れ幅をそろえる
+    var mid=(lo+hi)/2, half=Math.max(mid-lo, hi-mid);
+    return {lo:mid-half, hi:mid+half};
   }
   function pathOf(pts){
     return pts.map(function(p,i){ return (i?"L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1); }).join("");
@@ -785,19 +787,25 @@
     return bands;
   }
 
-  // 主グラフ。参考画像の音声波形にならい、細かい縦の柱で描く。
-  // 赤い横線はこの12時間の真ん中の気圧。柱がそこから下へ伸びていれば
-  // 下がっている、上へ伸びていれば上がっている。
-  var PLOT_COLS = 68;
+  // 主グラフ。参考画像の音声波形を横に倒した見え方にする。
+  // 赤い横線がゼロ線。柱はそこから上下へ伸び、値のある側を長く、
+  // 反対側を短く（0.45倍）取る。音の波形が上下で非対称なのと同じで、
+  // 長いほうがいまの気圧の向きを示す。
+  var PLOT_COLS = 104;
+  var MIRROR = 0.45;
   function drawMain(svg, d, focus){
     clear(svg);
-    var v=d.pressure, now=d.nowIndex, W=320, H=78, top=7, bot=7;
+    var v=d.pressure, now=d.nowIndex, W=320, H=78, top=4, bot=4;
     var w=win(), span=w.e-w.s;
-    var sc=scaleOf(v.slice(w.s, w.e+1), 6); if(!sc || span<1) return;
+    // 縦の目盛りをきつめに取り、わずかな変化も振れとして見せる
+    var sc=scaleOf(v.slice(w.s, w.e+1), 2.5, 0.03); if(!sc || span<1) return;
     var ph=H-top-bot;
     function X(i){ return ((i-w.s)/span)*W; }
     function Y(x){ return top+(1-(x-sc.lo)/(sc.hi-sc.lo))*ph; }
     var yb = Y((sc.lo+sc.hi)/2);
+    // 振れの大きいところが枠いっぱい近くまで届くように取る
+    var amp = ph * 0.45;
+    function dev(val){ return (( (sc.lo+sc.hi)/2 - val) / ((sc.hi-sc.lo)/2)) * -amp; }
 
     // 下敷きの罫
     for(var r=0;r<=6;r++){
@@ -816,41 +824,48 @@
       }));
     });
 
-    // 真ん中の高さを示す赤い線。柱の下に敷く。
+    // ゼロ線。柱の下に敷く。
     svg.appendChild(mk("line",{ x1:0, x2:W, y1:yb, y2:yb,
       stroke:"var(--accent)", "stroke-width":1.3 }));
 
-    // 1時間ごとの値のあいだを補間し、細かい柱で埋める。
-    var bw = (W/PLOT_COLS)*0.62;
+    // 1時間ごとの値のあいだを補間し、細かい柱で上下に振る。
+    var bw = (W/PLOT_COLS)*0.46;
     for(var c=0;c<PLOT_COLS;c++){
       var t  = c/(PLOT_COLS-1);
       var fi = w.s + t*span;
       var i0 = Math.floor(fi), i1 = Math.min(w.e, i0+1);
       if(v[i0]==null || v[i1]==null) continue;
       var val = v[i0] + (v[i1]-v[i0])*(fi-i0);
-      var y = Y(val), x = t*W;
+      var dv  = dev(val);                 // ゼロ線からの振れ（画面の向き）
+      var yA  = yb + dv;                  // 値のある側
+      var yB  = yb - dv*MIRROR;           // 反対側の控えめな鏡
       svg.appendChild(mk("rect",{
-        x: x-bw/2, y: Math.min(y, yb), width: bw,
-        height: Math.max(Math.abs(y-yb), 1.4),
+        x: (t*W)-bw/2, y: Math.min(yA,yB), width: bw,
+        height: Math.max(Math.abs(yA-yB), 1.6),
         fill: "var(--ink)",
         // これから先はうすく。参考画像の灰色の波形にあたる。
         opacity: (fi > now) ? .34 : 1
       }));
     }
 
-    // 柱の頭をなぞる輪郭。動きの少ない日でも一本の線として読める。
-    var past=[], future=[];
+    // 波形の輪郭。角を尖らせて、ジグザグをそのまま出す。
+    var pastA=[], pastB=[], futA=[], futB=[];
     for(var i=w.s;i<=w.e;i++){
       if(v[i]==null) continue;
-      var pt=[X(i), Y(v[i])];
-      if(i<=now) past.push(pt);
-      if(i>=now) future.push(pt);
+      var x=X(i), q=dev(v[i]);
+      if(i<=now){ pastA.push([x, yb+q]); pastB.push([x, yb-q*MIRROR]); }
+      if(i>=now){ futA.push([x, yb+q]);  futB.push([x, yb-q*MIRROR]); }
     }
-    if(past.length>1) svg.appendChild(mk("path",{ d:pathOf(past), fill:"none",
-      stroke:"var(--ink)", "stroke-width":1.6, "stroke-linejoin":"round", "stroke-linecap":"round" }));
-    if(future.length>1) svg.appendChild(mk("path",{ d:pathOf(future), fill:"none",
-      stroke:"var(--ink)", "stroke-width":1.6, opacity:.42,
-      "stroke-linejoin":"round", "stroke-linecap":"round" }));
+    function edge(pts, dim, weight){
+      if(pts.length<2) return;
+      svg.appendChild(mk("path",{ d:pathOf(pts), fill:"none", stroke:"var(--ink)",
+        "stroke-width":weight, "stroke-linejoin":"miter", "stroke-miterlimit":3,
+        "stroke-linecap":"butt", opacity:dim }));
+    }
+    edge(pastA, 1,   2.0);
+    edge(pastB, .55, 1.2);
+    edge(futA,  .42, 2.0);
+    edge(futB,  .24, 1.2);
 
     // 両端の印
     svg.appendChild(mk("path",{ d:"M0 "+(yb-3.6)+"L4.6 "+yb+"L0 "+(yb+3.6)+"Z",
