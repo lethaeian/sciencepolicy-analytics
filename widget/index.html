@@ -435,7 +435,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v29";
+  var BUILD = "v30";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -787,29 +787,37 @@
     return bands;
   }
 
-  // 主グラフ。参考画像の音声波形を横に倒した見え方にする。
-  // 赤い横線がゼロ線。柱はそこから上下へ伸び、値のある側を長く、
-  // 反対側を短く（0.45倍）取る。音の波形が上下で非対称なのと同じで、
-  // 長いほうがいまの気圧の向きを示す。
+  // 主グラフ。縦軸は気圧そのものではなく、1時間あたりの変化量。
+  // 音の波形の振幅がエネルギーであるのと同じで、大きく振れているほど
+  // 気圧が速く動いている。赤い横線が「変化なし」。
+  // 下に振れていれば下降中、上なら上昇中。値のある側を長く、反対側を
+  // 0.45倍で取り、音の波形の非対称さに合わせる。
   var PLOT_COLS = 104;
   var MIRROR = 0.45;
+  var RATE_FLOOR = 1.0;   // 目盛りの下限 hPa/時。穏やかな日を煽らない
   function drawMain(svg, d, focus){
     clear(svg);
     var v=d.pressure, now=d.nowIndex, W=320, H=78, top=4, bot=4;
     var w=win(), span=w.e-w.s;
-    // 縦の目盛りをきつめに取り、わずかな変化も振れとして見せる
-    var sc=scaleOf(v.slice(w.s, w.e+1), 2.5, 0.03); if(!sc || span<1) return;
-    var ph=H-top-bot;
+    if(span<1) return;
+    var ph=H-top-bot, yb=top+ph/2;
     function X(i){ return ((i-w.s)/span)*W; }
-    function Y(x){ return top+(1-(x-sc.lo)/(sc.hi-sc.lo))*ph; }
-    var yb = Y((sc.lo+sc.hi)/2);
-    // 振れの大きいところが枠いっぱい近くまで届くように取る
+
+    // 1時間でどれだけ動いたか。添字は d.pressure と同じ。
+    var rate=[], i;
+    for(i=0;i<v.length;i++){
+      rate[i] = (i>0 && v[i]!=null && v[i-1]!=null) ? (v[i]-v[i-1]) : null;
+    }
+    var mx=0;
+    for(i=w.s;i<=w.e;i++) if(rate[i]!=null) mx=Math.max(mx, Math.abs(rate[i]));
+    var lim = Math.max(RATE_FLOOR, mx*1.06);
     var amp = ph * 0.45;
-    function dev(val){ return (( (sc.lo+sc.hi)/2 - val) / ((sc.hi-sc.lo)/2)) * -amp; }
+    // 下降（負）を下へ振る
+    function dev(r){ return -(r/lim)*amp; }
 
     // 下敷きの罫
-    for(var r=0;r<=6;r++){
-      var ry = top + (ph/6)*r;
+    for(var g=0;g<=6;g++){
+      var ry = top + (ph/6)*g;
       svg.appendChild(mk("line",{ x1:0, x2:W, y1:ry, y2:ry,
         stroke:"var(--rule)", "stroke-width":0.6, opacity:.55 }));
     }
@@ -828,17 +836,17 @@
     svg.appendChild(mk("line",{ x1:0, x2:W, y1:yb, y2:yb,
       stroke:"var(--accent)", "stroke-width":1.3 }));
 
-    // 1時間ごとの値のあいだを補間し、細かい柱で上下に振る。
+    // 1時間ごとの変化量のあいだを補間し、細かい柱で上下に振る。
     var bw = (W/PLOT_COLS)*0.46;
     for(var c=0;c<PLOT_COLS;c++){
       var t  = c/(PLOT_COLS-1);
       var fi = w.s + t*span;
       var i0 = Math.floor(fi), i1 = Math.min(w.e, i0+1);
-      if(v[i0]==null || v[i1]==null) continue;
-      var val = v[i0] + (v[i1]-v[i0])*(fi-i0);
-      var dv  = dev(val);                 // ゼロ線からの振れ（画面の向き）
-      var yA  = yb + dv;                  // 値のある側
-      var yB  = yb - dv*MIRROR;           // 反対側の控えめな鏡
+      if(rate[i0]==null || rate[i1]==null) continue;
+      var r  = rate[i0] + (rate[i1]-rate[i0])*(fi-i0);
+      var dv = dev(r);
+      var yA = yb + dv;                   // 変化のある側
+      var yB = yb - dv*MIRROR;            // 反対側の控えめな鏡
       svg.appendChild(mk("rect",{
         x: (t*W)-bw/2, y: Math.min(yA,yB), width: bw,
         height: Math.max(Math.abs(yA-yB), 1.6),
@@ -850,9 +858,9 @@
 
     // 波形の輪郭。角を尖らせて、ジグザグをそのまま出す。
     var pastA=[], pastB=[], futA=[], futB=[];
-    for(var i=w.s;i<=w.e;i++){
-      if(v[i]==null) continue;
-      var x=X(i), q=dev(v[i]);
+    for(i=w.s;i<=w.e;i++){
+      if(rate[i]==null) continue;
+      var x=X(i), q=dev(rate[i]);
       if(i<=now){ pastA.push([x, yb+q]); pastB.push([x, yb-q*MIRROR]); }
       if(i>=now){ futA.push([x, yb+q]);  futB.push([x, yb-q*MIRROR]); }
     }
@@ -867,6 +875,12 @@
     edge(futA,  .42, 2.0);
     edge(futB,  .24, 1.2);
 
+    // 縦軸が気圧そのものでないことがわかるよう、単位だけ添える
+    var unit = mk("text",{ x:2, y:9, "font-size":7.5, fill:"var(--ink-faint)",
+      "letter-spacing":.3 });
+    unit.textContent = "hPa/h";
+    svg.appendChild(unit);
+
     // 両端の印
     svg.appendChild(mk("path",{ d:"M0 "+(yb-3.6)+"L4.6 "+yb+"L0 "+(yb+3.6)+"Z",
       fill:"var(--accent)" }));
@@ -875,8 +889,8 @@
 
     // いま、またはなぞっている位置
     var at = (focus==null) ? now : focus;
-    if(v[at]!=null && at>=w.s && at<=w.e){
-      var cx=X(at), cy=Y(v[at]);
+    if(rate[at]!=null && at>=w.s && at<=w.e){
+      var cx=X(at), cy=yb+dev(rate[at]);
       svg.appendChild(mk("line",{ x1:cx, x2:cx, y1:0, y2:H,
         stroke:"var(--ink)", "stroke-width":1, opacity:.5 }));
       svg.appendChild(mk("circle",{ cx:cx, cy:cy, r:5, fill:"var(--bg)" }));
@@ -933,7 +947,7 @@
     els.humidityValue.textContent = hv==null ? "--" : Math.round(hv);
     els.plotMid.textContent = (state.scrub==null)
       ? "現在"
-      : hhmm(d.times[i]) + (i<d.nowIndex ? "・過去" : (i>d.nowIndex ? "・予報" : "・現在"));
+      : hhmm(d.times[i]) + "  " + (pv==null ? "--" : Math.round(pv)) + "hPa";
   }
 
   // その地点の「今日」の最高・最低気温。時刻は現地時刻で並んでいる。
