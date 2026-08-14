@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#528a66" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0e1c15" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#e5e5e2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,50 +18,53 @@
   /* 参考画像の作法にならう。
      ・地は一色のべた塗り。カードも影も使わない。
      ・図はすべて一色の黒。差し色は赤の点ひとつだけ。
-     ・言葉は、図で言えないことにだけ使う。 */
+     ・言葉は、図で言えないことにだけ使う。
+     ・一画面に収める。余りは目盛りの円が吸う。 */
   :root{
     color-scheme: light;
-    --bg:        #528a66;              /* べた塗りのグリーン */
-    --ink:       #0b1a12;              /* ほぼ黒。図も文字もこれ一色 */
-    --ink-soft:  rgba(11,26,18,.66);
-    --ink-faint: rgba(11,26,18,.46);
-    --rule:      rgba(11,26,18,.24);
-    --band:      rgba(11,26,18,.14);   /* 要注意の時間帯 */
-    --dim:       .20;                  /* 未点灯の目盛り */
-    --tile:      #0b1a12;              /* 数字の札。地に対して黒く抜く */
-    --tile-ink:  #528a66;
-    --accent:    #e33629;              /* 赤い点 */
+    --bg:        #e5e5e2;              /* べた塗りのライトグレー */
+    --ink:       #131313;              /* ほぼ黒。図も文字もこれ一色 */
+    --ink-soft:  rgba(19,19,19,.62);
+    --ink-faint: rgba(19,19,19,.42);
+    --rule:      rgba(19,19,19,.16);
+    --band:      rgba(19,19,19,.085);  /* 要注意の時間帯 */
+    --dim:       .17;                  /* 未点灯の目盛り */
+    --accent:    #e02a1f;              /* 赤い点 */
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --bg:        #0e1c15;
-      --ink:       #e4efe7;
-      --ink-soft:  rgba(228,239,231,.64);
-      --ink-faint: rgba(228,239,231,.42);
-      --rule:      rgba(228,239,231,.22);
-      --band:      rgba(228,239,231,.10);
-      --dim:       .22;
-      --tile:      #e4efe7;
-      --tile-ink:  #0e1c15;
-      --accent:    #ff5445;
+      --bg:        #141414;
+      --ink:       #ececea;
+      --ink-soft:  rgba(236,236,234,.62);
+      --ink-faint: rgba(236,236,234,.40);
+      --rule:      rgba(236,236,234,.18);
+      --band:      rgba(236,236,234,.09);
+      --dim:       .19;
+      --accent:    #ff4d3d;
     }
   }
 
   *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; }
+  html,body{ margin:0; padding:0; height:100%; }
   body{
     background: var(--bg);
     color: var(--ink);
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
+    overflow: hidden;                  /* スクロールさせない */
   }
+  /* 縦は画面のぶんだけ。伸び縮みは目盛りの円が引き受ける。 */
   .app{
+    height: 100dvh;
     max-width: 420px;
     margin: 0 auto;
-    padding: calc(env(safe-area-inset-top) + 18px) 20px
-             calc(env(safe-area-inset-bottom) + 22px);
+    padding: calc(env(safe-area-inset-top) + 14px) 20px
+             calc(env(safe-area-inset-bottom) + 12px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   .sr-only{
     position:absolute; width:1px; height:1px;
@@ -69,83 +72,17 @@
     clip:rect(0 0 0 0); white-space:nowrap; border:0;
   }
 
-  /* ---------- 見出し：地名だけ ---------- */
-  .place{
-    display:flex;
-    align-items:center;
-    gap: 8px;
-    width:100%;
-    background:none; border:none; padding:0; margin:0;
-    font: inherit;
-    color: var(--ink);
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    text-align:left;
-  }
-  .place svg{ flex:none; width:20px; height:20px; opacity:.7; }
-
-  /* ---------- 気圧の数字 ---------- */
-  .flips{
-    display:flex;
-    justify-content:center;
-    gap: 5px;
-    margin-top: 22px;
-  }
-  .fd{
-    --fdH: min(112px, 26vw);
-    position: relative;
-    flex: 1 1 0;
-    max-width: 74px;
-    height: var(--fdH);
-    perspective: 420px;
-    font-size: min(88px, 20.5vw);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    color: var(--tile-ink);
-  }
-  .fd-half, .fd-flap{
-    position:absolute;
-    left:0; right:0;
-    height: calc(50% - 1px);   /* 上下の間に2pxの継ぎ目を残す */
-    overflow:hidden;
-    background: var(--tile);
-    backface-visibility: hidden;
-  }
-  .fd-half > span, .fd-flap > span{
-    position:absolute;
-    left:0; width:100%;
-    height: var(--fdH);
-    line-height: var(--fdH);
-    text-align:center;
-  }
-  .fd-top,  .fd-flap-top{ top:0;    border-radius: 6px 6px 1px 1px; }
-  .fd-bot,  .fd-flap-bot{ bottom:0; border-radius: 1px 1px 6px 6px; }
-  .fd-top > span,  .fd-flap-top > span{ top: 0; }
-  .fd-bot > span,  .fd-flap-bot > span{ top: calc(var(--fdH) * -0.5); }
-
-  .fd-flap{ z-index: 2; }
-  .fd-flap-top{ transform-origin: bottom center; animation: fdFall 170ms ease-in forwards; }
-  .fd-flap-bot{ transform-origin: top center;    transform: rotateX(90deg);
-                animation: fdRise 170ms ease-out 170ms forwards; }
-  @keyframes fdFall{ from{ transform: rotateX(0deg);  } to{ transform: rotateX(-90deg); } }
-  @keyframes fdRise{ from{ transform: rotateX(90deg); } to{ transform: rotateX(0deg);   } }
-  @media (prefers-reduced-motion: reduce){
-    .fd-flap{ display:none; }
-  }
-  .hero-unit{
-    display:block;
-    text-align:center;
-    margin-top: 10px;
-    font-size: 11px;
-    letter-spacing: .28em;
-    color: var(--ink-faint);
-  }
-
   /* ---------- 体調の目盛り：横線で描いた円 ---------- */
   /* 下から点灯する。満ちるほど負荷が大きい。言葉は使わない。 */
-  .risk{ margin-top: 26px; }
-  .risk svg{ display:block; width: 74%; max-width: 260px; height:auto; margin: 0 auto; }
+  .risk{
+    flex: 1 1 auto;
+    min-height: 100px;
+    max-height: 44vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .risk svg{ display:block; width:100%; height:100%; }
   .rr{
     stroke: var(--ink);
     stroke-linecap: butt;
@@ -158,11 +95,19 @@
   }
 
   /* ---------- 状態のひとこと ---------- */
-  .status{ margin-top: 22px; text-align:center; }
+  .status{
+    flex: 1 1 auto;
+    min-height: 0;
+    display:flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    text-align:center;
+  }
+  .status-note{ margin-top: 14px; }
   .status-note{
     font-size: 13px;
     color: var(--ink-soft);
-    line-height: 1.5;
+    line-height: 1.4;
     font-variant-numeric: tabular-nums;
   }
   .status-note:empty{ display:none; }
@@ -171,7 +116,7 @@
     justify-content:center;
     align-items: baseline;
     gap: 16px;
-    margin-top: 6px;
+    margin-top: 5px;
     font-variant-numeric: tabular-nums;
     font-size: 15px;
     font-weight: 700;
@@ -188,25 +133,27 @@
   .minmax .u{ font-size: 10px; color: var(--ink-faint); }
 
   /* ---------- 3時間ごとの気圧 ---------- */
+  /* 大きな数字をやめたので、いまの気圧はこの列の左端が受け持つ。 */
   .strip{
+    flex:none;
     display:grid;
     grid-template-columns: repeat(5, 1fr);
     font-variant-numeric: tabular-nums;
-    margin-top: 30px;
+    margin-top: 20px;
   }
   .strip div{ text-align:center; }
   .strip .h{ font-size: 10px; color: var(--ink-faint); letter-spacing: .04em; }
-  .strip .v{ font-size: 15px; font-weight: 700; margin-top: 6px; letter-spacing: -0.02em; }
+  .strip .v{ font-size: 16px; font-weight: 700; margin-top: 5px; letter-spacing: -0.02em; }
   .strip .now .h{ color: var(--ink); }
-  .strip .now .v{ font-weight: 800; }
+  .strip .now .v{ font-size: 21px; font-weight: 800; }
 
   /* ---------- 気圧のグラフ ---------- */
-  .plot{ margin-top: 16px; touch-action: pan-y; }
+  .plot{ flex:none; margin-top: 12px; touch-action: pan-y; }
   .plot svg{ display:block; width:100%; height:auto; overflow:visible; }
   .plot-foot{
     display:flex;
     justify-content:space-between;
-    margin-top: 8px;
+    margin-top: 7px;
     font-size: 10px;
     color: var(--ink-faint);
     letter-spacing: .06em;
@@ -215,32 +162,33 @@
   }
   .plot-foot .mid{ color: var(--ink-soft); }
   .plot-note{
-    margin-top: 10px;
-    font-size: 11px;
+    margin-top: 8px;
+    font-size: 10px;
     color: var(--ink-faint);
     display:flex;
     align-items:center;
-    gap: 7px;
+    gap: 6px;
+    min-height: 11px;
   }
-  .plot-note:empty{ display:none; }
+  .plot-note:empty::before{ display:none; }
   .plot-note::before{
     content:"";
     flex: none;
-    width: 16px; height: 10px;
+    width: 14px; height: 9px;
     background: var(--band);
     box-shadow: inset 0 0 0 1px var(--rule);
   }
 
   /* ---------- 気温・湿度 ---------- */
   /* 単位そのものが見出しになるので、言葉は置かない。 */
+  .rows{ flex:none; margin-top: 14px; border-top: 1px solid var(--rule); }
   .row{
     display:flex;
     align-items:center;
     gap: 14px;
-    padding: 16px 0;
+    padding: 13px 0;
     border-bottom: 1px solid var(--rule);
   }
-  .rows{ margin-top: 26px; border-top: 1px solid var(--rule); }
   .row:last-child{ border-bottom: none; }
   .row-value{
     font-size: 21px;
@@ -254,46 +202,22 @@
   .row-spark{ flex: 1; min-width: 0; touch-action: pan-y; }
   .row-spark svg{ display:block; width:100%; height:auto; }
 
-  /* ---------- できること ---------- */
-  .care{ margin-top: 26px; }
-  .care ul{ list-style:none; margin: 0; padding: 0; }
-  .care li{
-    display:flex;
-    gap: 12px;
-    align-items:baseline;
-    padding: 13px 0;
-    border-bottom: 1px solid var(--rule);
-    font-size: 14.5px;
-    font-weight: 600;
-    line-height: 1.4;
-    letter-spacing: -0.01em;
-  }
-  .care li:first-child{ border-top: 1px solid var(--rule); }
-  .care li:last-child{ border-bottom: none; }
-  .care li .n{
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--ink-faint);
-    font-variant-numeric: tabular-nums;
-    flex: none;
-    width: 1.1em;
-  }
-
-  /* ---------- 足もと：赤い点で更新する ---------- */
+  /* ---------- 足もと：赤い点で更新、右の点で地名 ---------- */
   .foot-row{
+    flex:none;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin-top: 30px;
+    gap: 12px;
+    padding-top: 14px;
   }
   .dot{
-    width: 46px; height: 46px;
+    width: 44px; height: 44px;
+    flex:none;
     padding: 0;
     border: none;
     border-radius: 50%;
     background: var(--accent);
-    /* 赤と緑は明度が近い。輪郭を足して、形として読めるようにする。 */
-    box-shadow: inset 0 0 0 2.5px var(--ink);
     transition: transform .15s ease;
   }
   .dot:active{ transform: scale(.92); }
@@ -302,7 +226,21 @@
   @media (prefers-reduced-motion: reduce){
     .dot[aria-busy="true"]{ animation:none; opacity:.55; }
   }
+  .glyph{
+    width: 44px; height: 44px;
+    flex:none;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: none;
+    color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .glyph svg{ width: 19px; height: 19px; }
+  .glyph:active{ background: var(--band); }
   .foot-row .t{
+    flex: 1;
+    text-align:center;
     font-size: 13px;
     font-weight: 700;
     color: var(--ink-soft);
@@ -311,15 +249,28 @@
   }
 
   .msg{
-    font-size: 11.5px;
+    flex:none;
+    font-size: 11px;
     color: var(--ink-faint);
-    line-height:1.55;
-    margin-top: 14px;
+    line-height:1.5;
+    margin-top: 8px;
+    max-height: 3em;
+    overflow: hidden;
   }
   .msg:empty{ display:none; }
 
-  /* ---------- 地名の検索 ---------- */
-  .search{ margin-top: 20px; }
+  /* ---------- 地名の検索・ことわり：どちらも別の面として開く ---------- */
+  /* 本体を一画面に収めたいので、開くものは上に重ねる。 */
+  .sheet{
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: var(--bg);
+    padding: calc(env(safe-area-inset-top) + 22px) 20px
+             calc(env(safe-area-inset-bottom) + 22px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   .search.hidden{ display:none; }
   .search input{
     width:100%;
@@ -336,7 +287,7 @@
   .search input:focus{ outline:none; border-bottom-color: var(--ink); }
   .search ul{ list-style:none; margin: 2px 0 0; padding:0; }
   .search li{
-    padding: 13px 0;
+    padding: 14px 0;
     font-size: 15px;
     font-weight: 600;
     border-bottom: 1px solid var(--rule);
@@ -344,39 +295,59 @@
   .search li:active{ color: var(--ink-soft); }
   .search li.empty{ color: var(--ink-faint); border:none; font-weight: 400; }
 
-  /* ---------- ことわり ---------- */
-  details.note{ margin-top: 26px; }
+  details.note{ flex:none; margin-top: 8px; }
   details.note summary{
     list-style:none;
     font-size: 10px;
     color: var(--ink-faint);
-    letter-spacing: .16em;
+    letter-spacing: .14em;
     text-transform: uppercase;
   }
   details.note summary::-webkit-details-marker{ display:none; }
+  details.note[open]{
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    margin: 0;
+    background: var(--bg);
+    padding: calc(env(safe-area-inset-top) + 22px) 20px
+             calc(env(safe-area-inset-bottom) + 22px);
+    overflow-y: auto;
+  }
   details.note p{
-    font-size: 11.5px;
-    line-height: 1.7;
+    font-size: 12px;
+    line-height: 1.75;
     color: var(--ink-faint);
-    margin: 12px 0 0;
+    margin: 14px 0 0;
+    max-width: 420px;
   }
   details.note a{ color: var(--ink-soft); }
+
+  /* 背の低い画面でも一画面に収める */
+  @media (max-height: 730px){
+    .app{ padding-top: calc(env(safe-area-inset-top) + 10px);
+          padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
+    .risk{ min-height: 78px; max-height: 38vh; }
+    .status-note{ margin-top: 10px; font-size: 12px; }
+    .minmax{ margin-top: 3px; font-size: 14px; }
+    .strip{ margin-top: 12px; }
+    .strip .v{ font-size: 15px; margin-top: 3px; }
+    .strip .now .v{ font-size: 19px; }
+    .plot{ margin-top: 8px; }
+    .plot-foot{ margin-top: 5px; }
+    .plot-note{ margin-top: 5px; }
+    .rows{ margin-top: 8px; }
+    .row{ padding: 9px 0; }
+    .row-value{ font-size: 19px; }
+    .foot-row{ padding-top: 10px; }
+    .dot, .glyph{ width: 38px; height: 38px; }
+    .msg{ margin-top: 6px; }
+    details.note{ margin-top: 6px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
-
-  <button class="place" id="placeBtn" type="button" aria-label="地名を変える">
-    <span id="placeName">…</span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M5 9l7 7 7-7"/>
-    </svg>
-  </button>
-
-  <div class="flips" id="flips" aria-hidden="true"></div>
-  <div class="sr-only" id="heroValue">--</div>
-  <div class="hero-unit">hPa</div>
 
   <div class="status" id="status" data-level="good">
     <div class="risk">
@@ -384,6 +355,7 @@
            aria-labelledby="statusWord"></svg>
     </div>
     <div class="sr-only" id="statusWord">読み込み中</div>
+    <div class="sr-only" id="heroValue">--</div>
     <div class="status-note" id="statusNote"></div>
     <div class="minmax">
       <span><span class="k">max</span><span id="tMax">--</span><span class="u">°</span></span>
@@ -394,7 +366,7 @@
   <div class="strip" id="strip"></div>
 
   <div class="plot" id="plot">
-    <svg id="chartPressure" viewBox="0 0 320 104" preserveAspectRatio="none"
+    <svg id="chartPressure" viewBox="0 0 320 90" preserveAspectRatio="none"
          role="img" aria-label="気圧の推移"></svg>
     <div class="plot-foot">
       <span>−12h</span>
@@ -407,29 +379,31 @@
   <div class="rows">
     <div class="row">
       <div class="row-value"><span id="tempValue">--</span><span class="u">°C</span></div>
-      <div class="row-spark"><svg id="chartTemp" viewBox="0 0 160 26" preserveAspectRatio="none"
+      <div class="row-spark"><svg id="chartTemp" viewBox="0 0 160 24" preserveAspectRatio="none"
         role="img" aria-label="気温の推移"></svg></div>
     </div>
     <div class="row">
       <div class="row-value"><span id="humidityValue">--</span><span class="u">%</span></div>
-      <div class="row-spark"><svg id="chartHumidity" viewBox="0 0 160 26" preserveAspectRatio="none"
+      <div class="row-spark"><svg id="chartHumidity" viewBox="0 0 160 24" preserveAspectRatio="none"
         role="img" aria-label="湿度の推移"></svg></div>
     </div>
-  </div>
-
-  <div class="care" id="care">
-    <div class="sr-only" id="careLabel">できること</div>
-    <ul id="careList" aria-labelledby="careLabel"></ul>
   </div>
 
   <div class="foot-row">
     <button class="dot" id="refreshBtn" type="button" aria-label="更新"></button>
     <span class="t" id="footTime"></span>
+    <button class="glyph" id="placeBtn" type="button" aria-label="地名を変える">
+      <span class="sr-only" id="placeName">…</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/>
+      </svg>
+    </button>
   </div>
 
   <div class="msg" id="msg"></div>
 
-  <div class="search hidden" id="search">
+  <div class="search sheet hidden" id="search">
     <input type="text" id="geoInput" placeholder="地名で検索" autocomplete="off"
            autocorrect="off" spellcheck="false" enterkeyhint="search">
     <ul id="geoResults"></ul>
@@ -449,7 +423,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v26";
+  var BUILD = "v27";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -460,11 +434,10 @@
   var $ = function(id){ return document.getElementById(id); };
   var els = {
     placeBtn:$("placeBtn"), placeName:$("placeName"),
-    heroValue:$("heroValue"), flips:$("flips"),
+    heroValue:$("heroValue"),
     status:$("status"), statusWord:$("statusWord"), statusNote:$("statusNote"),
     riskCircle:$("riskCircle"),
     tMax:$("tMax"), tMin:$("tMin"),
-    careLabel:$("careLabel"), careList:$("careList"),
     strip:$("strip"),
     plot:$("plot"), chartPressure:$("chartPressure"), plotMid:$("plotMid"),
     plotNote:$("plotNote"),
@@ -741,109 +714,6 @@
   }
 
   // ---------- self-care ----------
-  // その場でできる一般的なセルフケア。いずれも薬に頼らない範囲にとどめ、
-  // 受診の判断は注記側に委ねる。
-  //   must … その状況では必ず出す（安全に関わるもの）
-  //   when … 出せる状況かどうか
-  // must を先に並べ、残りの枠は時間で入れ替える。
-  var CARE_POOL = [
-    { t:"横になれる場所で休む", w:"暗く静かな場所だとなお良い",
-      when:function(c){ return c.level==="critical"; }, must:true },
-    { t:"激しい運動と長時間の外出は避ける", w:"回復を優先する",
-      when:function(c){ return c.level==="critical"; }, must:true },
-    { t:"耳と首の後ろを温める", w:"蒸しタオルや手のひらで十分",
-      when:function(c){ return c.level==="critical"||c.level==="serious"; } },
-    { t:"耳を軽くつまんで、ゆっくり回す", w:"耳まわりの血流をうながす。1回1分ほど",
-      when:function(c){ return c.level==="serious"||c.level==="warning"; } },
-    { t:"4秒吸って8秒吐く呼吸を数回", w:"息を長く吐くと体がゆるみやすい",
-      when:function(c){ return c.level!=="good"; } },
-    { t:"予定を詰め込まない", w:"低下が続く間は余裕をもって",
-      when:function(c){ return c.level==="serious"||c.level==="critical"; } },
-    { t:"首と肩をゆっくり回す", w:"こわばりが頭痛につながりやすい",
-      when:function(){ return true; } },
-    { t:"カフェインとアルコールは控えめに", w:"利尿で水分が失われる",
-      when:function(c){ return c.level!=="good"; } },
-
-    // 気温・湿度から出るもの
-    { t:"温かい飲み物で水分をとる", w:"冷えると症状が強く出やすい",
-      when:function(c){ return c.temp!=null && c.temp<=18; }, fit:true },
-    { t:"冷たすぎない水をこまめに", w:"汗で失う分を先回りして補う",
-      when:function(c){ return c.temp!=null && c.temp>=24; }, fit:true },
-    { t:"風を通すか除湿する", w:"蒸し暑さは寝つきにも響く",
-      when:function(c){ return c.hum!=null && c.hum>=80; }, fit:true },
-    { t:"のどと鼻を潤す", w:"乾いた空気は粘膜の負担になる",
-      when:function(c){ return c.hum!=null && c.hum<=30; }, fit:true },
-    { t:"羽織れるものを一枚持つ", w:"気温差が大きい日は体が消耗しやすい",
-      when:function(c){ return c.swing!=null && c.swing>=10; }, fit:true },
-    { t:"温度差の少ない場所で過ごす", w:"急な寒暖差は自律神経に響く",
-      when:function(c){ return c.tempFall; }, fit:true },
-
-    // 落ち着いているときの整え
-    { t:"こまめに水分をとる", w:"脱水は頭痛の引き金になりやすい",
-      when:function(){ return true; } },
-    { t:"睡眠の時間帯を一定に保つ", w:"自律神経の乱れを防ぐ",
-      when:function(c){ return c.level==="good"; } },
-    { t:"軽く体を動かしておく", w:"穏やかな日のうちに巡りを整える",
-      when:function(c){ return c.level==="good"; } },
-    { t:"入浴で体を温める", w:"寝る1〜2時間前だと眠りに入りやすい",
-      when:function(c){ return c.level==="good"; } }
-  ];
-
-  // 5分ごとに切り替わる番号。時計に紐づくので、開き直しても飛ばない。
-  function rotationSlot(){ return Math.floor(Date.now() / TICK_MS); }
-
-  function pickCare(ctx){
-    var pool = CARE_POOL.filter(function(it){ return it.when(ctx); });
-    var must = pool.filter(function(it){ return it.must; });
-    var fit  = pool.filter(function(it){ return !it.must && it.fit; });
-    var rest = pool.filter(function(it){ return !it.must && !it.fit; });
-    var n = (ctx.level==="good") ? 3 : 4;
-
-    var out = must.slice(0, n);
-    // いまの天候に紐づくものを先に置く。ただし最低1枠は入れ替え用に空ける。
-    var keep = Math.max(0, n - out.length - (rest.length ? 1 : 0));
-    out = out.concat(fit.slice(0, keep));
-
-    if(rest.length){
-      var slot = rotationSlot();
-      for(var k=0; out.length<n && k<rest.length; k++){
-        out.push(rest[(slot + k) % rest.length]);
-      }
-    }
-    for(var j=0; out.length<n && j<fit.length; j++){
-      if(out.indexOf(fit[j]) < 0) out.push(fit[j]);
-    }
-    return out;
-  }
-
-  function renderCare(alarm){
-    var day = state.data ? dayRange(state.data) : {hi:null,lo:null};
-    var ctx = {
-      level: alarm.level,
-      temp: alarm.temp,
-      hum: alarm.hum,
-      swing: (day.hi!=null && day.lo!=null) ? (day.hi-day.lo) : null,
-      tempFall: alarm.notes.some(function(x){ return x.k==="tempFall"||x.k==="coolDown"; })
-    };
-    var items = pickCare(ctx);
-    els.careLabel.textContent = (alarm.level === "good") ? "整えておくこと" : "いまできること";
-    els.careList.innerHTML = "";
-    items.forEach(function(it, i){
-      var li = document.createElement("li");
-      var n = document.createElement("span");
-      n.className = "n";
-      n.textContent = (i + 1);
-      var body = document.createElement("div");
-      body.appendChild(document.createTextNode(it.t));
-      var why = document.createElement("span");
-      why.className = "sr-only";
-      why.textContent = it.w;
-      body.appendChild(why);
-      li.appendChild(n); li.appendChild(body);
-      els.careList.appendChild(li);
-    });
-  }
-
   // ---------- format ----------
 
   function describeAge(ms){
@@ -905,7 +775,7 @@
 
   function drawMain(svg, d, focus){
     clear(svg);
-    var v=d.pressure, now=d.nowIndex, W=320, H=104, top=10, bot=8;
+    var v=d.pressure, now=d.nowIndex, W=320, H=90, top=9, bot=7;
     var w=win(), span=w.e-w.s;
     var sc=scaleOf(v.slice(w.s, w.e+1), 6); if(!sc || span<1) return;
     var ph=H-top-bot;
@@ -950,7 +820,7 @@
 
   function drawSpark(svg, vals, now, focus){
     clear(svg);
-    var W=160,H=26,pad=3.5;
+    var W=160,H=24,pad=3.5;
     var w=win(), span=w.e-w.s;
     var sc=scaleOf(vals.slice(w.s, w.e+1), 4); if(!sc || span<1) return;
     function X(i){ return ((i-w.s)/span)*W; }
@@ -984,89 +854,6 @@
 
   var state = { data:null, fetchedAt:0, place:"", scrub:null };
 
-  // ---------- flip digits ----------
-
-  function makeTile(ch){
-    var fd = document.createElement("div");
-    fd.className = "fd";
-    fd.setAttribute("data-v", ch);
-    ["fd-top","fd-bot"].forEach(function(cls){
-      var half = document.createElement("div");
-      half.className = "fd-half " + cls;
-      var sp = document.createElement("span");
-      sp.textContent = ch;
-      half.appendChild(sp);
-      fd.appendChild(half);
-    });
-    return fd;
-  }
-
-  function halfWith(cls, ch){
-    var el = document.createElement("div");
-    el.className = "fd-flap " + cls;
-    var sp = document.createElement("span");
-    sp.textContent = ch;
-    el.appendChild(sp);
-    return el;
-  }
-
-  // 上半分が新しい数字に替わったところへ、古い数字の板が倒れ、
-  // 続いて新しい数字の下半分が起き上がる。
-  function flipTile(fd, next){
-    var prev = fd.getAttribute("data-v");
-    if(prev === next) return;
-    fd.setAttribute("data-v", next);
-
-    var top = fd.querySelector(".fd-top > span");
-    var bot = fd.querySelector(".fd-bot > span");
-
-    // 途中の札が残っていれば片付ける（連続更新への備え）
-    var stale = fd.querySelectorAll(".fd-flap");
-    for(var k=0;k<stale.length;k++) fd.removeChild(stale[k]);
-
-    top.textContent = next;          // 倒れる板の裏から現れる
-    // bot は倒れ終わるまで古い数字のまま残す
-
-    var flapTop = halfWith("fd-flap-top", prev);
-    var flapBot = halfWith("fd-flap-bot", next);
-    fd.appendChild(flapTop);
-    fd.appendChild(flapBot);
-
-    flapBot.addEventListener("animationend", function(){
-      bot.textContent = next;
-      if(flapTop.parentNode) fd.removeChild(flapTop);
-      if(flapBot.parentNode) fd.removeChild(flapBot);
-    });
-  }
-
-  function setTile(fd, ch){
-    fd.setAttribute("data-v", ch);
-    fd.querySelector(".fd-top > span").textContent = ch;
-    fd.querySelector(".fd-bot > span").textContent = ch;
-    var stale = fd.querySelectorAll(".fd-flap");
-    for(var k=0;k<stale.length;k++) fd.removeChild(stale[k]);
-  }
-
-  var reduceMotion = window.matchMedia
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function renderFlips(text, animate){
-    var chars = String(text).split("");
-    var tiles = els.flips.children;
-
-    // 桁数が変わったら組み直す（このときは動かさない）
-    if(tiles.length !== chars.length){
-      els.flips.innerHTML = "";
-      chars.forEach(function(ch){ els.flips.appendChild(makeTile(ch)); });
-      return;
-    }
-    chars.forEach(function(ch, i){
-      var fd = tiles[i];
-      if(animate && !reduceMotion) flipTile(fd, ch);
-      else if(fd.getAttribute("data-v") !== ch) setTile(fd, ch);
-    });
-  }
-
   function renderHero(animate){
     var d=state.data; if(!d) return;
     var i = (state.scrub==null) ? d.nowIndex : state.scrub;
@@ -1074,8 +861,6 @@
     var pv = live && live.pressure!=null ? live.pressure : d.pressure[i];
     var shown = pv==null ? "--" : String(Math.round(pv));
     els.heroValue.textContent = shown;
-    // なぞっている間は値が連続で変わるため、めくらずに差し替える
-    renderFlips(shown, animate === true && state.scrub == null);
     var tv = live && live.temp!=null ? live.temp : d.temp[i];
     var hv = live && live.humidity!=null ? live.humidity : d.humidity[i];
     els.tempValue.textContent = tv==null ? "--" : tv.toFixed(1);
@@ -1149,7 +934,6 @@
     els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
       ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
       : a.lines.join(" · ");
-    renderCare(a);
   }
 
   // 3時間ごとの気圧予報。Weat の時刻ストリップにあたる部分。
@@ -1158,6 +942,8 @@
   function renderStrip(){
     var d=state.data; if(!d) return;
     var base = d.pressure[d.nowIndex];
+    // 実測値があればそちらを「今」として出す（差分は予報の基準値から測る）
+    var shownNow = (d.cur && d.cur.pressure!=null) ? d.cur.pressure : base;
     els.strip.innerHTML="";
     for(var k=0;k<5;k++){      // 今 / +3 / +6 / +9 / +12 時間。グラフの右端に合わせる
       var i=d.nowIndex+k*3;
@@ -1174,7 +960,7 @@
       if(d.pressure[i]==null || base==null){
         v.textContent = "--";
       }else if(k===0){
-        v.textContent = Math.round(base);
+        v.textContent = Math.round(shownNow);
       }else{
         var diff = d.pressure[i] - base;
         var r = Math.abs(diff) < 0.05 ? 0 : diff;   // -0.0 を出さない
