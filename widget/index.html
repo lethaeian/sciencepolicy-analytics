@@ -445,7 +445,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v34";
+  var BUILD = "v35";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -803,7 +803,7 @@
   // 下に振れていれば下降中、上なら上昇中。値のある側を長く、反対側を
   // 0.45倍で取り、音の波形の非対称さに合わせる。塗りつぶしの面で描く。
   var MIRROR = 0.45;
-  var RATE_FLOOR = 1.0;   // 目盛りの下限 hPa/時。穏やかな日を煽らない
+  var RATE_FLOOR = 0.5;   // 目盛りの下限 hPa/時。これ以下は縮めずに見せる
   function drawMain(svg, d, focus){
     clear(svg);
     var v=d.pressure, now=d.nowIndex, W=320, H=104, top=5, bot=5;
@@ -819,7 +819,7 @@
     }
     var mx=0;
     for(i=w.s;i<=w.e;i++) if(rate[i]!=null) mx=Math.max(mx, Math.abs(rate[i]));
-    var lim = Math.max(RATE_FLOOR, mx*1.06);
+    var lim = Math.max(RATE_FLOOR, mx*1.02);
     var amp = ph * 0.45;
     // 下降（負）を下へ振る
     function dev(r){ return -(r/lim)*amp; }
@@ -882,10 +882,11 @@
         d:"M"+bx+" "+H+"L"+(bx+5*dir)+" "+H+"L"+bx+" "+(H-5)+"Z", fill:"var(--ink)", opacity:.75 }));
     });
 
-    // 縦軸が気圧そのものでないことがわかるよう、単位だけ添える
+    // 目盛りは日によって伸び縮みするので、上下の端が何hPa/時かを添える。
+    // 縦軸が気圧そのものでないことも、これで分かる。
     var unit = mk("text",{ x:2, y:9, "font-size":7.5, fill:"var(--ink-faint)",
       "letter-spacing":.3 });
-    unit.textContent = "hPa/h";
+    unit.textContent = "±" + lim.toFixed(1) + " hPa/h";
     svg.appendChild(unit);
 
     // 両端の印
