@@ -587,7 +587,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v24";
+  var BUILD = "v25";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -726,6 +726,19 @@
   var ORDER = { good:0, warning:1, serious:2, critical:3 };
   var WORD  = { good:"問題なし", warning:"注意", serious:"警戒", critical:"厳重警戒" };
 
+  // 気圧ではなく湿度・気温で針が振れたときの言い方
+  var NON_PRESSURE_WORD = {
+    muggy:    "蒸し暑さが重なっています",
+    humid:    "湿度が高い状態です",
+    dry:      "空気が乾いています",
+    hot:      "気温が高い状態です",
+    cold:     "気温が低い状態です",
+    tempFall: "気温が下がっています",
+    tempRise: "気温が上がっています",
+    coolDown: "この先気温が下がります",
+    swing:    "気温差が大きい一日です"
+  };
+
   function back(a,i,n){ var j=i-n; if(j<0||i>=a.length||a[j]==null||a[i]==null) return null; return a[i]-a[j]; }
   function ahead(a,i,n){ var j=i+n; if(j>=a.length||a[j]==null||a[i]==null) return null; return a[j]-a[i]; }
   function levelFor(d,k){
@@ -788,7 +801,7 @@
 
   // ゲージの目盛り 0〜9。気圧の下がり方を主軸に、湿度と気温を上乗せする。
   //   気圧 … 0.7hPa/3時間 ごとに1点。6時間と予報も同じ重みに揃えて最大を採る
-  //   湿度 … 65%を超えたぶんを12で割る。蒸し暑さは別に上乗せ（最大2.5点）
+  //   湿度 … 62%を超えたぶんを9で割る。蒸し暑さは別に上乗せ（最大4.5点）
   //   気温 … 下がり幅と、極端な暑さ寒さ（最大1.5点）
   function riskOf(d){
     var p = d.pressure, i = d.nowIndex;
@@ -804,11 +817,11 @@
     var hum = d.humidity[i], tp = d.temp[i];
     var sh = 0;
     if(hum != null){
-      if(hum > 65) sh += (hum - 65) / 12;        // 85%で約1.7点、95%で2.5点
-      if(hum <= 30) sh += (30 - hum) / 14;       // 乾燥も負荷とみなす
-      if(hum >= 72 && tp != null && tp >= 25) sh += 0.8;  // 蒸し暑さ
+      if(hum > 62) sh += (hum - 62) / 9;         // 80%で2.0点、90%で3.1点
+      if(hum <= 32) sh += (32 - hum) / 11;       // 乾燥も負荷とみなす
+      if(hum >= 72 && tp != null && tp >= 25) sh += 1.0;  // 蒸し暑さ
     }
-    sh = Math.min(2.5, sh);
+    sh = Math.min(4.5, sh);
 
     var st = 0;
     var dT3 = back(d.temp, i, 3), fT6 = ahead(d.temp, i, 6);
@@ -832,9 +845,19 @@
     var word = futureLeads ? futurePhrase(f6) : pastPhrase(d3);
 
     var notes = weatherNotes(d);
+    var pLevel = level;   // 注記の組み立ては気圧の段階で決める
+
+    // 気圧が穏やかでも湿度や気温で針が振れることがある。針と、
+    // 色・読み上げ・対策の見出しが食い違わないよう、段階を引き上げる。
+    var risk = riskOf(d);
+    var byRisk = risk>=7 ? "critical" : risk>=5 ? "serious" : risk>=3 ? "warning" : "good";
+    if(ORDER[byRisk] > ORDER[level]){
+      level = byRisk;
+      word = NON_PRESSURE_WORD[notes.length ? notes[0].k : ""] || "気圧以外の負荷があります";
+    }
     var lines = [];
     var note = "";
-    if(level!=="good"){
+    if(pLevel!=="good"){
       // 「低下」で向きは伝わるので数値の符号は外す
       var c=[];
       if(d3!=null&&ORDER[lv[0]]>0) c.push({v:d3,t:"3時間 "+d3.toFixed(1)+"hPa"});
@@ -850,7 +873,7 @@
     }
     note = lines.join(" · ");
     return { level:level, word:word, note:note, lines:lines, notes:notes,
-             risk: riskOf(d),
+             risk: risk,
              d3:d3, d6:d6, f6:f6, hum:d.humidity[i], temp:d.temp[i] };
   }
 
