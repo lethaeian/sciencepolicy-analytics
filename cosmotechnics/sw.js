@@ -8,7 +8,7 @@
  */
 
 /* index.html の VERSION と version.json に揃えること。 */
-var VERSION = "2026.08.14-4";
+var VERSION = "2026.08.15-1";
 var CACHE = "cosmotechnics-shell-" + VERSION;
 
 var SHELL = [
