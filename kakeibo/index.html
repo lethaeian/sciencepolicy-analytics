@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="家計">
+<meta name="description" content="数字と色面だけの家計簿。金額・費目・日付の三つしか置かない。">
+<title>家計 — 数字だけの家計簿</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  /* ── 設計の方針 ───────────────────────────────
+     参考にした画面の作りにならい、言葉をほとんど置かない。
+     費目は絵の丸、種別は矢印、量は帯の幅・花弁の長さ・点の大きさで示す。
+     読ませるのは金額の数字だけ。四枚の画面はそれぞれ地の色を変え、
+     黒（今月）・橙（入力）・灰（内訳）・生成り（暦）で役割を区別する。
+     ───────────────────────────────────────── */
+  :root{
+    color-scheme: dark;
+    --orange:  #ff5b34;
+    --yellow:  #ffd23f;
+    --pink:    #f3a8d8;
+    --green:   #3ddc84;
+    --blue:    #8ab4ff;
+    --lilac:   #c9b8ff;
+    --stone:   #b9b3a8;
+
+    --grot:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
+    --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+
+    --dots: 34px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    background:#0d0d0d; color:#f4f2ee;
+    font-family:var(--grot);
+    font-feature-settings:"palt" 1; font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+  button{ font-family:inherit; color:inherit; border:0; background:none; padding:0; cursor:pointer; }
+
+  .shell{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    max-width:520px; margin:0 auto;
+  }
+
+  /* ── 三枚の窓：横に送る ───────────────────── */
+  .strip{
+    flex:1 1 auto; min-height:0;
+    display:flex; overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    scrollbar-width:none; -ms-overflow-style:none;
+    overscroll-behavior-x:contain;
+  }
+  .strip::-webkit-scrollbar{ display:none; }
+  .pane{
+    flex:0 0 100%; width:100%; height:100%;
+    scroll-snap-align:center; scroll-snap-stop:always;
+    display:flex; flex-direction:column;
+    overflow-y:auto; overscroll-behavior-y:contain;
+    padding:calc(env(safe-area-inset-top) + 16px) 18px 14px;
+  }
+  .pane.dark{ background:#0d0d0d; color:#f4f2ee; --ghost:rgba(244,242,238,.26); --rule:rgba(244,242,238,.14); --soft:rgba(244,242,238,.10); }
+  .pane.hot { background:var(--orange); color:#0d0d0d;  --ghost:rgba(13,13,13,.30);  --rule:rgba(13,13,13,.20);  --soft:rgba(13,13,13,.10); }
+  .pane.pale{ background:#e9e6df; color:#0d0d0d;        --ghost:rgba(13,13,13,.26);  --rule:rgba(13,13,13,.16);  --soft:rgba(13,13,13,.07); }
+
+  /* ── 大きな見出し ─────────────────────────── */
+  .display{
+    margin:0; font-weight:800; letter-spacing:-.035em;
+    font-size:clamp(38px,13vw,60px); line-height:.94;
+  }
+  .display .ghost{ color:var(--ghost); }
+  #topcat .ghost{ display:block; margin-top:8px; }
+  .display .yen{ font-size:.52em; letter-spacing:0; vertical-align:.14em; margin-right:.04em; }
+  .ghost{ color:var(--ghost); }
+
+  .micro{
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ghost);
+  }
+
+  /* ── 丸いしるし ───────────────────────────── */
+  .chip{
+    width:40px; height:40px; flex:0 0 40px; border-radius:50%;
+    display:grid; place-items:center;
+    font-size:15px; font-weight:800; line-height:1; color:#0d0d0d;
+    background:var(--soft);
+  }
+  .chip.sm{ width:30px; height:30px; flex-basis:30px; font-size:12px; }
+  .chip.lg{ width:46px; height:46px; flex-basis:46px; font-size:17px; }
+  .chip.hollow{ background:none; border:1.5px solid var(--rule); color:inherit; }
+  .chip.ink{ background:#0d0d0d; color:#fff; }
+  .chip.pressable{ transition:transform .12s ease; }
+  .chip.pressable:active{ transform:scale(.9); }
+
+  /* 費目は文字ではなく絵で示す。色と形の二重の手がかりで見分ける。 */
+  .ic{ display:block; width:19px; height:19px; fill:currentColor; }
+  .chip.sm .ic{ width:16px; height:16px; }
+  .cats .chip .ic{ width:23px; height:23px; }
+  .ic.big{ width:clamp(46px,15vw,66px); height:clamp(46px,15vw,66px); }
+
+  .marks{ display:flex; gap:8px; align-items:center; }
+
+  /* ── 今月（黒） ───────────────────────────── */
+  .topline{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .topline .nav{
+    width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+    font-size:17px; line-height:1; color:var(--ghost); border:1.5px solid var(--rule);
+  }
+  .topline .nav:active{ color:inherit; }
+  .topline .sp{ flex:1 1 auto; }
+
+  .head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .head .marks{ padding-top:6px; }
+
+  .flow{ margin:16px -4px 0; }
+  .flow svg{ display:block; width:100%; height:auto; }
+
+  .band{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; padding:12px 0 8px; margin-top:6px;
+    border-bottom:1.5px solid currentColor;
+  }
+  .band b{ font-size:15px; font-weight:800; letter-spacing:-.01em; }
+
+  .rows{ display:flex; flex-direction:column; }
+  .row{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 0; border-bottom:1px solid var(--rule);
+    -webkit-user-select:none; user-select:none;
+  }
+  .row .amt{ font-size:27px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .row .amt .yen{ font-size:.55em; vertical-align:.12em; margin-right:.06em; }
+  .row .when{ display:block; margin-top:4px; }
+  .row .sp{ flex:1 1 auto; }
+  .row.gone{ opacity:0; transform:translateX(-14px); transition:opacity .18s, transform .18s; }
+  .empty{ padding:26px 0 8px; }
+
+  /* ── 入力（橙） ───────────────────────────── */
+  .pane.hot{ padding-bottom:10px; }
+  .kinds{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .kinds .sp{ flex:1 1 auto; }
+  /* 打ち込んでいる金額を画面の真ん中に大きく置く。ここが入力画面の主役。 */
+  .amtwrap{ flex:1 1 auto; min-height:96px; display:grid; align-items:center; }
+  .amount{ margin:0; font-size:clamp(52px,17vw,78px); white-space:nowrap; }
+  .amount.long{ font-size:clamp(36px,11.5vw,56px); }
+  .amount.zero .num{ color:var(--ghost); }
+  .cats{ display:flex; gap:8px; margin:16px 0 8px; }
+  .cats .chip{ flex:1 1 0; width:auto; border-radius:22px; height:44px; background:var(--c,var(--soft)); }
+  /* 選んだ費目は黒で塗る。色そのものは変えず、反転で示す。 */
+  .cats .chip[aria-pressed="true"]{ background:#0d0d0d; color:#fff; }
+
+  .meter{ height:4px; border-radius:2px; background:var(--soft); overflow:hidden; margin-bottom:14px; }
+  .meter i{ display:block; height:100%; background:#0d0d0d; width:0; transition:width .3s ease; }
+
+  .pad{
+    flex:0 0 auto;
+    height:min(42vh,290px); min-height:172px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:8px;
+  }
+  .key{
+    background:rgba(13,13,13,.11); border-radius:16px;
+    font-size:23px; font-weight:800; letter-spacing:-.02em;
+    display:grid; place-items:center;
+    transition:background .1s ease;
+  }
+  .key:active{ background:rgba(13,13,13,.22); }
+  .enter{
+    margin-top:8px; height:56px; flex:0 0 56px;
+    background:#0d0d0d; color:#fff; border-radius:18px;
+    display:grid; place-items:center; font-size:22px;
+    margin-bottom:env(safe-area-inset-bottom);
+  }
+  .enter:active{ opacity:.75; }
+  .enter[disabled]{ opacity:.28; }
+
+  /* ── 内訳（灰） ───────────────────────────── */
+  .bloom{ margin:10px auto 8px; width:100%; max-width:290px; }
+  .bloom svg{ display:block; width:100%; height:auto; }
+  .ranks{ display:flex; flex-direction:column; }
+  .rank{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--rule); }
+  .rank .bar{ flex:1 1 auto; height:6px; border-radius:3px; background:var(--soft); overflow:hidden; }
+  .rank .bar i{ display:block; height:100%; border-radius:3px; }
+  .rank .n{ font-size:17px; font-weight:800; letter-spacing:-.02em; min-width:74px; text-align:right; }
+  .foot{ display:flex; align-items:center; gap:10px; padding:14px 0 calc(env(safe-area-inset-bottom) + 4px); margin-top:auto; }
+  .foot .sp{ flex:1 1 auto; }
+  .foot .n{ font-size:20px; font-weight:800; letter-spacing:-.02em; }
+
+  /* ── 暦（生成り） ─────────────────────────── */
+  .pane.cal{
+    background:#f4f1e3; color:#0d0d0d; position:relative;
+    --ghost:rgba(13,13,13,.26); --rule:rgba(13,13,13,.14); --soft:rgba(13,13,13,.07);
+    padding-left:60px;
+  }
+  /* 参考にした画面と同じく、月は左端に縦へ置く。 */
+  .vtitle{
+    position:absolute; left:12px; top:calc(env(safe-area-inset-top) + 14px);
+    writing-mode:vertical-rl;
+    font-size:28px; font-weight:800; letter-spacing:.01em; line-height:1;
+  }
+  .calhead{ display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .calhead .marks{ gap:8px; }
+  .calhead .nav{
+    width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+    font-size:17px; line-height:1; color:var(--ghost); border:1.5px solid var(--rule);
+  }
+  .grid{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:13px 8px;
+    width:100%; max-width:290px; margin:0 auto; padding:26px 0 22px;
+  }
+  .day{ height:26px; display:grid; place-items:center; }
+  .day i{ display:block; border-radius:50%; background:#0d0d0d; transition:transform .12s ease; }
+  .day:active i{ transform:scale(.82); }
+  .daysum{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding:10px 0 8px; border-bottom:1.5px solid currentColor;
+  }
+  .daysum b{ font-size:27px; font-weight:800; letter-spacing:-.03em; }
+  .daysum b .yen{ font-size:.55em; vertical-align:.12em; margin-right:.06em; }
+  .pane.cal .rows{ padding-bottom:calc(env(safe-area-inset-bottom) + 6px); }
+  .row.mini{ padding:9px 0; }
+  .row.mini .amt{ font-size:21px; }
+
+  /* ── 下の点 ───────────────────────────────── */
+  .dots{
+    flex:0 0 var(--dots); display:flex; align-items:center; justify-content:center; gap:7px;
+    background:#0d0d0d; padding-bottom:env(safe-area-inset-bottom);
+    box-sizing:content-box;
+  }
+  .dots i{ width:6px; height:6px; border-radius:50%; background:rgba(244,242,238,.26); transition:background .2s; }
+  .dots i.on{ background:#f4f2ee; }
+
+  @media (max-height:680px){
+    .display{ font-size:clamp(32px,10vw,46px); }
+    .pad{ min-height:160px; }
+    .enter{ height:48px; flex-basis:48px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="strip" id="strip">
+
+    <!-- ① 今月 ─────────────────────────────── -->
+    <section class="pane dark" id="p0">
+      <div class="topline">
+        <button class="nav" id="prev" aria-label="前の月">‹</button>
+        <button class="nav" id="next" aria-label="次の月">›</button>
+        <span class="sp"></span>
+        <span class="micro" id="ym">2026.08</span>
+      </div>
+
+      <div class="head">
+        <h1 class="display" id="total"><span class="yen">¥</span>0</h1>
+        <div class="marks">
+          <span class="chip" id="pct" style="background:var(--yellow)">0%</span>
+          <span class="chip hollow" id="left">0</span>
+        </div>
+      </div>
+
+      <div class="flow" id="flow"></div>
+
+      <div class="band">
+        <b id="bandL">0</b>
+        <span class="micro" id="bandR">残 —</span>
+      </div>
+
+      <div class="rows" id="rows"></div>
+    </section>
+
+    <!-- ② 入力 ─────────────────────────────── -->
+    <section class="pane hot" id="p1">
+      <div class="kinds">
+        <button class="chip pressable" id="kOut" aria-pressed="true">↗</button>
+        <button class="chip pressable" id="kIn" aria-pressed="false">↘</button>
+        <span class="sp"></span>
+        <span class="micro" id="mode">2026.08</span>
+      </div>
+
+      <div class="cats" id="cats"></div>
+
+      <div class="amtwrap">
+        <h2 class="display amount zero" id="amount"><span class="yen">¥</span><span class="num">0</span></h2>
+      </div>
+
+      <div class="meter"><i id="meter"></i></div>
+
+      <div class="pad" id="pad"></div>
+      <button class="enter" id="enter" disabled aria-label="記録する">↙</button>
+    </section>
+
+    <!-- ③ 内訳 ─────────────────────────────── -->
+    <section class="pane pale" id="p2">
+      <div class="head">
+        <h1 class="display" id="topcat" role="img" aria-label="記録なし">—<span class="ghost">0%</span></h1>
+        <div class="marks">
+          <span class="chip hollow" id="count">0</span>
+        </div>
+      </div>
+
+      <div class="bloom" id="bloom"></div>
+
+      <div class="ranks" id="ranks"></div>
+
+      <div class="foot">
+        <button class="chip pressable" id="budget" style="background:var(--yellow)">◎</button>
+        <span class="n" id="budgetN">¥0</span>
+        <span class="sp"></span>
+        <button class="chip sm hollow pressable" id="wipe" aria-label="全部消す">✕</button>
+      </div>
+    </section>
+
+    <!-- ④ 暦 ───────────────────────────────── -->
+    <section class="pane cal" id="p3">
+      <span class="vtitle" id="vtitle">2026.08</span>
+
+      <div class="calhead">
+        <span class="micro" id="calsum">¥0</span>
+        <div class="marks">
+          <button class="nav" id="cprev" aria-label="前の月">‹</button>
+          <button class="nav" id="cnext" aria-label="次の月">›</button>
+        </div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="daysum">
+        <b id="daytotal"><span class="yen">¥</span>0</b>
+        <span class="micro" id="daymeta">—</span>
+      </div>
+
+      <div class="rows" id="dayrows"></div>
+    </section>
+
+  </div>
+
+  <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── 費目：絵と色だけで見分ける ───────────────
+   k は内部の呼び名で、画面には出さない（読み上げの名前にだけ使う）。
+   橙は入力画面の地色と警告に使うので、費目には割り当てない。 */
+var CATS = [
+  { k:"食", c:"var(--yellow)" },
+  { k:"住", c:"var(--lilac)"  },
+  { k:"移", c:"var(--green)"  },
+  { k:"遊", c:"var(--pink)"   },
+  { k:"医", c:"var(--blue)"   },
+  { k:"他", c:"var(--stone)"  }
+];
+
+/* 24×24の枠に描いた絵。色は文字色に従うので、黒の丸でも白抜きでも使える。 */
+var ICONS = {
+  "食": '<rect x="2.4" y="9.2" width="19.2" height="2.4" rx="1.2"/>'
+      + '<path d="M4.3 13.2h15.4a7.7 7.7 0 0 1-15.4 0z"/>',
+  "住": '<path d="M12 2.4 2.2 11.4v10.2h7.1v-6h5.4v6h7.1V11.4z"/>',
+  "移": '<path fill-rule="evenodd" d="M6.6 2.4h10.8A3.6 3.6 0 0 1 21 6v9.4a3.6 3.6 0 0 1-3.6 3.6H6.6A3.6 3.6 0 0 1 3 15.4V6a3.6 3.6 0 0 1 3.6-3.6zM6.8 6.6v4.8h10.4V6.6zm.6 7.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zm9.2 0a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/>'
+      + '<path d="M7.4 19.6 5.4 22.4h2.7l1.6-2.8zm9.2 0 2 2.8h-2.7l-1.6-2.8z"/>',
+  "遊": '<path d="M12 1.8 15.1 8.4l7 .9-5.1 5 1.3 7-6.3-3.4-6.3 3.4 1.3-7-5.1-5 7-.9z"/>',
+  /* 十字だけだと「足す」に見えるので、鞄の形に入れて薬箱にする。 */
+  "医": '<path fill-rule="evenodd" d="M9.2 2.6h5.6a2.2 2.2 0 0 1 2.2 2.2v1.3h2.6A2.4 2.4 0 0 1 22 8.5v9.3a2.4 2.4 0 0 1-2.4 2.4H4.4A2.4 2.4 0 0 1 2 17.8V8.5a2.4 2.4 0 0 1 2.4-2.4H7V4.8a2.2 2.2 0 0 1 2.2-2.2zm.4 3.5h4.8V4.9H9.6zm1.3 3.8v2.3H8.6v2.6h2.3v2.3h2.6v-2.3h2.3v-2.6h-2.3V9.9z"/>',
+  "他": '<circle cx="4.6" cy="12" r="2.3"/><circle cx="12" cy="12" r="2.3"/><circle cx="19.4" cy="12" r="2.3"/>'
+};
+function ic(k, cls){
+  return '<svg class="ic' + (cls ? " " + cls : "") + '" viewBox="0 0 24 24" aria-hidden="true">'
+       + (ICONS[k] || ICONS["他"]) + '</svg>';
+}
+
+function catOf(k){
+  for(var i=0;i<CATS.length;i++){ if(CATS[i].k === k) return CATS[i]; }
+  return CATS[CATS.length-1];
+}
+
+/* ── 保存 ─────────────────────────────────── */
+var KEY = "kakeibo.v1";
+var db = { entries:[], budgets:{} };
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return;
+    var o = JSON.parse(raw);
+    if(o && Array.isArray(o.entries)) db.entries = o.entries;
+    if(o && o.budgets && typeof o.budgets === "object") db.budgets = o.budgets;
+  }catch(e){ /* 壊れていたら空から始める */ }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e){ /* 容量超過などは黙って諦める。画面の値は生きている */ }
+}
+
+/* ── 月まわり ─────────────────────────────── */
+var view = new Date();
+view.setDate(1);
+
+function ymOf(d){
+  return d.getFullYear() + "-" + ("0" + (d.getMonth()+1)).slice(-2);
+}
+function ym(){ return ymOf(view); }
+function isThisMonth(){ return ym() === ymOf(new Date()); }
+function daysInMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
+function daysLeft(){
+  if(!isThisMonth()) return 0;
+  var now = new Date();
+  return daysInMonth(view) - now.getDate() + 1;
+}
+function monthEntries(){
+  var m = ym();
+  return db.entries.filter(function(e){ return e.ym === m; })
+                   .sort(function(a,b){ return b.ts - a.ts; });
+}
+function sums(){
+  var out = 0, inn = 0, per = {};
+  CATS.forEach(function(c){ per[c.k] = 0; });
+  monthEntries().forEach(function(e){
+    if(e.kind === "in"){ inn += e.amt; }
+    else { out += e.amt; per[e.k] = (per[e.k] || 0) + e.amt; }
+  });
+  return { out:out, in:inn, per:per };
+}
+function budget(){ return db.budgets[ym()] || 0; }
+
+var yen = function(n){ return "¥" + Math.round(n).toLocaleString("ja-JP"); };
+var num = function(n){ return Math.round(n).toLocaleString("ja-JP"); };
+
+/* ── ①今月：帯のグラフ ─────────────────────
+   費目ごとの太さが金額の比。左端の並びと右端の並びを逆にして、
+   帯どうしが交差するようにしている。金額が無い月は薄い placeholder。 */
+function drawFlow(){
+  var host = document.getElementById("flow");
+  var W = 320, H = 136, x0 = 10, x1 = W - 10, gap = 6;
+  var s = sums(), list = [];
+  CATS.forEach(function(c){ if(s.per[c.k] > 0) list.push({ k:c.k, c:c.c, v:s.per[c.k] }); });
+
+  var ghostMode = list.length === 0;
+  if(ghostMode){ list = CATS.slice(0,4).map(function(c){ return { k:c.k, c:c.c, v:1 }; }); }
+
+  var n = list.length;
+  var total = list.reduce(function(a,d){ return a + d.v; }, 0) || 1;
+  var room = H - gap*(n-1);
+  /* 一本が太りすぎると図が塊になるので上下を抑える。比は残す。 */
+  var w = list.map(function(d){
+    return ghostMode ? 8 : Math.min(34, Math.max(8, room * d.v/total));
+  });
+  var sum = w.reduce(function(a,b){ return a+b; }, 0);
+  if(sum > room){ var k = room/sum; w = w.map(function(v){ return v*k; }); sum = room; }
+
+  var top = (H - (sum + gap*(n-1)))/2;   /* 縦の中央に寄せる */
+  var yL = [], yR = [], acc = top, i;
+  for(i=0;i<n;i++){ yL.push(acc + w[i]/2); acc += w[i] + gap; }
+  acc = top;
+  for(i=n-1;i>=0;i--){ yR[i] = acc + w[i]/2; acc += w[i] + gap; }
+
+  var m1 = x0 + (x1-x0)*.42, m2 = x0 + (x1-x0)*.58;
+  function band(i){
+    return 'M '+x0+' '+yL[i].toFixed(1)+' C '+m1+' '+yL[i].toFixed(1)
+         + ', '+m2+' '+yR[i].toFixed(1)+', '+x1+' '+yR[i].toFixed(1);
+  }
+
+  /* 太い順に描く。細い帯があとから黒い縁ごと重なるので、
+     交差しても路線図のように一本ずつ見分けられる。 */
+  var order = [];
+  for(i=0;i<n;i++) order.push(i);
+  order.sort(function(a,b){ return w[b] - w[a]; });
+
+  var svg = ['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="費目ごとの割合">'];
+  svg.push('<g opacity="'+(ghostMode ? .12 : 1)+'">');
+  order.forEach(function(i){
+    if(!ghostMode){
+      svg.push('<path d="'+band(i)+'" fill="none" stroke="#0d0d0d" stroke-width="'+(w[i]+5).toFixed(1)+'"/>');
+    }
+    svg.push('<path d="'+band(i)+'" fill="none" stroke="'+list[i].c+'" stroke-width="'+w[i].toFixed(1)+'"/>');
+  });
+  if(!ghostMode){
+    for(i=0;i<n;i++){
+      var r = Math.min(3.2, w[i]/2.6);
+      svg.push('<circle cx="'+x0+'" cy="'+yL[i].toFixed(1)+'" r="'+r.toFixed(1)+'" fill="#0d0d0d"/>');
+      svg.push('<circle cx="'+x1+'" cy="'+yR[i].toFixed(1)+'" r="'+r.toFixed(1)+'" fill="#0d0d0d"/>');
+    }
+  }
+  svg.push('</g></svg>');
+  host.innerHTML = svg.join("");
+}
+
+/* ── ③内訳：花弁 ─────────────────────────
+   花弁の長さが金額の比。数字を読ませずに偏りだけを見せる。 */
+function drawBloom(){
+  var host = document.getElementById("bloom");
+  var W = 200, H = 200, cx = W/2, cy = H/2;
+  var s = sums(), list = [];
+  CATS.forEach(function(c){ if(s.per[c.k] > 0) list.push({ k:c.k, c:c.c, v:s.per[c.k] }); });
+  list.sort(function(a,b){ return b.v - a.v; });   /* 一番大きい費目を真上に置く */
+
+  var ghostMode = list.length === 0;
+  if(ghostMode){ list = CATS.map(function(c){ return { k:c.k, c:c.c, v:1 }; }); }
+
+  var n = list.length;
+  var max = list[0].v || 1;
+  var svg = ['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="費目ごとの内訳">'];
+  svg.push('<g opacity="'+(ghostMode ? .12 : 1)+'">');
+  for(var i=0;i<n;i++){
+    /* reach は花弁の先端までの長さ。差が開きすぎないよう平方根で丸める（順位は保たれる）。 */
+    var reach = 26 + 62 * Math.sqrt(list[i].v/max);
+    var ry = reach/2, rx = 8 + 5*(reach/88);
+    var deg = (360/n) * i;   /* 真上から時計回り */
+    svg.push('<ellipse cx="'+cx+'" cy="'+(cy - ry).toFixed(1)+'" rx="'+rx.toFixed(1)+'" ry="'+ry.toFixed(1)+'" '
+      + 'fill="'+list[i].c+'" transform="rotate('+deg.toFixed(1)+' '+cx+' '+cy+')"/>');
+  }
+  svg.push('</g></svg>');
+  host.innerHTML = svg.join("");
+}
+
+/* ── 明細の一行。今月の画面と暦の画面で同じものを使う ───── */
+var pressTimer = null;
+
+function entryRow(e, mini){
+  var c = catOf(e.k);
+  var row = document.createElement("div");
+  row.className = "row" + (mini ? " mini" : "");
+  row.innerHTML =
+    '<div><div class="amt">' + (e.kind === "in" ? "+" : "") + '<span class="yen">¥</span>' + num(e.amt) + '</div>'
+    + '<span class="micro when">' + e.d + '</span></div>'
+    + '<span class="sp"></span>'
+    + '<span class="chip sm" style="background:' + c.c + '" role="img" aria-label="' + c.k + '">' + ic(c.k) + '</span>'
+    + '<span class="chip sm hollow">' + (e.kind === "in" ? "↘" : "↗") + '</span>';
+
+  /* 長押しで一件消す。誤操作を減らすため確認をはさむ。 */
+  var start = function(){
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(function(){
+      if(confirm(yen(e.amt) + " を消しますか？")){
+        row.classList.add("gone");
+        setTimeout(function(){
+          db.entries = db.entries.filter(function(x){ return x.id !== e.id; });
+          save(); renderAll();
+        }, 170);
+      }
+    }, 550);
+  };
+  var stop = function(){ clearTimeout(pressTimer); };
+  row.addEventListener("touchstart", start, { passive:true });
+  row.addEventListener("touchend", stop);
+  row.addEventListener("touchmove", stop, { passive:true });
+  row.addEventListener("mousedown", start);
+  row.addEventListener("mouseup", stop);
+  row.addEventListener("mouseleave", stop);
+  return row;
+}
+
+/* ── ①今月：明細 ─────────────────────────── */
+function drawMonth(){
+  var s = sums(), b = budget(), list = monthEntries();
+
+  document.getElementById("ym").textContent = ym().replace("-", ".");
+  document.getElementById("total").innerHTML = '<span class="yen">¥</span>' + num(s.out);
+
+  var pct = b > 0 ? Math.round(s.out / b * 100) : 0;
+  var pctEl = document.getElementById("pct");
+  pctEl.textContent = b > 0 ? pct + "%" : "—";
+  pctEl.style.background = (b > 0 && pct > 100) ? "var(--orange)" : "var(--yellow)";
+
+  var leftEl = document.getElementById("left");
+  leftEl.textContent = isThisMonth() ? daysLeft() : list.length;
+
+  document.getElementById("bandL").textContent = b > 0 ? yen(Math.max(0, b - s.out)) : yen(s.out);
+  document.getElementById("bandR").textContent =
+    (b > 0 ? "残 · " : "支出 · ") + (s.in > 0 ? "+" + yen(s.in) : list.length + "件");
+
+  var host = document.getElementById("rows");
+  host.innerHTML = "";
+  if(!list.length){
+    var p = document.createElement("p");
+    p.className = "micro empty";
+    p.textContent = "→ swipe to add";
+    host.appendChild(p);
+    drawFlow();
+    return;
+  }
+
+  list.forEach(function(e){ host.appendChild(entryRow(e)); });
+
+  drawFlow();
+}
+
+/* ── ③内訳 ────────────────────────────────── */
+function drawSplit(){
+  var s = sums(), list = [];
+  CATS.forEach(function(c){ if(s.per[c.k] > 0) list.push({ k:c.k, c:c.c, v:s.per[c.k] }); });
+  list.sort(function(a,b){ return b.v - a.v; });
+
+  var top = list[0];
+  document.getElementById("topcat").innerHTML =
+    (top ? ic(top.k, "big") : "—") + '<span class="ghost">'
+    + (top ? Math.round(top.v / s.out * 100) + "%" : "0%") + '</span>';
+  document.getElementById("topcat").setAttribute("aria-label", top ? top.k : "記録なし");
+  document.getElementById("count").textContent = monthEntries().length;
+
+  var host = document.getElementById("ranks");
+  host.innerHTML = "";
+  var max = top ? top.v : 1;
+  list.forEach(function(d){
+    var el = document.createElement("div");
+    el.className = "rank";
+    el.innerHTML =
+      '<span class="chip sm" style="background:' + d.c + '" role="img" aria-label="' + d.k + '">' + ic(d.k) + '</span>'
+      + '<span class="bar"><i style="width:' + (d.v/max*100).toFixed(1) + '%;background:' + d.c + '"></i></span>'
+      + '<span class="n">' + yen(d.v) + '</span>';
+    host.appendChild(el);
+  });
+
+  document.getElementById("budgetN").textContent = budget() > 0 ? yen(budget()) : "—";
+  drawBloom();
+}
+
+/* ── ②入力 ────────────────────────────────── */
+var buf = "";              /* 打ち込み中の数字 */
+var kind = "out";          /* out=支出 / in=収入 */
+var pick = CATS[0].k;      /* 選んでいる費目 */
+var mode = "entry";        /* entry=記録 / budget=予算 */
+
+function buildCats(){
+  var host = document.getElementById("cats");
+  host.innerHTML = "";
+  CATS.forEach(function(c){
+    var b = document.createElement("button");
+    b.className = "chip pressable";
+    b.style.setProperty("--c", c.c);
+    b.innerHTML = ic(c.k);
+    b.dataset.k = c.k;
+    b.setAttribute("aria-pressed", c.k === pick ? "true" : "false");
+    b.setAttribute("aria-label", c.k);
+    b.addEventListener("click", function(){
+      pick = c.k;
+      drawInput();
+    });
+    host.appendChild(b);
+  });
+}
+
+function buildPad(){
+  var host = document.getElementById("pad");
+  var keys = ["1","2","3","4","5","6","7","8","9","00","0","⌫"];
+  keys.forEach(function(k){
+    var b = document.createElement("button");
+    b.className = "key";
+    b.textContent = k;
+    b.addEventListener("click", function(){
+      if(k === "⌫"){ buf = buf.slice(0, -1); }
+      else if(buf.length < 9){ buf = (buf === "0" ? "" : buf) + k; }
+      if(buf.length > 9) buf = buf.slice(0, 9);
+      drawInput();
+    });
+    host.appendChild(b);
+  });
+}
+
+function drawInput(){
+  var v = parseInt(buf || "0", 10);
+  var amt = document.getElementById("amount");
+  amt.className = "display amount" + (v > 0 ? "" : " zero") + (String(v).length > 6 ? " long" : "");
+  amt.innerHTML = '<span class="yen">¥</span><span class="num">' + num(v) + '</span>';
+
+  document.getElementById("kOut").setAttribute("aria-pressed", kind === "out" ? "true" : "false");
+  document.getElementById("kIn").setAttribute("aria-pressed", kind === "in" ? "true" : "false");
+  document.getElementById("kOut").style.background = kind === "out" ? "#0d0d0d" : "rgba(13,13,13,.15)";
+  document.getElementById("kOut").style.color = kind === "out" ? "#fff" : "#0d0d0d";
+  document.getElementById("kIn").style.background = kind === "in" ? "#0d0d0d" : "rgba(13,13,13,.15)";
+  document.getElementById("kIn").style.color = kind === "in" ? "#fff" : "#0d0d0d";
+
+  /* 予算を決めている間は、費目と種別を伏せる */
+  var budgeting = mode === "budget";
+  document.getElementById("cats").style.display = budgeting ? "none" : "";
+  document.getElementById("kOut").style.visibility = budgeting ? "hidden" : "";
+  document.getElementById("kIn").style.visibility = budgeting ? "hidden" : "";
+  document.getElementById("mode").textContent = budgeting ? "◎ " + ym().replace("-", ".") : ym().replace("-", ".");
+  document.getElementById("enter").textContent = budgeting ? "◎" : "↙";
+  document.getElementById("enter").disabled = v <= 0;
+
+  Array.prototype.forEach.call(document.getElementById("cats").children, function(b){
+    b.setAttribute("aria-pressed", b.dataset.k === pick ? "true" : "false");
+  });
+
+  var s = sums(), b2 = budget();
+  document.getElementById("meter").style.width =
+    (b2 > 0 ? Math.min(100, s.out / b2 * 100) : 0) + "%";
+}
+
+function commit(){
+  var v = parseInt(buf || "0", 10);
+  if(v <= 0) return;
+
+  if(mode === "budget"){
+    db.budgets[ym()] = v;
+    mode = "entry";
+  }else{
+    /* 今月なら今日。ほかの月を見ているときは、暦で選んでいる日に付ける。 */
+    var now = new Date();
+    var day = isThisMonth() ? now.getDate() : (pickDay || daysInMonth(view));
+    db.entries.push({
+      id: String(Date.now()) + Math.random().toString(36).slice(2, 6),
+      ts: isThisMonth() ? now.getTime() : new Date(view.getFullYear(), view.getMonth(), day, 12).getTime(),
+      ym: ym(),
+      day: day,
+      d:  (view.getMonth()+1) + "/" + day,
+      k:  pick,
+      kind: kind,
+      amt: v
+    });
+  }
+  buf = "";
+  save();
+  renderAll();
+  go(0);
+}
+
+/* ── ④暦：日ごとの点 ───────────────────────
+   点の大きさがその日の支出。数字を並べず、月の使い方の形だけを見せる。
+   点を押すと、その日の明細が下に出る。 */
+var pickDay = 0;
+
+function dayOf(e){
+  return e.day || parseInt(String(e.d).split("/")[1], 10) || 1;
+}
+
+function drawCal(){
+  var y = view.getFullYear(), m = view.getMonth();
+  var first = new Date(y, m, 1).getDay();      /* 日曜=0 から始める */
+  var dim = daysInMonth(view);
+
+  var per = {}, max = 0;
+  monthEntries().forEach(function(e){
+    if(e.kind === "in") return;
+    var d = dayOf(e);
+    per[d] = (per[d] || 0) + e.amt;
+    if(per[d] > max) max = per[d];
+  });
+
+  /* 選ぶ日は、今月なら今日。ほかの月なら一番使った日。 */
+  if(!pickDay || pickDay > dim){
+    if(isThisMonth()){ pickDay = new Date().getDate(); }
+    else{
+      var best = 0, bestV = 0;
+      for(var d0 in per){ if(per[d0] > bestV){ bestV = per[d0]; best = parseInt(d0, 10); } }
+      pickDay = best || 1;
+    }
+  }
+
+  document.getElementById("vtitle").textContent = ym().replace("-", ".");
+  document.getElementById("calsum").textContent = yen(sums().out);
+
+  var host = document.getElementById("grid");
+  host.innerHTML = "";
+  var cells = Math.ceil((first + dim)/7) * 7;
+  for(var i=0;i<cells;i++){
+    (function(i){
+      var day = i - first + 1;
+      var inMonth = day >= 1 && day <= dim;
+      var v = inMonth ? (per[day] || 0) : 0;
+      var on = inMonth && day === pickDay;
+
+      var size = inMonth ? (v > 0 && max > 0 ? 8 + 11*Math.sqrt(v/max) : 8) : 6.5;
+      if(on) size = Math.max(size, 10);
+
+      var b = document.createElement("button");
+      b.className = "day";
+      b.disabled = !inMonth;
+      if(inMonth) b.setAttribute("aria-label", (m+1) + "月" + day + "日");
+      b.innerHTML = '<i style="width:' + size.toFixed(1) + 'px;height:' + size.toFixed(1) + 'px;'
+        + 'background:' + (on ? "var(--orange)" : "#0d0d0d") + ';'
+        + 'opacity:' + (on ? 1 : (inMonth ? (v > 0 ? 1 : .2) : .1)) + '"></i>';
+      if(inMonth){
+        b.addEventListener("click", function(){ pickDay = day; drawCal(); });
+      }
+      host.appendChild(b);
+    })(i);
+  }
+
+  var list = monthEntries().filter(function(e){ return dayOf(e) === pickDay; });
+  var out = 0;
+  list.forEach(function(e){ if(e.kind !== "in") out += e.amt; });
+
+  document.getElementById("daytotal").innerHTML = '<span class="yen">¥</span>' + num(out);
+  document.getElementById("daymeta").textContent =
+    (m+1) + "/" + pickDay + " · " + (list.length ? list.length + "件" : "—");
+
+  var rows = document.getElementById("dayrows");
+  rows.innerHTML = "";
+  list.forEach(function(e){ rows.appendChild(entryRow(e, true)); });
+}
+
+/* ── 画面送り ─────────────────────────────── */
+var strip = document.getElementById("strip");
+function go(i){
+  strip.scrollTo({ left: strip.clientWidth * i, behavior:"smooth" });
+}
+/* 下の帯は、いま見ている画面の地色に合わせる。 */
+var TONE = ["#0d0d0d", "#ff5b34", "#e9e6df", "#f4f1e3"];
+
+function syncDots(){
+  var i = Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
+  if(i < 0) i = 0;
+  if(i >= TONE.length) i = TONE.length - 1;
+  var dots = document.getElementById("dots").children;
+  for(var j=0;j<dots.length;j++){ dots[j].className = (j === i ? "on" : ""); }
+  document.querySelector(".dots").style.background = TONE[i];
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", TONE[i]);
+  for(j=0;j<dots.length;j++){
+    dots[j].style.background = dots[j].className === "on"
+      ? (i === 0 ? "#f4f2ee" : "#0d0d0d")
+      : (i === 0 ? "rgba(244,242,238,.26)" : "rgba(13,13,13,.24)");
+  }
+}
+strip.addEventListener("scroll", function(){
+  window.requestAnimationFrame(syncDots);
+}, { passive:true });
+
+/* ── 組み立て ─────────────────────────────── */
+function renderAll(){ drawMonth(); drawInput(); drawSplit(); drawCal(); }
+
+function shiftMonth(n){
+  view.setMonth(view.getMonth() + n);
+  pickDay = 0;            /* 月が変われば選ぶ日も選び直す */
+  renderAll();
+}
+document.getElementById("prev").addEventListener("click", function(){ shiftMonth(-1); });
+document.getElementById("next").addEventListener("click", function(){ shiftMonth(1); });
+document.getElementById("cprev").addEventListener("click", function(){ shiftMonth(-1); });
+document.getElementById("cnext").addEventListener("click", function(){ shiftMonth(1); });
+document.getElementById("kOut").addEventListener("click", function(){ kind = "out"; drawInput(); });
+document.getElementById("kIn").addEventListener("click", function(){ kind = "in"; drawInput(); });
+document.getElementById("enter").addEventListener("click", commit);
+document.getElementById("budget").addEventListener("click", function(){
+  mode = "budget"; buf = ""; drawInput(); go(1);
+});
+document.getElementById("wipe").addEventListener("click", function(){
+  if(!db.entries.length && !Object.keys(db.budgets).length) return;
+  if(confirm("記録を全部消しますか？")){
+    db = { entries:[], budgets:{} };
+    pickDay = 0;
+    save(); renderAll();
+  }
+});
+
+/* 物理キーボードからも打てるようにしておく（机上での確認用） */
+document.addEventListener("keydown", function(ev){
+  if(Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth)) !== 1) return;
+  if(ev.key >= "0" && ev.key <= "9"){ if(buf.length < 9) buf = (buf === "0" ? "" : buf) + ev.key; drawInput(); }
+  else if(ev.key === "Backspace"){ buf = buf.slice(0, -1); drawInput(); }
+  else if(ev.key === "Enter"){ commit(); }
+});
+
+window.addEventListener("resize", syncDots);
+
+load();
+buildCats();
+buildPad();
+renderAll();
+syncDots();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+})();
+</script>
+</body>
+</html>
