@@ -161,9 +161,10 @@
     --ghost:rgba(13,13,13,.26); --rule:rgba(13,13,13,.16); --soft:rgba(13,13,13,.06);
     --sunk:inset 0 1px 2px rgba(13,13,13,.16);
     --sunk-deep:inset 0 2px 5px rgba(13,13,13,.22);
-    /* 鍵の直径の上限。実際は行の高さとこの値の小さいほうになる。 */
-    --kmax:84px;
-    --kmax:min( calc((min(100vw,520px) - 52px) / 3), 92px );
+    /* 鍵の直径の上限。実際は行の高さとこの値の小さいほうになる。
+       列の幅より一回り小さく取り、余った分は鍵と鍵の間になる。 */
+    --kmax:70px;
+    --kmax:min( calc((min(100vw,520px) - 52px) / 3 - 20px), 72px );
     padding-bottom:10px;
   }
   .kinds{ display:flex; align-items:center; gap:9px; margin-bottom:16px; }
@@ -190,7 +191,6 @@
   }
   .amount.long{ font-size:clamp(26px,8.5vw,40px); }
   .amount.zero .num{ color:var(--ghost); }
-  .amount .yen{ font-size:.52em; vertical-align:.14em; margin-right:.04em; }
 
   /* 費目は色のついた丸い鍵。色は暦や帯の図と同じものを使う。 */
   .cats{ display:flex; justify-content:space-between; gap:6px; margin-bottom:16px; }
@@ -205,7 +205,7 @@
 
   .pad{
     flex:1 1 auto; min-height:190px;
-    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:10px 8px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:20px 8px;
   }
   .key{
     height:min(100%, var(--kmax)); width:auto; aspect-ratio:1; place-self:center;
@@ -312,13 +312,13 @@
   @media (max-height:680px){
     .display{ font-size:clamp(32px,10vw,46px); }
     /* 縦が短い端末では、盤のまわりを詰めて鍵の大きさを保つ。 */
-    .pane.calc{ --kmax:64px; }
+    .pane.calc{ --kmax:56px; }
     .pane.calc .kinds{ margin-bottom:10px; }
     .pane.calc .lcd{ min-height:76px; max-height:106px; margin-bottom:12px; }
     .pane.calc .cats{ margin-bottom:10px; }
     .pane.calc .cats .chip{ width:38px; height:38px; flex-basis:38px; }
     .pane.calc .meter{ margin-bottom:10px; }
-    .pane.calc .pad{ min-height:150px; gap:7px 6px; }
+    .pane.calc .pad{ min-height:150px; gap:13px 6px; }
     .pane.calc .enterrow{ margin-top:7px; }
   }
 </style>
@@ -370,7 +370,7 @@
           <span class="sp"></span>
           <span class="micro" id="lcdNote">—</span>
         </div>
-        <h2 class="amount zero" id="amount"><span class="yen">¥</span><span class="num">0</span></h2>
+        <h2 class="amount zero" id="amount"><span class="num">0</span></h2>
       </div>
 
       <div class="cats" id="cats"></div>
@@ -869,7 +869,7 @@ function drawInput(){
   var v = parseInt(buf || "0", 10);
   var amt = document.getElementById("amount");
   amt.className = "amount" + (v > 0 ? "" : " zero") + (String(v).length > 6 ? " long" : "");
-  amt.innerHTML = '<span class="yen">¥</span><span class="num">' + num(v) + '</span>';
+  amt.innerHTML = '<span class="num">' + num(v) + '</span>';
 
   document.getElementById("kOut").setAttribute("aria-pressed", kind === "out" ? "true" : "false");
   document.getElementById("kIn").setAttribute("aria-pressed", kind === "in" ? "true" : "false");
