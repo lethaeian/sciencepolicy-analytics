@@ -19,7 +19,8 @@
      参考にした画面の作りにならい、言葉をほとんど置かない。
      費目は絵の丸、種別は矢印、量は帯の幅・液面の高さ・点の大きさで示す。
      読ませるのは金額の数字だけ。四枚の画面はそれぞれ地の色を変え、
-     黒（今月）・焦げ茶（入力＝電卓）・濃茶（貯）・生成り（暦）で役割を区別する。
+     黒（今月）・つや消しの黒（入力＝ブラウン ET66 の電卓）・
+     生成り（貯・暦）で役割を区別する。
      ───────────────────────────────────────── */
   :root{
     color-scheme: dark;
@@ -31,17 +32,19 @@
     --lilac:   #c9b8ff;
     --stone:   #b9b3a8;
 
-    /* 電卓の本体まわり */
-    --case:    #4a3a2e;
-    --plate:   #3d3026;
-    --key:     #5d4b3d;
-    --key-hi:  #6f5b4a;
-    --key-dim: #4f4034;
-    --lcd:     #c9c8ac;
-    --lcd-ink: #262619;
+    /* 電卓（ET66）の本体まわり */
+    --case:    #161616;   /* つや消しの黒 */
+    --bezel:   #0b0b0b;   /* 液晶を落とし込む枠 */
+    --key:     #262626;   /* 数字の鍵 */
+    --key-hi:  #343434;
+    --key-fn:  #4a4436;   /* 機能の鍵（くすんだ黄土） */
+    --key-mem: #2b3b30;   /* 記憶の鍵（深緑） */
+    --lcd:     #b7bbad;   /* 液晶：灰みの緑 */
+    --lcd-ink: #22241c;
+    --yellow-key: #e8b93a; /* ＝の鍵。差し色はここだけ */
     --accent:  #ff5b34;
-    --keyshadow: 0 1px 0 rgba(255,255,255,.07) inset, 0 2px 4px rgba(0,0,0,.30);
-    --deep:    #1b1712;
+    --keyshadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 3px 5px rgba(0,0,0,.45);
+    --cream:   #f4f1e3;
 
     --grot:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
     --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
@@ -160,101 +163,121 @@
   .empty{ padding:26px 0 8px; }
 
   /* ── 入力（電卓）───────────────────────────
-     ブラウンの電卓にならい、焦げ茶の本体・うぐいす色の液晶・
-     まるい鍵の格子で組む。差し色は決定キーの橙ひとつだけ。 */
+     ブラウン ET66 の作りにならう。つや消しの黒い本体、落とし込んだ
+     灰緑の液晶、まるい鍵の格子。差し色は「＝」にあたる黄の鍵ひとつだけ。 */
   .pane.calc{
-    background:var(--case); color:#e9e0d3;
-    --ghost:rgba(233,224,211,.34); --rule:rgba(233,224,211,.16); --soft:rgba(0,0,0,.22);
+    background:var(--case); color:#e8e6e0;
+    --ghost:rgba(232,230,224,.34); --rule:rgba(232,230,224,.16); --soft:rgba(255,255,255,.07);
     padding-bottom:10px;
   }
-  .kinds{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .kinds{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
   .kinds .sp{ flex:1 1 auto; }
-  .kinds .chip{ background:var(--key); color:#e9e0d3; box-shadow:var(--keyshadow); }
-  .kinds .chip[aria-pressed="true"]{ background:#e9e0d3; color:var(--case); }
+  /* 種別は ET66 の記憶キーにならって深緑の丸。 */
+  .kinds .chip{ background:var(--key-mem); color:#e8e6e0; box-shadow:var(--keyshadow); }
+  .kinds .chip[aria-pressed="true"]{ background:#e8e6e0; color:var(--case); }
 
-  /* 液晶。数字は電卓と同じく右へ寄せる。 */
+  /* 液晶。黒い枠に落とし込み、数字は電卓と同じく右へ寄せる。 */
   .lcd{
-    background:var(--lcd); color:var(--lcd-ink); border-radius:10px;
-    padding:14px 16px 16px; margin-bottom:16px;
-    box-shadow:inset 0 2px 5px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.35);
+    background:var(--lcd); color:var(--lcd-ink); border-radius:4px;
+    padding:12px 14px 13px; margin:0 6px 20px;
+    box-shadow:0 0 0 7px var(--bezel), inset 0 2px 6px rgba(0,0,0,.30);
     display:flex; flex-direction:column; justify-content:space-between; gap:6px;
-    flex:1 1 auto; min-height:104px; max-height:210px;
+    flex:0 1 auto; min-height:94px; max-height:132px;
   }
-  .lcd .line{ display:flex; align-items:center; gap:8px; min-height:20px; }
+  .lcd .line{ display:flex; align-items:center; gap:8px; min-height:18px; }
   .lcd .line .sp{ flex:1 1 auto; }
-  .lcd .mark{ display:grid; place-items:center; width:20px; height:20px; color:var(--lcd-ink); opacity:.8; }
-  .lcd .mark .ic{ width:16px; height:16px; }
-  .lcd .micro{ color:rgba(42,42,32,.5); }
+  .lcd .mark{ display:grid; place-items:center; width:18px; height:18px; opacity:.75; }
+  .lcd .mark .ic{ width:15px; height:15px; }
+  .lcd .micro{ color:rgba(34,36,28,.5); }
   .amount{
     margin:0; text-align:right; white-space:nowrap;
-    font-size:clamp(40px,13vw,58px); line-height:1; color:var(--lcd-ink);
+    font-size:clamp(38px,12vw,54px); line-height:1; color:var(--lcd-ink);
   }
-  .amount.long{ font-size:clamp(28px,9vw,42px); }
-  .amount.zero .num{ color:rgba(42,42,32,.3); }
+  .amount.long{ font-size:clamp(26px,8.5vw,40px); }
+  .amount.zero .num{ color:rgba(34,36,28,.28); }
 
-  .cats{ display:flex; gap:7px; margin:0 0 14px; }
+  /* 費目は色のついた丸い鍵。ここだけ色を持たせる。 */
+  .cats{ display:flex; justify-content:space-between; gap:6px; margin:0 2px 16px; }
   .cats .chip{
-    flex:1 1 0; width:auto; height:40px; border-radius:20px;
-    background:var(--c,var(--key)); box-shadow:var(--keyshadow);
+    width:44px; height:44px; flex:0 0 44px; border-radius:50%;
+    background:var(--c,var(--key));
+    /* 色みは残しつつ、本体になじむ濃さへ落とす（対応できない環境では素の色） */
+    background:radial-gradient(circle at 38% 28%, rgba(255,255,255,.10), rgba(255,255,255,0) 58%),
+               color-mix(in srgb, var(--c,var(--key)) 50%, #1c1c1c);
+    color:#efece4;
+    box-shadow:var(--keyshadow);
   }
-  /* 選んだ費目は本体の色で沈める。色そのものは変えず、反転で示す。 */
-  .cats .chip[aria-pressed="true"]{ background:var(--case); color:#e9e0d3; box-shadow:inset 0 1px 3px rgba(0,0,0,.5); }
+  .cats .chip[aria-pressed="true"]{
+    background:#e8e6e0; color:var(--case);
+    box-shadow:0 0 0 2px rgba(232,230,224,.35), var(--keyshadow);
+  }
 
-  .meter{ height:3px; border-radius:2px; background:rgba(0,0,0,.28); overflow:hidden; margin-bottom:14px; }
-  .meter i{ display:block; height:100%; background:var(--accent); width:0; transition:width .3s ease; }
+  .meter{ height:2px; border-radius:1px; background:rgba(255,255,255,.10); overflow:hidden; margin:0 4px 12px; }
+  .meter i{ display:block; height:100%; background:var(--yellow-key); width:0; transition:width .3s ease; }
 
+  /* 鍵はまるく、行の高さいっぱいの直径で。列のなかでは中央に置く。 */
   .pad{
-    flex:0 1 auto; margin-top:auto;
-    height:min(46vh,320px); min-height:172px;
-    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:9px;
+    flex:0 1 auto; margin:auto 0 0;
+    height:min(56vh,400px); min-height:168px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:10px 8px;
   }
-  .key{
-    background:var(--key); color:#efe7da; border-radius:999px;
-    font-size:22px; font-weight:700; letter-spacing:-.01em;
+  .key, .enter{
+    aspect-ratio:1; height:100%; width:auto; max-width:100%;
+    place-self:center; border-radius:50%;
+    background:radial-gradient(circle at 38% 28%, rgba(255,255,255,.10), rgba(255,255,255,0) 58%), var(--key);
+    color:#e8e6e0; font-size:21px; font-weight:600; letter-spacing:-.01em;
     display:grid; place-items:center;
     box-shadow:var(--keyshadow);
-    transition:background .1s ease, transform .06s ease;
+    transition:filter .1s ease, transform .06s ease;
   }
-  .key:active{ background:var(--key-hi); transform:translateY(1px); }
-  .key.fn{ background:var(--key-dim); color:#cdbfae; }
+  .key:active, .enter:active{ filter:brightness(1.35); transform:translateY(1px); }
+  .key.fn{
+    background:radial-gradient(circle at 38% 28%, rgba(255,255,255,.10), rgba(255,255,255,0) 58%), var(--key-fn);
+    color:#efe9dc;
+  }
+  /* 決定は ET66 の「＝」と同じ黄の丸。右下に置く。 */
+  .enterrow{ display:flex; align-items:center; gap:10px; margin-top:10px; padding-bottom:env(safe-area-inset-bottom); }
+  .enterrow .sp{ flex:1 1 auto; }
+  .lamps{ display:flex; align-items:center; gap:14px; padding-left:6px; }
+  .lamps i{ width:9px; height:9px; border-radius:50%; box-shadow:inset 0 -1px 1px rgba(0,0,0,.4); }
+  .lamps i.on{ background:#3e7a3a; }
+  .lamps i.off{ background:#c0392b; }
   .enter{
-    margin-top:9px; height:54px; flex:0 0 54px;
-    background:var(--accent); color:#2a1a12; border-radius:999px;
-    display:grid; place-items:center; font-size:21px; font-weight:700;
-    box-shadow:var(--keyshadow);
-    margin-bottom:env(safe-area-inset-bottom);
+    flex:0 0 auto; height:74px; width:74px; aspect-ratio:auto;
+    background:radial-gradient(circle at 38% 28%, rgba(255,255,255,.22), rgba(255,255,255,0) 58%), var(--yellow-key);
+    color:#241c06; font-size:20px;
   }
-  .enter:active{ transform:translateY(1px); }
-  .enter[disabled]{ opacity:.4; box-shadow:none; }
+  .enter[disabled]{ opacity:.34; box-shadow:none; }
 
   /* ── 貯（溜まる液体）───────────────────────
-     週の予算と使った額の差を、円のなかに溜まる液体で示す。
-     数字は液面の上下で色が入れ替わる（下の層と、液体で切り抜いた層）。 */
+     暦の画面と同じ生成りの地。器の輪郭は描かず、溜まった液体そのものが
+     形になる。数字は液面の上下で色が入れ替わる。 */
   .pane.save{
-    background:var(--deep); color:#efe7db;
-    --ghost:rgba(239,231,219,.30); --rule:rgba(239,231,219,.14); --soft:rgba(239,231,219,.09);
+    background:var(--cream); color:#0d0d0d;
+    --ghost:rgba(13,13,13,.26); --rule:rgba(13,13,13,.16); --soft:rgba(13,13,13,.07);
   }
   .savehead{ display:flex; align-items:center; gap:10px; }
   .savehead .sp{ flex:1 1 auto; }
-  /* 週の七日。休日は輪、平日は点。過ぎた日は明るい。 */
+  /* 週の七日。休日は輪、平日は点。今日は橙。 */
   .week{ display:flex; gap:7px; align-items:center; }
-  .week i{ width:9px; height:9px; border-radius:50%; background:#efe7db; opacity:.22; }
-  .week i.past{ opacity:.8; }
-  .week i.holi{ background:none; box-shadow:inset 0 0 0 2px #efe7db; }
-  .week i.now{ background:var(--accent); opacity:1; box-shadow:none; transform:scale(1.25); }
+  .week i{ width:9px; height:9px; border-radius:50%; background:#0d0d0d; opacity:.22; }
+  .week i.past{ opacity:.75; }
+  .week i.holi{ background:none; box-shadow:inset 0 0 0 2px #0d0d0d; }
+  .week i.now{ background:var(--accent); opacity:1; box-shadow:none; transform:scale(1.3); }
 
-  .tank{ flex:1 1 auto; display:grid; place-items:center; min-height:0; padding:14px 0 6px; }
-  .tank svg{ display:block; width:100%; height:100%; max-height:min(52vh,304px); }
+  .tank{ flex:1 1 auto; display:grid; place-items:center; min-height:0; padding:10px 0; }
+  .tank svg{ display:block; width:100%; height:100%; max-height:min(54vh,320px); }
 
-  .rates{ display:flex; gap:9px; align-items:stretch; padding-bottom:calc(env(safe-area-inset-bottom) + 6px); }
-  .rate{
-    flex:1 1 0; text-align:left; border-radius:14px; padding:9px 13px 11px;
-    background:var(--soft); transition:background .12s ease;
+  /* 設定は暦の画面と同じ、罫と太い数字だけの組み。 */
+  .rates{
+    display:flex; align-items:flex-end; gap:16px;
+    border-top:1.5px solid currentColor; padding:12px 0 calc(env(safe-area-inset-bottom) + 6px);
   }
-  .rate:active{ background:rgba(239,231,219,.18); }
-  .rate b{ display:block; margin-top:3px; font-size:19px; font-weight:800; letter-spacing:-.02em; }
+  .rate{ flex:1 1 0; text-align:left; }
   .rate .micro{ display:block; }
-  .rates .chip{ align-self:center; }
+  .rate b{ display:block; margin-top:4px; font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .rate:active b{ opacity:.5; }
+  .rates .chip{ flex:0 0 30px; }
 
   /* ── 暦（生成り） ─────────────────────────── */
   .pane.cal{
@@ -362,7 +385,12 @@
       <div class="meter"><i id="meter"></i></div>
 
       <div class="pad" id="pad"></div>
-      <button class="enter" id="enter" disabled aria-label="記録する">↙</button>
+
+      <div class="enterrow">
+        <span class="lamps" aria-hidden="true"><i class="on"></i><i class="off"></i></span>
+        <span class="sp"></span>
+        <button class="enter" id="enter" disabled aria-label="記録する">↙</button>
+      </div>
     </section>
 
     <!-- ③ 貯（溜まる液体）────────────────────── -->
@@ -376,12 +404,15 @@
       <div class="tank" id="tank"></div>
 
       <div class="rates">
-        <button class="rate pressable" id="rateWd">
-          <span class="micro">平日</span><b>—</b>
+        <button class="rate" id="rateWd">
+          <span class="micro">◎ 平日 / 日</span><b>—</b>
         </button>
-        <button class="rate pressable" id="rateHe">
-          <span class="micro">休日</span><b>—</b>
+        <button class="rate" id="rateHe">
+          <span class="micro">◎ 休日 / 日</span><b>—</b>
         </button>
+        <div class="rate" aria-hidden="true">
+          <span class="micro">週</span><b id="weekN">—</b>
+        </div>
         <button class="chip sm hollow pressable" id="wipe" aria-label="全部消す">✕</button>
       </div>
     </section>
@@ -714,12 +745,14 @@ function drawSave(){
 
   document.querySelector("#rateWd b").textContent = db.rates.wd ? yen(db.rates.wd) : "—";
   document.querySelector("#rateHe b").textContent = db.rates.he ? yen(db.rates.he) : "—";
+  document.getElementById("weekN").textContent = wp > 0 ? yen(wp) : "—";
 
   /* 液面は「経過した日ぶんの予算のうち、どれだけ残せたか」。
      一日でも使わなければ満ちるので、日々の増減が目に見える。 */
   tankState.target = s.plan > 0 ? Math.max(0, Math.min(1, s.saved / s.plan)) : 0;
   tankState.label  = wp > 0 ? (s.saved < 0 ? "−" : "") + yen(Math.abs(s.saved)) : "—";
   tankState.over   = wp > 0 && s.saved < 0;
+  tankState.empty  = wp <= 0;
   buildTank();
 }
 
@@ -745,13 +778,17 @@ function buildTank(){
     +   '<clipPath id="lq"><path id="waveClip" d=""/></clipPath>'
     + '</defs>'
     + '<g clip-path="url(#vessel)">'
-    +   '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="rgba(239,231,219,.07)"/>'
-    +   text(tankState.over ? "#ff5b34" : "#efe7db")
-    +   '<path id="wave2" fill="rgba(255,126,84,.32)" d=""/>'
+    /* 器そのものは描かない。溜まった液体だけが形になる。
+       ただし予算を決める前だけは、破線の輪を置いて場所を示す。 */
+    +   (tankState.empty
+        ? '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="rgba(13,13,13,.16)" '
+          + 'stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>'
+        : '')
+    +   text(tankState.over ? "#ff5b34" : "#0d0d0d")
+    +   '<path id="wave2" fill="rgba(255,91,52,.34)" d=""/>'
     +   '<path id="wave1" fill="#ff5b34" d=""/>'
-    +   '<g clip-path="url(#lq)">' + text("#1b1712") + '</g>'
+    +   '<g clip-path="url(#lq)">' + text("#f4f1e3") + '</g>'
     + '</g>'
-    + '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="rgba(239,231,219,.18)" stroke-width="1.5"/>'
     + '</svg>';
 
   tankState.wave  = document.getElementById("wave1");
@@ -984,8 +1021,8 @@ function paneIndex(){
   return i < 0 ? 0 : (i > 3 ? 3 : i);
 }
 /* 下の帯は、いま見ている画面の地色に合わせる。暗い三枚と明るい一枚。 */
-var TONE = ["#0d0d0d", "#4a3a2e", "#1b1712", "#f4f1e3"];
-var LIGHT_PANE = [false, false, false, true];
+var TONE = ["#0d0d0d", "#161616", "#f4f1e3", "#f4f1e3"];
+var LIGHT_PANE = [false, false, true, true];
 
 function syncDots(){
   var i = paneIndex();
