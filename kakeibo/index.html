@@ -17,9 +17,9 @@
 <style>
   /* ── 設計の方針 ───────────────────────────────
      参考にした画面の作りにならい、言葉をほとんど置かない。
-     費目は絵の丸、種別は矢印、量は帯の幅・花弁の長さ・点の大きさで示す。
+     費目は絵の丸、種別は矢印、量は帯の幅・液面の高さ・点の大きさで示す。
      読ませるのは金額の数字だけ。四枚の画面はそれぞれ地の色を変え、
-     黒（今月）・橙（入力）・灰（内訳）・生成り（暦）で役割を区別する。
+     黒（今月）・焦げ茶（入力＝電卓）・濃茶（貯）・生成り（暦）で役割を区別する。
      ───────────────────────────────────────── */
   :root{
     color-scheme: dark;
@@ -30,6 +30,18 @@
     --blue:    #8ab4ff;
     --lilac:   #c9b8ff;
     --stone:   #b9b3a8;
+
+    /* 電卓の本体まわり */
+    --case:    #4a3a2e;
+    --plate:   #3d3026;
+    --key:     #5d4b3d;
+    --key-hi:  #6f5b4a;
+    --key-dim: #4f4034;
+    --lcd:     #c9c8ac;
+    --lcd-ink: #262619;
+    --accent:  #ff5b34;
+    --keyshadow: 0 1px 0 rgba(255,255,255,.07) inset, 0 2px 4px rgba(0,0,0,.30);
+    --deep:    #1b1712;
 
     --grot:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
     --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
@@ -147,55 +159,102 @@
   .row.gone{ opacity:0; transform:translateX(-14px); transition:opacity .18s, transform .18s; }
   .empty{ padding:26px 0 8px; }
 
-  /* ── 入力（橙） ───────────────────────────── */
-  .pane.hot{ padding-bottom:10px; }
-  .kinds{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  /* ── 入力（電卓）───────────────────────────
+     ブラウンの電卓にならい、焦げ茶の本体・うぐいす色の液晶・
+     まるい鍵の格子で組む。差し色は決定キーの橙ひとつだけ。 */
+  .pane.calc{
+    background:var(--case); color:#e9e0d3;
+    --ghost:rgba(233,224,211,.34); --rule:rgba(233,224,211,.16); --soft:rgba(0,0,0,.22);
+    padding-bottom:10px;
+  }
+  .kinds{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
   .kinds .sp{ flex:1 1 auto; }
-  /* 打ち込んでいる金額を画面の真ん中に大きく置く。ここが入力画面の主役。 */
-  .amtwrap{ flex:1 1 auto; min-height:96px; display:grid; align-items:center; }
-  .amount{ margin:0; font-size:clamp(52px,17vw,78px); white-space:nowrap; }
-  .amount.long{ font-size:clamp(36px,11.5vw,56px); }
-  .amount.zero .num{ color:var(--ghost); }
-  .cats{ display:flex; gap:8px; margin:16px 0 8px; }
-  .cats .chip{ flex:1 1 0; width:auto; border-radius:22px; height:44px; background:var(--c,var(--soft)); }
-  /* 選んだ費目は黒で塗る。色そのものは変えず、反転で示す。 */
-  .cats .chip[aria-pressed="true"]{ background:#0d0d0d; color:#fff; }
+  .kinds .chip{ background:var(--key); color:#e9e0d3; box-shadow:var(--keyshadow); }
+  .kinds .chip[aria-pressed="true"]{ background:#e9e0d3; color:var(--case); }
 
-  .meter{ height:4px; border-radius:2px; background:var(--soft); overflow:hidden; margin-bottom:14px; }
-  .meter i{ display:block; height:100%; background:#0d0d0d; width:0; transition:width .3s ease; }
+  /* 液晶。数字は電卓と同じく右へ寄せる。 */
+  .lcd{
+    background:var(--lcd); color:var(--lcd-ink); border-radius:10px;
+    padding:14px 16px 16px; margin-bottom:16px;
+    box-shadow:inset 0 2px 5px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.35);
+    display:flex; flex-direction:column; justify-content:space-between; gap:6px;
+    flex:1 1 auto; min-height:104px; max-height:210px;
+  }
+  .lcd .line{ display:flex; align-items:center; gap:8px; min-height:20px; }
+  .lcd .line .sp{ flex:1 1 auto; }
+  .lcd .mark{ display:grid; place-items:center; width:20px; height:20px; color:var(--lcd-ink); opacity:.8; }
+  .lcd .mark .ic{ width:16px; height:16px; }
+  .lcd .micro{ color:rgba(42,42,32,.5); }
+  .amount{
+    margin:0; text-align:right; white-space:nowrap;
+    font-size:clamp(40px,13vw,58px); line-height:1; color:var(--lcd-ink);
+  }
+  .amount.long{ font-size:clamp(28px,9vw,42px); }
+  .amount.zero .num{ color:rgba(42,42,32,.3); }
+
+  .cats{ display:flex; gap:7px; margin:0 0 14px; }
+  .cats .chip{
+    flex:1 1 0; width:auto; height:40px; border-radius:20px;
+    background:var(--c,var(--key)); box-shadow:var(--keyshadow);
+  }
+  /* 選んだ費目は本体の色で沈める。色そのものは変えず、反転で示す。 */
+  .cats .chip[aria-pressed="true"]{ background:var(--case); color:#e9e0d3; box-shadow:inset 0 1px 3px rgba(0,0,0,.5); }
+
+  .meter{ height:3px; border-radius:2px; background:rgba(0,0,0,.28); overflow:hidden; margin-bottom:14px; }
+  .meter i{ display:block; height:100%; background:var(--accent); width:0; transition:width .3s ease; }
 
   .pad{
-    flex:0 0 auto;
-    height:min(42vh,290px); min-height:172px;
-    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:8px;
+    flex:0 1 auto; margin-top:auto;
+    height:min(46vh,320px); min-height:172px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr); gap:9px;
   }
   .key{
-    background:rgba(13,13,13,.11); border-radius:16px;
-    font-size:23px; font-weight:800; letter-spacing:-.02em;
+    background:var(--key); color:#efe7da; border-radius:999px;
+    font-size:22px; font-weight:700; letter-spacing:-.01em;
     display:grid; place-items:center;
-    transition:background .1s ease;
+    box-shadow:var(--keyshadow);
+    transition:background .1s ease, transform .06s ease;
   }
-  .key:active{ background:rgba(13,13,13,.22); }
+  .key:active{ background:var(--key-hi); transform:translateY(1px); }
+  .key.fn{ background:var(--key-dim); color:#cdbfae; }
   .enter{
-    margin-top:8px; height:56px; flex:0 0 56px;
-    background:#0d0d0d; color:#fff; border-radius:18px;
-    display:grid; place-items:center; font-size:22px;
+    margin-top:9px; height:54px; flex:0 0 54px;
+    background:var(--accent); color:#2a1a12; border-radius:999px;
+    display:grid; place-items:center; font-size:21px; font-weight:700;
+    box-shadow:var(--keyshadow);
     margin-bottom:env(safe-area-inset-bottom);
   }
-  .enter:active{ opacity:.75; }
-  .enter[disabled]{ opacity:.28; }
+  .enter:active{ transform:translateY(1px); }
+  .enter[disabled]{ opacity:.4; box-shadow:none; }
 
-  /* ── 内訳（灰） ───────────────────────────── */
-  .bloom{ margin:10px auto 8px; width:100%; max-width:290px; }
-  .bloom svg{ display:block; width:100%; height:auto; }
-  .ranks{ display:flex; flex-direction:column; }
-  .rank{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--rule); }
-  .rank .bar{ flex:1 1 auto; height:6px; border-radius:3px; background:var(--soft); overflow:hidden; }
-  .rank .bar i{ display:block; height:100%; border-radius:3px; }
-  .rank .n{ font-size:17px; font-weight:800; letter-spacing:-.02em; min-width:74px; text-align:right; }
-  .foot{ display:flex; align-items:center; gap:10px; padding:14px 0 calc(env(safe-area-inset-bottom) + 4px); margin-top:auto; }
-  .foot .sp{ flex:1 1 auto; }
-  .foot .n{ font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  /* ── 貯（溜まる液体）───────────────────────
+     週の予算と使った額の差を、円のなかに溜まる液体で示す。
+     数字は液面の上下で色が入れ替わる（下の層と、液体で切り抜いた層）。 */
+  .pane.save{
+    background:var(--deep); color:#efe7db;
+    --ghost:rgba(239,231,219,.30); --rule:rgba(239,231,219,.14); --soft:rgba(239,231,219,.09);
+  }
+  .savehead{ display:flex; align-items:center; gap:10px; }
+  .savehead .sp{ flex:1 1 auto; }
+  /* 週の七日。休日は輪、平日は点。過ぎた日は明るい。 */
+  .week{ display:flex; gap:7px; align-items:center; }
+  .week i{ width:9px; height:9px; border-radius:50%; background:#efe7db; opacity:.22; }
+  .week i.past{ opacity:.8; }
+  .week i.holi{ background:none; box-shadow:inset 0 0 0 2px #efe7db; }
+  .week i.now{ background:var(--accent); opacity:1; box-shadow:none; transform:scale(1.25); }
+
+  .tank{ flex:1 1 auto; display:grid; place-items:center; min-height:0; padding:14px 0 6px; }
+  .tank svg{ display:block; width:100%; height:100%; max-height:min(52vh,304px); }
+
+  .rates{ display:flex; gap:9px; align-items:stretch; padding-bottom:calc(env(safe-area-inset-bottom) + 6px); }
+  .rate{
+    flex:1 1 0; text-align:left; border-radius:14px; padding:9px 13px 11px;
+    background:var(--soft); transition:background .12s ease;
+  }
+  .rate:active{ background:rgba(239,231,219,.18); }
+  .rate b{ display:block; margin-top:3px; font-size:19px; font-weight:800; letter-spacing:-.02em; }
+  .rate .micro{ display:block; }
+  .rates .chip{ align-self:center; }
 
   /* ── 暦（生成り） ─────────────────────────── */
   .pane.cal{
@@ -219,7 +278,7 @@
     display:grid; grid-template-columns:repeat(7,1fr); gap:13px 8px;
     width:100%; max-width:290px; margin:0 auto; padding:26px 0 22px;
   }
-  .day{ height:26px; display:grid; place-items:center; }
+  .day{ height:28px; display:grid; place-items:center; }
   .day i{ display:block; border-radius:50%; background:#0d0d0d; transition:transform .12s ease; }
   .day:active i{ transform:scale(.82); }
   .daysum{
@@ -280,8 +339,8 @@
       <div class="rows" id="rows"></div>
     </section>
 
-    <!-- ② 入力 ─────────────────────────────── -->
-    <section class="pane hot" id="p1">
+    <!-- ② 入力（電卓）───────────────────────── -->
+    <section class="pane calc" id="p1">
       <div class="kinds">
         <button class="chip pressable" id="kOut" aria-pressed="true">↗</button>
         <button class="chip pressable" id="kIn" aria-pressed="false">↘</button>
@@ -289,11 +348,16 @@
         <span class="micro" id="mode">2026.08</span>
       </div>
 
-      <div class="cats" id="cats"></div>
-
-      <div class="amtwrap">
-        <h2 class="display amount zero" id="amount"><span class="yen">¥</span><span class="num">0</span></h2>
+      <div class="lcd">
+        <div class="line">
+          <span class="mark" id="lcdMark"></span>
+          <span class="sp"></span>
+          <span class="micro" id="lcdNote">—</span>
+        </div>
+        <h2 class="amount zero" id="amount"><span class="yen">¥</span><span class="num">0</span></h2>
       </div>
+
+      <div class="cats" id="cats"></div>
 
       <div class="meter"><i id="meter"></i></div>
 
@@ -301,23 +365,23 @@
       <button class="enter" id="enter" disabled aria-label="記録する">↙</button>
     </section>
 
-    <!-- ③ 内訳 ─────────────────────────────── -->
-    <section class="pane pale" id="p2">
-      <div class="head">
-        <h1 class="display" id="topcat" role="img" aria-label="記録なし">—<span class="ghost">0%</span></h1>
-        <div class="marks">
-          <span class="chip hollow" id="count">0</span>
-        </div>
+    <!-- ③ 貯（溜まる液体）────────────────────── -->
+    <section class="pane save" id="p2">
+      <div class="savehead">
+        <div class="week" id="week"></div>
+        <span class="sp"></span>
+        <span class="micro" id="weekrange">—</span>
       </div>
 
-      <div class="bloom" id="bloom"></div>
+      <div class="tank" id="tank"></div>
 
-      <div class="ranks" id="ranks"></div>
-
-      <div class="foot">
-        <button class="chip pressable" id="budget" style="background:var(--yellow)">◎</button>
-        <span class="n" id="budgetN">¥0</span>
-        <span class="sp"></span>
+      <div class="rates">
+        <button class="rate pressable" id="rateWd">
+          <span class="micro">平日</span><b>—</b>
+        </button>
+        <button class="rate pressable" id="rateHe">
+          <span class="micro">休日</span><b>—</b>
+        </button>
         <button class="chip sm hollow pressable" id="wipe" aria-label="全部消す">✕</button>
       </div>
     </section>
@@ -389,7 +453,9 @@ function catOf(k){
 
 /* ── 保存 ─────────────────────────────────── */
 var KEY = "kakeibo.v1";
-var db = { entries:[], budgets:{} };
+/* rates は一日あたりの予算。wd=平日 / he=休日（土日）。
+   月の予算はここから日を数えて出すので、月ごとに持つ必要がない。 */
+var db = { entries:[], budgets:{}, rates:{ wd:0, he:0 } };
 
 function load(){
   try{
@@ -398,7 +464,20 @@ function load(){
     var o = JSON.parse(raw);
     if(o && Array.isArray(o.entries)) db.entries = o.entries;
     if(o && o.budgets && typeof o.budgets === "object") db.budgets = o.budgets;
+    if(o && o.rates && typeof o.rates === "object"){
+      db.rates.wd = o.rates.wd || 0;
+      db.rates.he = o.rates.he || 0;
+    }
   }catch(e){ /* 壊れていたら空から始める */ }
+
+  /* 前の版で月ごとに入れていた予算を、一日あたりに均して引き継ぐ。 */
+  if(!db.rates.wd && !db.rates.he){
+    var keys = Object.keys(db.budgets).sort();
+    if(keys.length){
+      var per = Math.round((db.budgets[keys[keys.length-1]] || 0) / 30 / 10) * 10;
+      if(per > 0){ db.rates.wd = per; db.rates.he = per; save(); }
+    }
+  }
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(db)); }
@@ -434,7 +513,18 @@ function sums(){
   });
   return { out:out, in:inn, per:per };
 }
-function budget(){ return db.budgets[ym()] || 0; }
+/* 土日を休日とする。祝日の暦は持たない。 */
+function isHoliday(d){ var w = d.getDay(); return w === 0 || w === 6; }
+function rateOf(d){ return isHoliday(d) ? db.rates.he : db.rates.wd; }
+function weekPlan(){ return db.rates.wd*5 + db.rates.he*2; }
+
+/* 月の予算は、その月の平日・休日を数えて出す。 */
+function budget(){
+  if(!db.rates.wd && !db.rates.he) return 0;
+  var y = view.getFullYear(), m = view.getMonth(), n = daysInMonth(view), t = 0;
+  for(var d=1; d<=n; d++) t += rateOf(new Date(y, m, d));
+  return t;
+}
 
 var yen = function(n){ return "¥" + Math.round(n).toLocaleString("ja-JP"); };
 var num = function(n){ return Math.round(n).toLocaleString("ja-JP"); };
@@ -493,34 +583,6 @@ function drawFlow(){
       svg.push('<circle cx="'+x0+'" cy="'+yL[i].toFixed(1)+'" r="'+r.toFixed(1)+'" fill="#0d0d0d"/>');
       svg.push('<circle cx="'+x1+'" cy="'+yR[i].toFixed(1)+'" r="'+r.toFixed(1)+'" fill="#0d0d0d"/>');
     }
-  }
-  svg.push('</g></svg>');
-  host.innerHTML = svg.join("");
-}
-
-/* ── ③内訳：花弁 ─────────────────────────
-   花弁の長さが金額の比。数字を読ませずに偏りだけを見せる。 */
-function drawBloom(){
-  var host = document.getElementById("bloom");
-  var W = 200, H = 200, cx = W/2, cy = H/2;
-  var s = sums(), list = [];
-  CATS.forEach(function(c){ if(s.per[c.k] > 0) list.push({ k:c.k, c:c.c, v:s.per[c.k] }); });
-  list.sort(function(a,b){ return b.v - a.v; });   /* 一番大きい費目を真上に置く */
-
-  var ghostMode = list.length === 0;
-  if(ghostMode){ list = CATS.map(function(c){ return { k:c.k, c:c.c, v:1 }; }); }
-
-  var n = list.length;
-  var max = list[0].v || 1;
-  var svg = ['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="費目ごとの内訳">'];
-  svg.push('<g opacity="'+(ghostMode ? .12 : 1)+'">');
-  for(var i=0;i<n;i++){
-    /* reach は花弁の先端までの長さ。差が開きすぎないよう平方根で丸める（順位は保たれる）。 */
-    var reach = 26 + 62 * Math.sqrt(list[i].v/max);
-    var ry = reach/2, rx = 8 + 5*(reach/88);
-    var deg = (360/n) * i;   /* 真上から時計回り */
-    svg.push('<ellipse cx="'+cx+'" cy="'+(cy - ry).toFixed(1)+'" rx="'+rx.toFixed(1)+'" ry="'+ry.toFixed(1)+'" '
-      + 'fill="'+list[i].c+'" transform="rotate('+deg.toFixed(1)+' '+cx+' '+cy+')"/>');
   }
   svg.push('</g></svg>');
   host.innerHTML = svg.join("");
@@ -598,41 +660,144 @@ function drawMonth(){
   drawFlow();
 }
 
-/* ── ③内訳 ────────────────────────────────── */
-function drawSplit(){
-  var s = sums(), list = [];
-  CATS.forEach(function(c){ if(s.per[c.k] > 0) list.push({ k:c.k, c:c.c, v:s.per[c.k] }); });
-  list.sort(function(a,b){ return b.v - a.v; });
-
-  var top = list[0];
-  document.getElementById("topcat").innerHTML =
-    (top ? ic(top.k, "big") : "—") + '<span class="ghost">'
-    + (top ? Math.round(top.v / s.out * 100) + "%" : "0%") + '</span>';
-  document.getElementById("topcat").setAttribute("aria-label", top ? top.k : "記録なし");
-  document.getElementById("count").textContent = monthEntries().length;
-
-  var host = document.getElementById("ranks");
-  host.innerHTML = "";
-  var max = top ? top.v : 1;
-  list.forEach(function(d){
-    var el = document.createElement("div");
-    el.className = "rank";
-    el.innerHTML =
-      '<span class="chip sm" style="background:' + d.c + '" role="img" aria-label="' + d.k + '">' + ic(d.k) + '</span>'
-      + '<span class="bar"><i style="width:' + (d.v/max*100).toFixed(1) + '%;background:' + d.c + '"></i></span>'
-      + '<span class="n">' + yen(d.v) + '</span>';
-    host.appendChild(el);
+/* ── ③貯：週の予算との差を、溜まる液体で示す ──────────
+   週は月曜はじまり。経過した日ぶんの予算から、その間に使った額を
+   引いたものが「貯まった額」。円のなかの液面がその比を表す。
+   液面は二枚の波を別々の速さで動かし、止まって見えないようにする。 */
+function weekStart(){
+  var d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   /* 月曜へ戻す */
+  return d;
+}
+function entryDate(e){
+  var p = String(e.ym).split("-");
+  return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, dayOf(e));
+}
+function savings(){
+  var s0 = weekStart(), now = new Date();
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var plan = 0, days = [];
+  for(var d = new Date(s0); d <= today; d.setDate(d.getDate()+1)){
+    plan += rateOf(d);
+    days.push(new Date(d));
+  }
+  var spent = 0;
+  db.entries.forEach(function(e){
+    if(e.kind === "in") return;
+    var t = entryDate(e);
+    if(t >= s0 && t <= today) spent += e.amt;
   });
+  return { start:s0, today:today, plan:plan, spent:spent, saved:plan - spent, elapsed:days.length };
+}
 
-  document.getElementById("budgetN").textContent = budget() > 0 ? yen(budget()) : "—";
-  drawBloom();
+var tankState = { level:0, target:0, phase:0, raf:0, label:"—", over:false };
+
+function drawSave(){
+  var s = savings(), wp = weekPlan();
+
+  /* 週の七日。休日は輪、平日は点。今日は橙。 */
+  var host = document.getElementById("week");
+  host.innerHTML = "";
+  for(var i=0;i<7;i++){
+    var d = new Date(s.start); d.setDate(d.getDate()+i);
+    var cls = "";
+    if(isHoliday(d)) cls += " holi";
+    if(i < s.elapsed - 1) cls += " past";
+    if(i === s.elapsed - 1) cls += " now";
+    host.innerHTML += '<i class="' + cls.trim() + '"></i>';
+  }
+
+  var e = s.start, f = new Date(s.start); f.setDate(f.getDate()+6);
+  document.getElementById("weekrange").textContent =
+    (e.getMonth()+1) + "/" + e.getDate() + " — " + (f.getMonth()+1) + "/" + f.getDate();
+
+  document.querySelector("#rateWd b").textContent = db.rates.wd ? yen(db.rates.wd) : "—";
+  document.querySelector("#rateHe b").textContent = db.rates.he ? yen(db.rates.he) : "—";
+
+  /* 液面は「経過した日ぶんの予算のうち、どれだけ残せたか」。
+     一日でも使わなければ満ちるので、日々の増減が目に見える。 */
+  tankState.target = s.plan > 0 ? Math.max(0, Math.min(1, s.saved / s.plan)) : 0;
+  tankState.label  = wp > 0 ? (s.saved < 0 ? "−" : "") + yen(Math.abs(s.saved)) : "—";
+  tankState.over   = wp > 0 && s.saved < 0;
+  buildTank();
+}
+
+/* 器と、そこに置く文字。波の形だけを毎こま書き換える。
+   viewBox は正方形の固定寸で、実寸への拡大は CSS に任せる。 */
+var TW = 300;
+
+function buildTank(){
+  var host = document.getElementById("tank");
+  if(!host) return;
+  var c = TW/2, r = TW/2 - 3, fs = TW * 0.17;
+  var label = tankState.label || "—";
+  var text = function(fill){
+    return '<text x="'+c+'" y="'+c+'" text-anchor="middle" dominant-baseline="central" '
+         + 'font-size="'+fs.toFixed(1)+'" font-weight="800" letter-spacing="-.03em" fill="'+fill+'">'
+         + label + '</text>';
+  };
+
+  host.innerHTML =
+    '<svg viewBox="0 0 '+TW+' '+TW+'" role="img" aria-label="貯まった額 ' + label + '">'
+    + '<defs>'
+    +   '<clipPath id="vessel"><circle cx="'+c+'" cy="'+c+'" r="'+r+'"/></clipPath>'
+    +   '<clipPath id="lq"><path id="waveClip" d=""/></clipPath>'
+    + '</defs>'
+    + '<g clip-path="url(#vessel)">'
+    +   '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="rgba(239,231,219,.07)"/>'
+    +   text(tankState.over ? "#ff5b34" : "#efe7db")
+    +   '<path id="wave2" fill="rgba(255,126,84,.32)" d=""/>'
+    +   '<path id="wave1" fill="#ff5b34" d=""/>'
+    +   '<g clip-path="url(#lq)">' + text("#1b1712") + '</g>'
+    + '</g>'
+    + '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="rgba(239,231,219,.18)" stroke-width="1.5"/>'
+    + '</svg>';
+
+  tankState.wave  = document.getElementById("wave1");
+  tankState.wave2 = document.getElementById("wave2");
+  tankState.clip  = document.getElementById("waveClip");
+  tick(true);
+}
+
+function wavePath(level, phase, amp, freq){
+  /* 液面より下を塗る多角形。左右は器の外まで伸ばして継ぎ目を隠す。 */
+  var base = TW - level * (TW + amp*2) + amp;
+  var d = "M -8 " + (base + Math.sin(phase) * amp).toFixed(1);
+  for(var x = 0; x <= TW + 8; x += 8){
+    d += " L " + x + " " + (base + Math.sin(phase + x/TW * freq * Math.PI*2) * amp).toFixed(1);
+  }
+  return d + " L " + (TW+8) + " " + (TW+8) + " L -8 " + (TW+8) + " Z";
+}
+
+function tick(once){
+  tankState.raf = 0;
+  if(!tankState.wave) return;
+
+  tankState.level += (tankState.target - tankState.level) * (once ? 1 : .05);
+  tankState.phase += .022;
+
+  var amp = TW * 0.026;
+  var d1 = wavePath(tankState.level, tankState.phase, amp, 1.6);
+  tankState.wave.setAttribute("d", d1);
+  tankState.clip.setAttribute("d", d1);
+  tankState.wave2.setAttribute("d",
+    wavePath(tankState.level, -tankState.phase * 1.45 + 1.2, amp * .72, 2.2));
+
+  /* 見えている画面でだけ動かす。電池を無駄に使わない。 */
+  if(!once && paneIndex() === 2 && !document.hidden){
+    tankState.raf = requestAnimationFrame(function(){ tick(false); });
+  }
+}
+function startTank(){
+  if(!tankState.raf && tankState.wave) tankState.raf = requestAnimationFrame(function(){ tick(false); });
 }
 
 /* ── ②入力 ────────────────────────────────── */
 var buf = "";              /* 打ち込み中の数字 */
 var kind = "out";          /* out=支出 / in=収入 */
 var pick = CATS[0].k;      /* 選んでいる費目 */
-var mode = "entry";        /* entry=記録 / budget=予算 */
+var mode = "entry";        /* entry=記録 / wd=平日の予算 / he=休日の予算 */
 
 function buildCats(){
   var host = document.getElementById("cats");
@@ -658,7 +823,7 @@ function buildPad(){
   var keys = ["1","2","3","4","5","6","7","8","9","00","0","⌫"];
   keys.forEach(function(k){
     var b = document.createElement("button");
-    b.className = "key";
+    b.className = "key" + (k === "⌫" ? " fn" : "");
     b.textContent = k;
     b.addEventListener("click", function(){
       if(k === "⌫"){ buf = buf.slice(0, -1); }
@@ -673,24 +838,27 @@ function buildPad(){
 function drawInput(){
   var v = parseInt(buf || "0", 10);
   var amt = document.getElementById("amount");
-  amt.className = "display amount" + (v > 0 ? "" : " zero") + (String(v).length > 6 ? " long" : "");
+  amt.className = "amount" + (v > 0 ? "" : " zero") + (String(v).length > 6 ? " long" : "");
   amt.innerHTML = '<span class="yen">¥</span><span class="num">' + num(v) + '</span>';
 
   document.getElementById("kOut").setAttribute("aria-pressed", kind === "out" ? "true" : "false");
   document.getElementById("kIn").setAttribute("aria-pressed", kind === "in" ? "true" : "false");
-  document.getElementById("kOut").style.background = kind === "out" ? "#0d0d0d" : "rgba(13,13,13,.15)";
-  document.getElementById("kOut").style.color = kind === "out" ? "#fff" : "#0d0d0d";
-  document.getElementById("kIn").style.background = kind === "in" ? "#0d0d0d" : "rgba(13,13,13,.15)";
-  document.getElementById("kIn").style.color = kind === "in" ? "#fff" : "#0d0d0d";
 
   /* 予算を決めている間は、費目と種別を伏せる */
-  var budgeting = mode === "budget";
+  var budgeting = mode !== "entry";
   document.getElementById("cats").style.display = budgeting ? "none" : "";
   document.getElementById("kOut").style.visibility = budgeting ? "hidden" : "";
   document.getElementById("kIn").style.visibility = budgeting ? "hidden" : "";
-  document.getElementById("mode").textContent = budgeting ? "◎ " + ym().replace("-", ".") : ym().replace("-", ".");
+  document.getElementById("mode").textContent = ym().replace("-", ".");
   document.getElementById("enter").textContent = budgeting ? "◎" : "↙";
   document.getElementById("enter").disabled = v <= 0;
+
+  /* 液晶の一行目：いま何を打っているのか（費目の絵か、予算の別）。 */
+  document.getElementById("lcdMark").innerHTML = budgeting ? "◎" : ic(pick);
+  document.getElementById("lcdMark").setAttribute("aria-label", budgeting ? "予算" : pick);
+  document.getElementById("lcdNote").textContent =
+    budgeting ? (mode === "wd" ? "平日 / 一日" : "休日 / 一日")
+              : (kind === "in" ? "収入" : "支出");
 
   Array.prototype.forEach.call(document.getElementById("cats").children, function(b){
     b.setAttribute("aria-pressed", b.dataset.k === pick ? "true" : "false");
@@ -704,9 +872,10 @@ function drawInput(){
 function commit(){
   var v = parseInt(buf || "0", 10);
   if(v <= 0) return;
+  var wasBudget = mode !== "entry";
 
-  if(mode === "budget"){
-    db.budgets[ym()] = v;
+  if(mode === "wd" || mode === "he"){
+    db.rates[mode] = v;
     mode = "entry";
   }else{
     /* 今月なら今日。ほかの月を見ているときは、暦で選んでいる日に付ける。 */
@@ -726,7 +895,7 @@ function commit(){
   buf = "";
   save();
   renderAll();
-  go(0);
+  go(wasBudget ? 2 : 0);   /* 予算を決めたら貯の画面へ、記録したら今月へ戻る */
 }
 
 /* ── ④暦：日ごとの点 ───────────────────────
@@ -774,8 +943,9 @@ function drawCal(){
       var v = inMonth ? (per[day] || 0) : 0;
       var on = inMonth && day === pickDay;
 
-      var size = inMonth ? (v > 0 && max > 0 ? 8 + 11*Math.sqrt(v/max) : 8) : 6.5;
-      if(on) size = Math.max(size, 10);
+      var size = inMonth ? (v > 0 && max > 0 ? 8 + 10*Math.sqrt(v/max) : 8) : 6.5;
+      /* 選んでいる日は、どの黒い点よりひとまわり大きくする。 */
+      if(on) size = Math.max(size, 18) + 3;
 
       var b = document.createElement("button");
       b.className = "day";
@@ -809,29 +979,37 @@ var strip = document.getElementById("strip");
 function go(i){
   strip.scrollTo({ left: strip.clientWidth * i, behavior:"smooth" });
 }
-/* 下の帯は、いま見ている画面の地色に合わせる。 */
-var TONE = ["#0d0d0d", "#ff5b34", "#e9e6df", "#f4f1e3"];
+function paneIndex(){
+  var i = Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
+  return i < 0 ? 0 : (i > 3 ? 3 : i);
+}
+/* 下の帯は、いま見ている画面の地色に合わせる。暗い三枚と明るい一枚。 */
+var TONE = ["#0d0d0d", "#4a3a2e", "#1b1712", "#f4f1e3"];
+var LIGHT_PANE = [false, false, false, true];
 
 function syncDots(){
-  var i = Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
-  if(i < 0) i = 0;
-  if(i >= TONE.length) i = TONE.length - 1;
+  var i = paneIndex();
   var dots = document.getElementById("dots").children;
   for(var j=0;j<dots.length;j++){ dots[j].className = (j === i ? "on" : ""); }
   document.querySelector(".dots").style.background = TONE[i];
   document.querySelector('meta[name="theme-color"]').setAttribute("content", TONE[i]);
   for(j=0;j<dots.length;j++){
     dots[j].style.background = dots[j].className === "on"
-      ? (i === 0 ? "#f4f2ee" : "#0d0d0d")
-      : (i === 0 ? "rgba(244,242,238,.26)" : "rgba(13,13,13,.24)");
+      ? (LIGHT_PANE[i] ? "#0d0d0d" : "#f4f2ee")
+      : (LIGHT_PANE[i] ? "rgba(13,13,13,.24)" : "rgba(244,242,238,.26)");
   }
+  /* 液体は見えている間だけ動かす。 */
+  if(i === 2) startTank();
 }
 strip.addEventListener("scroll", function(){
   window.requestAnimationFrame(syncDots);
 }, { passive:true });
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && paneIndex() === 2) startTank();
+});
 
 /* ── 組み立て ─────────────────────────────── */
-function renderAll(){ drawMonth(); drawInput(); drawSplit(); drawCal(); }
+function renderAll(){ drawMonth(); drawInput(); drawSave(); drawCal(); }
 
 function shiftMonth(n){
   view.setMonth(view.getMonth() + n);
@@ -845,21 +1023,26 @@ document.getElementById("cnext").addEventListener("click", function(){ shiftMont
 document.getElementById("kOut").addEventListener("click", function(){ kind = "out"; drawInput(); });
 document.getElementById("kIn").addEventListener("click", function(){ kind = "in"; drawInput(); });
 document.getElementById("enter").addEventListener("click", commit);
-document.getElementById("budget").addEventListener("click", function(){
-  mode = "budget"; buf = ""; drawInput(); go(1);
+/* 平日・休日それぞれの一日あたりの予算を、電卓で打ち込む。 */
+document.getElementById("rateWd").addEventListener("click", function(){
+  mode = "wd"; buf = ""; drawInput(); go(1);
+});
+document.getElementById("rateHe").addEventListener("click", function(){
+  mode = "he"; buf = ""; drawInput(); go(1);
 });
 document.getElementById("wipe").addEventListener("click", function(){
-  if(!db.entries.length && !Object.keys(db.budgets).length) return;
-  if(confirm("記録を全部消しますか？")){
-    db = { entries:[], budgets:{} };
+  if(!db.entries.length && !db.rates.wd && !db.rates.he) return;
+  if(confirm("記録と予算を全部消しますか？")){
+    db = { entries:[], budgets:{}, rates:{ wd:0, he:0 } };
     pickDay = 0;
+    tankState.level = 0;
     save(); renderAll();
   }
 });
 
 /* 物理キーボードからも打てるようにしておく（机上での確認用） */
 document.addEventListener("keydown", function(ev){
-  if(Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth)) !== 1) return;
+  if(paneIndex() !== 1) return;
   if(ev.key >= "0" && ev.key <= "9"){ if(buf.length < 9) buf = (buf === "0" ? "" : buf) + ev.key; drawInput(); }
   else if(ev.key === "Backspace"){ buf = buf.slice(0, -1); drawInput(); }
   else if(ev.key === "Enter"){ commit(); }
