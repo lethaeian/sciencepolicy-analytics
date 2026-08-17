@@ -9,7 +9,7 @@
  *   - HTML は network-first。更新版があれば取りに行き、無ければ手元の版を返す。
  */
 
-var VERSION = "v4";
+var VERSION = "v5";
 var CACHE = "kakeibo-shell-" + VERSION;
 
 var SHELL = [
