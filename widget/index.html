@@ -271,6 +271,9 @@
   }
   .glyph svg{ width: 19px; height: 19px; }
   .glyph:active{ background: var(--band); }
+  /* 押されている間は地と図を入れ替える。言葉を足さずに状態を出す。 */
+  .glyph[aria-pressed="true"]{ background: var(--ink); color: var(--bg); }
+  .glyph.gone{ display: none; }
   .foot-row .t{
     flex: 1;
     text-align:center;
@@ -534,6 +537,14 @@
  <div class="foot-row">
    <button class="dot" id="refreshBtn" type="button" aria-label="更新"></button>
    <span class="t" id="footTime"></span>
+   <button class="glyph" id="wakeBtn" type="button"
+           aria-label="画面を消さない" aria-pressed="false">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" aria-hidden="true">
+       <circle cx="12" cy="12" r="4.1"/>
+       <path d="M12 2.4v2.6M12 19v2.6M2.4 12h2.6M19 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/>
+     </svg>
+   </button>
    <button class="glyph" id="placeBtn" type="button" aria-label="地名を変える">
      <span class="sr-only" id="placeName">…</span>
      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
@@ -557,7 +568,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v42";
+  var BUILD = "v43";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -577,7 +588,7 @@
     plotNote:$("plotNote"),
     tempValue:$("tempValue"), humidityValue:$("humidityValue"),
     chartTemp:$("chartTemp"), chartHumidity:$("chartHumidity"),
-    refreshBtn:$("refreshBtn"), footTime:$("footTime"),
+    refreshBtn:$("refreshBtn"), wakeBtn:$("wakeBtn"), footTime:$("footTime"),
     search:$("search"), geoInput:$("geoInput"), geoResults:$("geoResults"),
     msg:$("msg")
   };
@@ -1387,6 +1398,51 @@
 
   // ホーム画面から起動したとき、アプリは再読み込みされず「復帰」することがある。
   // 復帰も起動と同じ扱いにして、必ず現在時刻・現在地を取り直す。
+  // ---------- 画面を消さない ----------
+  // 見ているあいだだけ暗転を止める。端末側の取り決めで、画面が隠れると
+  // 自動的に外れるため、戻ってきたら取り直す。
+  var wakeLock = null, wakeWanted = false;
+
+  function paintWake(){
+    els.wakeBtn.setAttribute("aria-pressed", wakeWanted ? "true" : "false");
+  }
+
+  function takeWake(){
+    if(!("wakeLock" in navigator)) return Promise.resolve(false);
+    return navigator.wakeLock.request("screen").then(function(lock){
+      wakeLock = lock;
+      lock.addEventListener("release", function(){ wakeLock = null; });
+      return true;
+    }).catch(function(){ return false; });
+  }
+
+  function dropWake(){
+    wakeWanted = false;
+    if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; }
+    paintWake();
+  }
+
+  if(!("wakeLock" in navigator)){
+    // 使えない端末に効かないボタンは置かない
+    els.wakeBtn.classList.add("gone");
+  }else{
+    els.wakeBtn.addEventListener("click", function(){
+      if(wakeWanted){ dropWake(); setMsg(""); return; }
+      takeWake().then(function(ok){
+        wakeWanted = ok;
+        paintWake();
+        setMsg(ok ? "" : "この端末では画面を点けたままにできませんでした。");
+      });
+    });
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible" && wakeWanted && !wakeLock){
+        takeWake().then(function(ok){
+          if(!ok){ wakeWanted = false; paintWake(); }
+        });
+      }
+    });
+  }
+
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState==="visible") start();
   });
