@@ -23,7 +23,7 @@
      ブラウン ET66 の組み立て（液晶・まるい鍵・差し色の鍵ひとつ）を借りる。
      ───────────────────────────────────────── */
   :root{
-    color-scheme: dark;
+    color-scheme: light dark;
     --orange:  #ff5b34;
     --yellow:  #ffd23f;
     --pink:    #f3a8d8;
@@ -45,11 +45,13 @@
   html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
   html{ -webkit-text-size-adjust:100%; }
   body{
+    /* 初めに出る窓（今月）に合わせておく。以降は画面ごとに塗り替える。 */
     background:#0d0d0d; color:#f4f2ee;
     font-family:var(--grot);
     font-feature-settings:"palt" 1; font-variant-numeric:tabular-nums;
     -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
     overscroll-behavior:none;
+    transition:background .2s ease;
   }
   button{ font-family:inherit; color:inherit; border:0; background:none; padding:0; cursor:pointer; }
 
@@ -295,6 +297,7 @@
   .tabs{
     flex:0 0 var(--tabs); display:flex; align-items:stretch;
     background:#0d0d0d; padding-bottom:env(safe-area-inset-bottom);
+    transition:background .2s ease;
     box-sizing:content-box;
     box-shadow:0 -1px 0 rgba(127,127,127,.16);
   }
@@ -1042,6 +1045,9 @@ function syncDots(){
   var i = paneIndex();
   var bar = document.getElementById("tabs");
   bar.style.background = TONE[i];
+  /* body の色は画面の余り（下の安全域や横の余白）まで届く。
+     ここを黒のままにすると、生成りの窓のとき下に黒い帯が出る。 */
+  document.body.style.background = TONE[i];
   bar.style.color = LIGHT_PANE[i] ? "#0d0d0d" : "#f4f2ee";
   document.querySelector('meta[name="theme-color"]').setAttribute("content", TONE[i]);
   Array.prototype.forEach.call(bar.children, function(b, j){
