@@ -19,8 +19,8 @@
      参考にした画面の作りにならい、言葉をほとんど置かない。
      費目は絵の丸、種別は矢印、量は帯の幅・液面の高さ・点の大きさで示す。
      読ませるのは金額の数字だけ。四枚の画面はそれぞれ地の色を変え、
-     地は黒（今月）と生成り（電卓・貯・暦）の二色。入力の画面だけは
-     ブラウン ET66 の組み立て（液晶・まるい鍵・差し色の鍵ひとつ）を借りる。
+     地は黒（今月）と生成り（電卓・貯・暦）の二色。入力の画面は
+     やわらかい面の電卓で、色を持つのは決定の鍵と選んだ費目だけ。
      ───────────────────────────────────────── */
   :root{
     color-scheme: light dark;
@@ -156,16 +156,17 @@
   /* ── 入力（電卓）───────────────────────────
      やわらかい面の電卓。地とほぼ同じ色の角丸の鍵を、影と光だけで
      浮かせる。押すと沈む。右の列が操作、下の右端が決定（差し色）。
-     鍵の一辺は列の幅で決まり、余った縦の余白は行の間へ配られる。 */
+     鍵の一辺は列の幅で決まり、余った縦の余白は行の間へ配られる。
+
+     置くものを絞っている。面はひとつ、色を持つのは決定の鍵と選んだ
+     費目だけ。役割の違いは字の濃さで示し、言葉は月の表示だけに留める。 */
   .pane.calc{
     background:var(--cream); color:#0d0d0d;
     --ghost:rgba(13,13,13,.28); --rule:rgba(13,13,13,.14); --soft:rgba(13,13,13,.06);
-    --lift: 5px 6px 12px rgba(146,134,106,.30), -4px -5px 10px rgba(255,255,255,.90);
+    --lift: 4px 5px 12px rgba(146,134,106,.22), -3px -4px 10px rgba(255,255,255,.88);
     --press: inset 3px 4px 8px rgba(146,134,106,.34), inset -3px -3px 7px rgba(255,255,255,.80);
     --face: linear-gradient(158deg, #fbf9f0 0%, #ece7d5 100%);
-    --face-fn: linear-gradient(158deg, #ece7d6 0%, #ddd6c0 100%);
     --face-go: linear-gradient(158deg, #ffa646 0%, #f4601f 100%);
-    --face-on: linear-gradient(158deg, #2c2b26 0%, #16150f 100%);
     --kmax:76px;
     --kmax:min( calc((min(100vw,520px) - 69px) / 4), calc((100vh - 330px) / 4) );
     padding-bottom:8px;
@@ -186,22 +187,17 @@
   .amount.long{ font-size:clamp(30px,10vw,46px); }
   .amount.zero .num{ color:var(--ghost); }
 
-  /* 費目は色のついた丸い鍵。色は暦や帯の図と同じものを使う。 */
-  .cats{ display:flex; justify-content:space-between; gap:6px; margin-bottom:12px; }
+  /* 費目は面を持たず、絵だけを並べる。選んだものにだけ色がつく。 */
+  .cats{ display:flex; justify-content:space-between; gap:4px; margin:0 2px 18px; }
   .cats .chip{
-    width:42px; height:42px; flex:0 0 42px; border-radius:50%;
-    background:var(--c,var(--soft)); color:#0d0d0d;
-    box-shadow:3px 4px 8px rgba(146,134,106,.26), -2px -3px 7px rgba(255,255,255,.80);
-    transition:box-shadow .12s ease, transform .12s ease;
+    width:44px; height:44px; flex:0 0 44px; border-radius:50%;
+    background:none; box-shadow:none;
+    color:rgba(13,13,13,.24);
+    transition:color .14s ease, transform .12s ease;
   }
-  .cats .chip[aria-pressed="true"]{
-    background:#0d0d0d; color:var(--cream);
-    box-shadow:inset 2px 3px 6px rgba(0,0,0,.55);
-  }
-  .cats .chip:active{ box-shadow:var(--press); }
-
-  .meter{ height:3px; border-radius:2px; background:rgba(13,13,13,.07); overflow:hidden; margin:0 2px 14px; }
-  .meter i{ display:block; height:100%; background:var(--accent); width:0; transition:width .3s ease; }
+  .cats .chip .ic{ width:26px; height:26px; }
+  .cats .chip[aria-pressed="true"]{ color:var(--c); }
+  .cats .chip:active{ transform:scale(.88); }
 
   /* 鍵盤は 4 列。右の列が操作（取り消し・種別・消去・決定）。 */
   .pad{
@@ -217,15 +213,16 @@
     transition:box-shadow .12s ease, color .12s ease;
   }
   .key:active{ box-shadow:var(--press); }
-  .key.fn{ background:var(--face-fn); color:rgba(13,13,13,.55); font-size:20px; }
-  .key.tog{ background:var(--face-fn); color:rgba(13,13,13,.6); }
-  .key.tog[aria-pressed="true"]{ background:var(--face-on); color:var(--cream); box-shadow:var(--lift); }
+  /* 面は全部おなじ。取り消し・消去・種別は字を薄くして役割を示す。 */
+  .key.fn{ color:rgba(13,13,13,.34); font-size:20px; }
+  .key.tog{ color:rgba(13,13,13,.34); }
+  .key.tog[aria-pressed="true"]{ color:#0d0d0d; }
   .key.go{
     background:var(--face-go); color:#fff; font-size:22px;
     box-shadow:5px 6px 14px rgba(214,110,40,.42), -4px -5px 10px rgba(255,255,255,.75);
   }
   .key.go:active{ box-shadow:inset 3px 4px 9px rgba(150,60,10,.45), inset -3px -3px 7px rgba(255,190,140,.55); }
-  .key.go[disabled]{ background:var(--face-fn); color:var(--ghost); box-shadow:var(--lift); }
+  .key.go[disabled]{ background:var(--face); color:rgba(13,13,13,.22); box-shadow:var(--lift); }
 
   /* ── 貯（溜まる液体）───────────────────────
      暦の画面と同じ生成りの地。器の輪郭は描かず、溜まった液体そのものが
@@ -324,7 +321,6 @@
     .pane.calc .lcd{ min-height:76px; max-height:106px; margin-bottom:12px; }
     .pane.calc .cats{ margin-bottom:10px; }
     .pane.calc .cats .chip{ width:38px; height:38px; flex-basis:38px; }
-    .pane.calc .meter{ margin-bottom:10px; }
     .pane.calc .pad{ min-height:150px; gap:13px 6px; }
     .pane.calc .enterrow{ margin-top:7px; }
   }
@@ -376,8 +372,6 @@
       </div>
 
       <div class="cats" id="cats"></div>
-
-      <div class="meter"><i id="meter"></i></div>
 
       <div class="pad" id="pad"></div>
     </section>
@@ -907,20 +901,18 @@ function drawInput(){
   document.getElementById("enter").textContent = budgeting ? "◎" : "↙";
   document.getElementById("enter").disabled = v <= 0;
 
-  /* 液晶の一行目：いま何を打っているのか（費目の絵か、予算の別）。 */
-  document.getElementById("lcdMark").innerHTML = budgeting ? "◎" : ic(pick);
-  document.getElementById("lcdMark").setAttribute("aria-label", budgeting ? "予算" : pick);
-  document.getElementById("lcdNote").textContent =
-    budgeting ? (mode === "wd" ? "平日 / 一日" : "休日 / 一日")
-              : (kind === "in" ? "収入" : "支出");
+  /* 一行目はふだん月だけ。何を打っているかは、選ばれた費目の色と
+     矢印の鍵が示すので、言葉は置かない。予算のときだけ何の予算かを添える。 */
+  var mk = document.getElementById("lcdMark"), nt = document.getElementById("lcdNote");
+  mk.style.display = budgeting ? "" : "none";
+  nt.style.display = budgeting ? "" : "none";
+  mk.textContent = "◎";
+  mk.setAttribute("aria-label", "予算");
+  nt.textContent = mode === "wd" ? "平日 / 一日" : "休日 / 一日";
 
   Array.prototype.forEach.call(document.getElementById("cats").children, function(b){
     b.setAttribute("aria-pressed", b.dataset.k === pick ? "true" : "false");
   });
-
-  var s = sums(), b2 = budget();
-  document.getElementById("meter").style.width =
-    (b2 > 0 ? Math.min(100, s.out / b2 * 100) : 0) + "%";
 }
 
 function commit(){
