@@ -19,7 +19,7 @@
      参考にした画面の作りにならい、言葉をほとんど置かない。
      費目は絵の丸、種別は矢印、量は帯の幅・液面の高さ・点の大きさで示す。
      読ませるのは金額の数字だけ。四枚の画面はそれぞれ地の色を変え、
-     地は黒（今月）と生成り（電卓・貯・暦）の二色。入力の画面は
+     地は黒（今月・貯）と生成り（電卓・暦）が交互。入力の画面は
      やわらかい面の電卓で、色を持つのは決定の鍵と選んだ費目だけ。
      ───────────────────────────────────────── */
   :root{
@@ -225,32 +225,36 @@
   .key.go[disabled]{ background:var(--face); color:rgba(13,13,13,.22); box-shadow:var(--lift); }
 
   /* ── 貯（溜まる液体）───────────────────────
-     暦の画面と同じ生成りの地。器の輪郭は描かず、溜まった液体そのものが
-     形になる。数字は液面の上下で色が入れ替わる。 */
+     暗い地に、橙の液体だけが浮かぶ。器の輪郭は描かない。
+     液体はいつも形を揺らしていて、数字は液面の上下で色が入れ替わる。 */
   .pane.save{
-    background:var(--cream); color:#0d0d0d;
-    --ghost:rgba(13,13,13,.26); --rule:rgba(13,13,13,.16); --soft:rgba(13,13,13,.07);
+    background:#0d0d0d; color:var(--cream);
+    --ghost:rgba(244,241,227,.28); --rule:rgba(244,241,227,.16); --soft:rgba(244,241,227,.08);
   }
   .savehead{ display:flex; align-items:center; gap:10px; }
   .savehead .sp{ flex:1 1 auto; }
   /* 週の七日。休日は輪、平日は点。今日は橙。 */
   .week{ display:flex; gap:7px; align-items:center; }
-  .week i{ width:9px; height:9px; border-radius:50%; background:#0d0d0d; opacity:.22; }
+  .week i{ width:9px; height:9px; border-radius:50%; background:var(--cream); opacity:.22; }
   .week i.past{ opacity:.75; }
-  .week i.holi{ background:none; box-shadow:inset 0 0 0 2px #0d0d0d; }
+  .week i.holi{ background:none; box-shadow:inset 0 0 0 2px var(--cream); }
   .week i.now{ background:var(--accent); opacity:1; box-shadow:none; transform:scale(1.3); }
 
   .tank{ flex:1 1 auto; display:grid; place-items:center; min-height:0; padding:10px 0; }
   .tank svg{ display:block; width:100%; height:100%; max-height:min(54vh,320px); }
 
-  /* 設定は暦の画面と同じ、罫と太い数字だけの組み。 */
+  /* 予算はここで決める。三つとも押せる（週を決めると平日と休日へ配る）。 */
   .rates{
-    display:flex; align-items:flex-end; gap:16px;
+    display:flex; align-items:flex-end; gap:14px;
     border-top:1.5px solid currentColor; padding:12px 0 calc(env(safe-area-inset-bottom) + 6px);
   }
   .rate{ flex:1 1 0; text-align:left; }
   .rate .micro{ display:block; }
-  .rate b{ display:block; margin-top:4px; font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .rate b{ display:block; margin-top:4px; font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  .rate b::after{
+    content:""; display:block; height:1.5px; margin-top:5px;
+    background:currentColor; opacity:.22;
+  }
   .rate:active b{ opacity:.5; }
   .rates .chip{ flex:0 0 30px; }
 
@@ -393,9 +397,9 @@
         <button class="rate" id="rateHe">
           <span class="micro">◎ 休日 / 日</span><b>—</b>
         </button>
-        <div class="rate" aria-hidden="true">
-          <span class="micro">週</span><b id="weekN">—</b>
-        </div>
+        <button class="rate" id="rateWk">
+          <span class="micro">◎ 週</span><b id="weekN">—</b>
+        </button>
         <button class="chip sm hollow pressable" id="wipe" aria-label="全部消す">✕</button>
       </div>
     </section>
@@ -752,45 +756,61 @@ function drawSave(){
   buildTank();
 }
 
-/* 器と、そこに置く文字。波の形だけを毎こま書き換える。
+/* 器と、そこに置く文字。器の輪郭と波の形を、毎こま書き換える。
    viewBox は正方形の固定寸で、実寸への拡大は CSS に任せる。 */
 var TW = 300;
 
 function buildTank(){
   var host = document.getElementById("tank");
   if(!host) return;
-  var c = TW/2, r = TW/2 - 3, fs = TW * 0.17;
+  var c = TW/2, r = TW/2 - 3, fs = TW * 0.115;
   var label = tankState.label || "—";
   var text = function(fill){
     return '<text x="'+c+'" y="'+c+'" text-anchor="middle" dominant-baseline="central" '
-         + 'font-size="'+fs.toFixed(1)+'" font-weight="800" letter-spacing="-.03em" fill="'+fill+'">'
+         + 'font-size="'+fs.toFixed(1)+'" font-weight="800" letter-spacing="-.02em" fill="'+fill+'">'
          + label + '</text>';
   };
 
   host.innerHTML =
     '<svg viewBox="0 0 '+TW+' '+TW+'" role="img" aria-label="貯まった額 ' + label + '">'
     + '<defs>'
-    +   '<clipPath id="vessel"><circle cx="'+c+'" cy="'+c+'" r="'+r+'"/></clipPath>'
+    /* 器の輪郭そのものが揺れる。液体はこの中だけに現れる。 */
+    +   '<clipPath id="vessel"><path id="blobClip" d=""/></clipPath>'
     +   '<clipPath id="lq"><path id="waveClip" d=""/></clipPath>'
     + '</defs>'
+    /* 予算を決める前だけは、破線の輪を置いて場所を示す。 */
+    + (tankState.empty
+      ? '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="rgba(244,241,227,.20)" '
+        + 'stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>'
+      : '')
     + '<g clip-path="url(#vessel)">'
-    /* 器そのものは描かない。溜まった液体だけが形になる。
-       ただし予算を決める前だけは、破線の輪を置いて場所を示す。 */
-    +   (tankState.empty
-        ? '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="rgba(13,13,13,.16)" '
-          + 'stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>'
-        : '')
-    +   text(tankState.over ? "#ff5b34" : "#0d0d0d")
-    +   '<path id="wave2" fill="rgba(255,91,52,.34)" d=""/>'
+    +   text(tankState.over ? "#ff5b34" : "#f4f1e3")
+    +   '<path id="wave2" fill="rgba(206,62,26,.92)" d=""/>'
     +   '<path id="wave1" fill="#ff5b34" d=""/>'
-    +   '<g clip-path="url(#lq)">' + text("#f4f1e3") + '</g>'
+    +   '<g clip-path="url(#lq)">' + text("#0d0d0d") + '</g>'
     + '</g>'
     + '</svg>';
 
   tankState.wave  = document.getElementById("wave1");
   tankState.wave2 = document.getElementById("wave2");
   tankState.clip  = document.getElementById("waveClip");
+  tankState.blob  = document.getElementById("blobClip");
   tick(true);
+}
+
+/* 器の輪郭。半径を角度と時間で揺らして、水のかたまりのように見せる。 */
+function blobPath(t){
+  var c = TW/2, base = TW/2 - 5, n = 72, d = "";
+  for(var i=0;i<n;i++){
+    var a = i/n * Math.PI*2;
+    var r = base * (1
+      + 0.030 * Math.sin(3*a + t*0.9)
+      + 0.020 * Math.sin(5*a - t*1.3 + 1.1)
+      + 0.012 * Math.sin(2*a + t*0.55 + 2.4));
+    d += (i ? " L " : "M ") + (c + Math.cos(a)*r).toFixed(1)
+       + " " + (c + Math.sin(a)*r).toFixed(1);
+  }
+  return d + " Z";
 }
 
 function wavePath(level, phase, amp, freq){
@@ -810,12 +830,15 @@ function tick(once){
   tankState.level += (tankState.target - tankState.level) * (once ? 1 : .05);
   tankState.phase += .022;
 
-  var amp = TW * 0.026;
+  /* 浅いときと満ちたときは波を小さくする。器の縁で形が崩れないように。 */
+  var edge = Math.min(1, Math.min(tankState.level, 1 - tankState.level) * 5);
+  var amp = TW * 0.026 * (0.4 + 0.6 * edge);
   var d1 = wavePath(tankState.level, tankState.phase, amp, 1.6);
   tankState.wave.setAttribute("d", d1);
   tankState.clip.setAttribute("d", d1);
   tankState.wave2.setAttribute("d",
     wavePath(tankState.level, -tankState.phase * 1.45 + 1.2, amp * .72, 2.2));
+  tankState.blob.setAttribute("d", blobPath(tankState.phase));
 
   /* 見えている画面でだけ動かす。電池を無駄に使わない。 */
   if(!once && paneIndex() === 2 && !document.hidden){
@@ -908,7 +931,9 @@ function drawInput(){
   nt.style.display = budgeting ? "" : "none";
   mk.textContent = "◎";
   mk.setAttribute("aria-label", "予算");
-  nt.textContent = mode === "wd" ? "平日 / 一日" : "休日 / 一日";
+  nt.textContent = mode === "wd" ? "平日 / 一日"
+                 : mode === "he" ? "休日 / 一日"
+                 : "週 / 七日ぶん";
 
   Array.prototype.forEach.call(document.getElementById("cats").children, function(b){
     b.setAttribute("aria-pressed", b.dataset.k === pick ? "true" : "false");
@@ -922,6 +947,19 @@ function commit(){
 
   if(mode === "wd" || mode === "he"){
     db.rates[mode] = v;
+    mode = "entry";
+  }else if(mode === "wk"){
+    /* 週の合計から一日あたりへ。すでに平日と休日の比があればそれを保ち、
+       無ければ七日に均す。十円単位に丸める。 */
+    var cur = db.rates.wd*5 + db.rates.he*2;
+    var round10 = function(x){ return Math.max(10, Math.round(x/10)*10); };
+    if(cur > 0){
+      var k2 = v / cur;
+      db.rates.wd = round10(db.rates.wd * k2);
+      db.rates.he = round10(db.rates.he * k2);
+    }else{
+      db.rates.wd = db.rates.he = round10(v/7);
+    }
     mode = "entry";
   }else{
     /* 今月なら今日。ほかの月を見ているときは、暦で選んでいる日に付ける。 */
@@ -1030,8 +1068,8 @@ function paneIndex(){
   return i < 0 ? 0 : (i > 3 ? 3 : i);
 }
 /* 下の帯は、いま見ている画面の地色に合わせる。暗い三枚と明るい一枚。 */
-var TONE = ["#0d0d0d", "#f4f1e3", "#f4f1e3", "#f4f1e3"];
-var LIGHT_PANE = [false, true, true, true];
+var TONE = ["#0d0d0d", "#f4f1e3", "#0d0d0d", "#f4f1e3"];
+var LIGHT_PANE = [false, true, false, true];
 
 function syncDots(){
   var i = paneIndex();
@@ -1070,6 +1108,9 @@ document.getElementById("cnext").addEventListener("click", function(){ shiftMont
 /* 平日・休日それぞれの一日あたりの予算を、電卓で打ち込む。 */
 document.getElementById("rateWd").addEventListener("click", function(){
   mode = "wd"; buf = ""; drawInput(); go(1);
+});
+document.getElementById("rateWk").addEventListener("click", function(){
+  mode = "wk"; buf = ""; drawInput(); go(1);
 });
 document.getElementById("rateHe").addEventListener("click", function(){
   mode = "he"; buf = ""; drawInput(); go(1);
