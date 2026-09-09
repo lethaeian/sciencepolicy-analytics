@@ -72,6 +72,7 @@
   .pane.now  { background:var(--yellow); color:var(--ink); --rule:rgba(16,16,16,.22); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.09); }
   .pane.deck { background:var(--cream);  color:var(--ink); --rule:rgba(16,16,16,.20); --ghost:rgba(16,16,16,.40); --soft:rgba(16,16,16,.08); }
   .pane.dial { background:var(--ink);    color:var(--paper); --rule:rgba(242,239,230,.16); --ghost:rgba(242,239,230,.40); --soft:rgba(242,239,230,.07); }
+  .pane.list { background:var(--paper);  color:var(--ink); --rule:rgba(16,16,16,.18); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.07); }
 
   /* ── 見出しの帯 ───────────────────────────── */
   .top{ display:flex; align-items:flex-start; gap:10px; }
@@ -225,7 +226,7 @@
   .bandrow .sc{ font-family:var(--mono); font-size:11.5px; flex:0 0 48px; text-align:right; letter-spacing:.02em; }
 
   /* ── 選局の面：トラック一覧 ───────────────── */
-  .list{ margin-top:12px; display:flex; flex-direction:column; }
+  .list{ margin-top:12px; display:flex; flex-direction:column; flex:0 0 auto; }
   .track{
     display:flex; align-items:center; gap:12px;
     padding:11px 2px; border-top:1px solid var(--rule);
@@ -249,7 +250,7 @@
   .track .srv.off{ background:none; }
 
   /* ── 情報源のパネル ───────────────────────── */
-  .panel{ margin-top:14px; border:1px solid var(--rule); border-radius:14px; padding:14px; }
+  .panel{ margin-top:14px; border:1px solid var(--rule); border-radius:14px; padding:14px; flex:0 0 auto; }
   .panel h3{ margin:0 0 10px; font-family:var(--mono); font-size:9px; letter-spacing:.17em; text-transform:uppercase; color:var(--ghost); font-weight:600; }
   .srcrow{
     display:flex; align-items:center; gap:10px; width:100%;
@@ -278,14 +279,146 @@
   .note{ margin:12px 0 0; font-size:10.5px; line-height:1.62; color:var(--ghost); }
   .note a{ color:inherit; }
 
+  /* ── 日を送る ─────────────────────────────── */
+  .daynav{ display:flex; align-items:center; gap:8px; margin-top:12px; flex:0 0 auto; }
+  .daynav .dbtn{
+    width:34px; height:34px; flex:0 0 34px; border-radius:50%;
+    display:grid; place-items:center; border:1.3px solid var(--rule);
+  }
+  .daynav .dbtn:active{ background:var(--soft); }
+  .daynav .dbtn svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
+  .daynav .dlabel{
+    flex:1 1 auto; text-align:center; padding:8px 0; border-radius:9px;
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.1em;
+  }
+  .daynav .dlabel:active{ background:var(--soft); }
+  .daynav .dlabel.today{ color:var(--hot); }
+
+  /* ── 帯域と大会（つまみ） ─────────────────── */
+  .chips{
+    display:flex; gap:7px; margin-top:11px; padding-bottom:2px;
+    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+    overscroll-behavior-x:contain;
+    flex:0 0 auto;                       /* 横に流れる行は、縦には縮ませない */
+  }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip2{
+    flex:0 0 auto; padding:7px 13px; border-radius:999px;
+    border:1.3px solid var(--rule); font-size:12px; font-weight:700;
+    white-space:nowrap; transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip2 b{ font-weight:700; }
+  .chip2 i{ font-style:normal; font-family:var(--mono); font-size:9.5px; opacity:.5; margin-left:6px; }
+  .chip2.on{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
+  .chip2.on i{ opacity:.55; }
+  .pane.list .chip2.on{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .chips.sub .chip2{ font-size:11.5px; padding:6px 11px; font-weight:600; }
+
+  /* ── 検索 ─────────────────────────────────── */
+  .seek{
+    display:flex; align-items:center; gap:9px; margin-top:14px; flex:0 0 auto;
+    border:1.4px solid var(--rule); border-radius:12px; padding:0 12px;
+    background:var(--soft);
+  }
+  .seek .lens{ width:17px; height:17px; flex:0 0 17px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; opacity:.5; }
+  .seek input{
+    flex:1 1 auto; min-width:0; border:0; outline:0; background:none;
+    font-family:inherit; font-size:15px; color:inherit; padding:13px 0;
+    -webkit-appearance:none; appearance:none;
+  }
+  .seek input::-webkit-search-cancel-button{ display:none; }
+  .seek input::placeholder{ color:var(--ghost); }
+  .seek .clr{ width:26px; height:26px; flex:0 0 26px; display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .15s ease; }
+  .seek .clr svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; }
+  .seek.filled .clr{ opacity:.55; pointer-events:auto; }
+
+  /* 検索の結果・最近みた選手 */
+  .prow{
+    display:flex; align-items:center; gap:11px; width:100%;
+    padding:11px 2px; border-top:1px solid var(--rule); text-align:left;
+  }
+  .prow:last-child{ border-bottom:1px solid var(--rule); }
+  .prow:active{ background:var(--soft); }
+  .prow .rk{
+    width:30px; height:30px; flex:0 0 30px; border-radius:50%;
+    display:grid; place-items:center; background:var(--soft);
+    font-family:var(--mono); font-size:10px;
+  }
+  .prow .body{ flex:1 1 auto; min-width:0; }
+  .prow .nm{ font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .prow .meta{ font-size:10.5px; color:var(--ghost); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .prow .go{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--ghost); flex:0 0 auto; }
+
+  /* ── 選手の札 ─────────────────────────────── */
+  .sheetwrap{ position:fixed; inset:0; z-index:40; display:flex; align-items:flex-end; justify-content:center; }
+  /* display を指定すると hidden 属性が効かなくなるので、明示的に伏せる */
+  .sheetwrap[hidden]{ display:none; }
+  .scrim{ position:absolute; inset:0; background:rgba(16,16,16,.52); animation:fade .18s ease; }
+  @keyframes fade{ from{ opacity:0; } }
+  .sheet{
+    position:relative; width:100%; max-width:560px;
+    max-height:88vh; overflow-y:auto; overscroll-behavior:contain;
+    background:var(--paper); color:var(--ink);
+    --rule:rgba(16,16,16,.16); --ghost:rgba(16,16,16,.44); --soft:rgba(16,16,16,.06);
+    border-radius:20px 20px 0 0;
+    padding:10px 18px calc(env(safe-area-inset-bottom) + 22px);
+    animation:rise .22s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes rise{ from{ transform:translateY(14%); } }
+  .sheet .grab{
+    display:block; width:42px; height:4px; border-radius:2px;
+    background:rgba(16,16,16,.22); margin:2px auto 14px;
+  }
+  .sheet h2{ margin:0; font-size:24px; font-weight:800; letter-spacing:-.03em; line-height:1.1; }
+  .sheet .who2{ margin:5px 0 0; font-size:11.5px; color:var(--ghost); }
+
+  .statrow{ display:flex; gap:10px; margin-top:16px; }
+  .stat{ flex:1 1 0; background:var(--ink); color:var(--paper); border-radius:13px; padding:12px 13px 11px; }
+  .stat .v{ font-size:23px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .stat .v small{ font-size:.46em; font-weight:600; opacity:.5; margin-left:.2em; letter-spacing:0; }
+  .stat .c{ font-family:var(--mono); font-size:8px; letter-spacing:.13em; text-transform:uppercase; opacity:.5; margin-top:7px; }
+
+  /* 直近の勝敗を、テープの目のように並べる */
+  .form{ display:flex; gap:4px; margin-top:14px; }
+  .form span{ flex:1 1 0; height:22px; border-radius:3px; background:var(--soft); display:grid; place-items:center;
+              font-family:var(--mono); font-size:9px; color:var(--paper); }
+  .form span.w{ background:var(--ink); }
+  .form span.l{ background:rgba(16,16,16,.22); color:var(--ink); }
+
+  .hrow{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 0; border-top:1px solid var(--rule);
+  }
+  .hrow .res{
+    width:20px; height:20px; flex:0 0 20px; border-radius:50%;
+    display:grid; place-items:center; font-size:10px; font-weight:800;
+    background:var(--ink); color:var(--paper);
+  }
+  .hrow .res.l{ background:none; border:1.3px solid var(--rule); color:var(--ghost); }
+  .hrow .body{ flex:1 1 auto; min-width:0; }
+  .hrow .op{ font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hrow .mt{ font-size:10px; color:var(--ghost); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hrow .sc2{ font-family:var(--mono); font-size:11.5px; flex:0 0 auto; letter-spacing:.02em; }
+
+  .loading{ padding:22px 0; text-align:center; font-family:var(--mono); font-size:10px; letter-spacing:.15em; color:var(--ghost); }
+
+  /* 選手名を押せることを、控えめに示す */
+  .tap{ cursor:pointer; }
+  .tap:active{ opacity:.55; }
+
   /* ── 下の帯（面の位置） ───────────────────── */
   .rail{
     flex:0 0 auto; display:flex; justify-content:center; gap:7px;
     padding:9px 0 calc(env(safe-area-inset-bottom) + 9px);
-    background:var(--ink);
+    background:var(--railbg, var(--ink));
+    transition:background .25s ease;
   }
-  .rail i{ width:5px; height:5px; border-radius:50%; background:rgba(242,239,230,.24); transition:background .2s ease, width .2s ease; }
-  .rail i.on{ background:var(--paper); width:17px; border-radius:3px; }
+  .rail i{
+    width:5px; height:5px; border-radius:50%;
+    background:var(--railink, rgba(242,239,230,.24));
+    transition:background .2s ease, width .2s ease;
+  }
+  .rail i.on{ background:var(--railon, var(--paper)); width:17px; border-radius:3px; }
 
   .spacer{ flex:1 1 auto; min-height:6px; }
 
@@ -415,7 +548,20 @@
         </button>
       </div>
 
+      <!-- 日を送る。その日のカードを丸ごと取るので、昨日の結果も明日の予定も見られる -->
+      <div class="daynav">
+        <button class="dbtn" id="dayPrev" aria-label="前の日"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="dlabel" id="dayLabel">—</button>
+        <button class="dbtn" id="dayNext" aria-label="次の日"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+
+      <!-- 帯域。ラジオの AM/FM のつもりで、ツアーの区分を切り替える -->
+      <div class="chips" id="bandChips"></div>
+      <!-- そのなかの大会 -->
+      <div class="chips sub" id="tourChips"></div>
+
       <div class="list" id="list"></div>
+      <p class="note" id="listNote"></p>
 
       <div class="panel">
         <h3>Source — 情報源</h3>
@@ -436,9 +582,53 @@
       <div class="spacer"></div>
     </section>
 
+    <!-- ── 四枚目：名簿 ───────────────────────── -->
+    <section class="pane list" id="paneRoster">
+      <div class="top">
+        <div class="grow">
+          <h1 class="title">名簿</h1>
+          <p class="sub" id="rosterSub">選手を引く</p>
+        </div>
+        <button class="caret" id="toNow3" aria-label="いまの面へ">
+          <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="seek">
+        <svg class="lens" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+        <input id="q" type="search" inputmode="search" autocomplete="off" autocorrect="off"
+               spellcheck="false" placeholder="選手の名（例: Alcaraz）" aria-label="選手を検索">
+        <button class="clr" id="qClear" aria-label="消す"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+
+      <div id="qResult"></div>
+      <p class="note" id="qNote">名前の一部でかまいません。押すとその選手の直近の戦績が出ます。</p>
+
+      <div class="panel" id="favPanel">
+        <h3>Recent — 最近みた選手</h3>
+        <div id="recentList"></div>
+      </div>
+
+      <div class="panel" id="todayPanel">
+        <h3>Today — 今日出ている選手</h3>
+        <div id="todayList"></div>
+      </div>
+
+      <div class="spacer"></div>
+    </section>
+
   </div>
 
-  <div class="rail" id="rail"><i class="on"></i><i></i><i></i></div>
+  <div class="rail" id="rail"><i class="on"></i><i></i><i></i><i></i></div>
+
+  <!-- ── 選手の札。どの面からでも、選手名を押すと上がってくる ── -->
+  <div class="sheetwrap" id="sheetWrap" hidden>
+    <div class="scrim" id="sheetScrim"></div>
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="選手の戦績">
+      <button class="grab" id="sheetClose" aria-label="閉じる"></button>
+      <div id="sheetBody"></div>
+    </section>
+  </div>
 </div>
 
 <script>
@@ -520,32 +710,113 @@ function fetchJSON(url, ms){
   });
 }
 
-/* 情報源ごとの取得先と読み方。normalize は共通の Match 形を返す。 */
+/* 情報源ごとの取得先と読み方。normalize は共通の Match 形を返す。
+   できることは配信元でちがうので、持っている口だけを生やしておき、
+   画面側は「その口があるか」で機能を出し入れする。
+
+     url        … 進行中の試合。短い間隔で叩く
+     day(date)  … その日のカード丸ごと（終了・進行中・開始前）。開いたときだけ
+     search(q)  … 選手をさがす
+     history(id)… その選手の直近の試合
+   ─────────────────────────────────────────────────────────── */
+var SOFA = "https://api.sofascore.com/api/v1";
+var ESPN = "https://site.api.espn.com/apis/site/v2/sports/tennis";
+
 var SOURCES = [
   {
     id: "sofascore",
     name: "SofaScore",
-    /* ATP・WTA に加え、チャレンジャー、ITF、団体戦まで進行中の全試合が並ぶ。
-       通常いちばん試合数が多い。 */
+    /* ATP・WTA に加え、チャレンジャー、ITF、団体戦まで全試合が並ぶ。
+       通常いちばん試合数が多く、選手の検索と戦績も引ける。 */
     note: "ATP・WTA・チャレンジャー・ITF",
-    url: "https://api.sofascore.com/api/v1/sport/tennis/events/live",
-    parse: function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; }
+    url: SOFA + "/sport/tennis/events/live",
+    day: function(d){ return SOFA + "/sport/tennis/scheduled-events/" + d; },
+    search: function(q){
+      var e = encodeURIComponent(q);
+      return [                                   /* 上から順に当てる */
+        SOFA + "/search/all?q=" + e + "&page=0",
+        SOFA + "/search/all/?q=" + e + "&page=0",
+        SOFA + "/search/teams?q=" + e + "&page=0",
+        SOFA + "/search/player-teams?q=" + e + "&page=0"
+      ];
+    },
+    history: function(id){ return SOFA + "/team/" + id + "/events/last/0"; },
+    profile: function(id){ return SOFA + "/team/" + id; },
+    parse:        function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
+    parseDay:     function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
+    parseSearch:  sofaSearch,
+    parseHistory: function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
+    parseProfile: sofaProfile
   },
   {
     id: "espn-atp",
     name: "ESPN (ATP)",
     note: "ATP 本戦のみ",
-    url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard",
-    parse: function(j){ return fromEspn(j, "ATP"); }
+    url: ESPN + "/atp/scoreboard",
+    day: function(d){ return ESPN + "/atp/scoreboard?dates=" + d.replace(/-/g, ""); },
+    parse:    function(j){ return fromEspn(j, "ATP"); },
+    parseDay: function(j){ return fromEspn(j, "ATP"); }
   },
   {
     id: "espn-wta",
     name: "ESPN (WTA)",
     note: "WTA 本戦のみ",
-    url: "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard",
-    parse: function(j){ return fromEspn(j, "WTA"); }
+    url: ESPN + "/wta/scoreboard",
+    day: function(d){ return ESPN + "/wta/scoreboard?dates=" + d.replace(/-/g, ""); },
+    parse:    function(j){ return fromEspn(j, "WTA"); },
+    parseDay: function(j){ return fromEspn(j, "WTA"); }
   }
 ];
+
+/* SofaScore の検索。テニスでは選手も「チーム」として返るので、
+   競技がテニスのものだけを拾う。 */
+function sofaSearch(j){
+  /* 包み方は一つに決まっていない。考えられる置き場所をすべて見る。 */
+  var rows = [];
+  if(Array.isArray(j)) rows = j;
+  else if(j) rows = j.results || j.teams || j.players || j.playerTeams || [];
+  if(!Array.isArray(rows)) rows = [];
+
+  var out = [], seen = {};
+  rows.forEach(function(r){
+    if(!r) return;
+    var e = r.entity || r.team || r.player || r;
+    if(!e || e.id == null || !e.name) return;
+    /* 競技が読めるならテニスに限る。読めない包みのときは、
+       種別で弾いてから通す（大会やニュースを混ぜないため）。 */
+    var sport = e.sport && (e.sport.slug || e.sport.name);
+    if(sport && String(sport).toLowerCase() !== "tennis") return;
+    var type = r.type || (e.sport ? "team" : "");
+    if(type && type !== "team" && type !== "player" && type !== "playerTeam") return;
+    if(!sport && !r.type) return;                /* 何の entity か分からないものは採らない */
+    if(seen[e.id]) return;
+    seen[e.id] = 1;
+    out.push({
+      id: e.id,
+      name: e.name || "—",
+      short: e.shortName || surname(e.name),
+      country: (e.country && (e.country.alpha3 || e.country.alpha2 || e.country.name)) || "",
+      rank: (e.ranking != null) ? e.ranking : (e.rank != null ? e.rank : null),
+      gender: e.gender || ""
+    });
+  });
+  return out;
+}
+
+function sofaProfile(j){
+  var t = (j && j.team) || {};
+  var info = t.playerTeamInfo || {};
+  return {
+    id: t.id,
+    name: t.name || "—",
+    country: (t.country && (t.country.alpha3 || t.country.name)) || "",
+    rank: (t.ranking != null) ? t.ranking : null,
+    plays: info.plays || "",
+    height: info.height || null,
+    birth: info.birthDateTimestamp ? info.birthDateTimestamp * 1000 : null,
+    turnedPro: info.turnedPro || null
+  };
+}
 
 /* 大会名からツアーの区分を推す。表示の見出しに使うだけで、判定には使わない。 */
 function tourOf(tournamentName, categoryName){
@@ -732,8 +1003,9 @@ function probeAll(){
     demoOn = false;
     $("srcNote").textContent =
       win.src.name + "（" + win.relay.name + "）を採用。進行中 " + win.live + " 試合。";
-    ingest(win.list);
+    ingestLive(win.list);
     renderSources();
+    pullDay();                                   /* その日のカードも続けて取る */
     return win;
   });
 }
@@ -839,6 +1111,7 @@ DemoMatch.prototype.toMatch = function(){
 var demoOn = false, demoMatches = [];
 function useDemo(){
   demoOn = true;
+  daySet = {};
   if(!demoMatches.length){
     demoMatches = DEMO_SEEDS.map(function(s,i){
       var d = new DemoMatch(s, i);
@@ -955,27 +1228,127 @@ function momentum(m){
   return wsum ? sum / wsum : 0;
 }
 
-/* ── 台帳への取り込み ────────────────────────────────────── */
+/* ── 台帳への取り込み ──────────────────────────────────────
+   進行中の速報（短い間隔で叩く）と、その日のカード丸ごと（開いたとき
+   だけ叩く）の二つを別々に持ち、重ねて一つの台帳にする。同じ試合が
+   両方にあるときは、新しい進行中のほうを採る。
+   ─────────────────────────────────────────────────────────── */
+var liveSet = {}, daySet = {};                 /* 試合id → Match */
 var matches = [], byId = {}, curId = store.get("cur", null), chosen = store.get("chosen", null);
 
-function ingest(list){
-  var live = [], rest = [];
-  (list||[]).forEach(function(m){
-    if(!m) return;
+/* 表示する日。既定は今日。 */
+function ymd(d){
+  return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+}
+var dayDate = ymd(new Date());
+
+function ingestLive(list){
+  liveSet = {};
+  (list||[]).forEach(function(m){ if(m) liveSet[m.id] = m; });
+  rebuild();
+}
+function ingestDay(list){
+  daySet = {};
+  (list||[]).forEach(function(m){ if(m) daySet[m.id] = m; });
+  rebuild();
+}
+/* 進行中しか取れない配信元のための入口。従来どおりの呼び方も残す。 */
+function ingest(list){ ingestLive(list); }
+
+function rebuild(){
+  byId = {};
+  var all = [];
+  Object.keys(daySet).forEach(function(k){ byId[k] = daySet[k]; });
+  Object.keys(liveSet).forEach(function(k){ byId[k] = liveSet[k]; });
+  Object.keys(byId).forEach(function(k){
+    var m = byId[k];
     updateLog(m);
-    byId[m.id] = m;
-    (m.status === "live" ? live : rest).push(m);
+    all.push(m);
   });
-  /* 進行中を先に。同じ区分のなかでは、決着に近い試合ほど上に。 */
-  live.sort(function(a,b){ return tension(b) - tension(a); });
-  matches = live.concat(rest.filter(function(m){ return m.status === "done"; }));
+
+  /* 進行中 → 開始前（早い順）→ 終了。
+     進行中どうしは、決着に近い試合ほど上に。 */
+  var rank = { live:0, soon:1, done:2 };
+  all.sort(function(a,b){
+    var ra = rank[a.status], rb = rank[b.status];
+    if(ra !== rb) return ra - rb;
+    if(a.status === "live") return tension(b) - tension(a);
+    if(a.status === "soon") return (a.startTs||0) - (b.startTs||0);
+    return (b.startTs||0) - (a.startTs||0);
+  });
+  matches = all;
+  saneFilters();
+
   if(!byId[curId]){
     var fav = store.get("fav", null);
-    curId = (fav && byId[fav]) ? fav : (matches[0] ? matches[0].id : null);
+    var v = view();
+    curId = (fav && byId[fav]) ? fav : (v[0] ? v[0].id : (matches[0] ? matches[0].id : null));
   }
   trimLogs();
   store.set("logs", logs);
   renderAll();
+}
+
+/* ── 絞り込み ────────────────────────────────────────────────
+   帯域（ツアーの区分）と大会。一覧だけでなく、「いま」の面の
+   試合送りにも同じ絞りを効かせる。
+   ─────────────────────────────────────────────────────────── */
+var band = store.get("band", "ALL");           /* ALL / ATP / WTA / CH / ITF / CUP */
+var tourPick = store.get("tourPick", null);    /* 大会名。null なら帯域のなか全部 */
+
+function inBand(m){ return band === "ALL" || m.tour === band; }
+
+function view(){
+  return matches.filter(function(m){
+    if(!inBand(m)) return false;
+    if(tourPick && m.tournament !== tourPick) return false;
+    return true;
+  });
+}
+
+/* いま見ている試合が絞りの外に出ていたら、絞りの先頭に移す。
+   絞り込みを変えたのに「いま」の面が前の試合のままになるのを防ぐ。 */
+function ensureInView(){
+  var v = view();
+  if(!v.length) return;
+  for(var i=0; i<v.length; i++) if(v[i].id === curId) return;
+  curId = v[0].id;
+  store.set("cur", curId);
+}
+
+/* 覚えていた絞りが、今日の顔ぶれに当てはまらないことがある。
+   （前回 ATP に絞ったまま、今日は ATP の試合がない等）そのときは戻す。 */
+function saneFilters(){
+  if(band !== "ALL"){
+    var any = matches.some(function(m){ return m.tour === band; });
+    if(!any){ band = "ALL"; store.set("band", band); }
+  }
+  if(tourPick){
+    var ok = matches.some(function(m){ return m.tournament === tourPick && inBand(m); });
+    if(!ok){ tourPick = null; store.set("tourPick", null); }
+  }
+}
+
+/* 帯域ごとの試合数。つまみに出す。 */
+function bandCounts(){
+  var c = { ALL:0 };
+  matches.forEach(function(m){
+    c.ALL++;
+    c[m.tour] = (c[m.tour] || 0) + 1;
+  });
+  return c;
+}
+/* いまの帯域のなかにある大会を、試合数の多い順に。 */
+function tourList(){
+  var seen = {}, out = [];
+  matches.forEach(function(m){
+    if(!inBand(m)) return;
+    if(!seen[m.tournament]){ seen[m.tournament] = { name:m.tournament, n:0, live:0 }; out.push(seen[m.tournament]); }
+    seen[m.tournament].n++;
+    if(m.status === "live") seen[m.tournament].live++;
+  });
+  out.sort(function(a,b){ return (b.live - a.live) || (b.n - a.n) || a.name.localeCompare(b.name); });
+  return out;
 }
 
 /* 競り具合。セットを取り合っていて、いまのセットも近いほど大きい。 */
@@ -1113,7 +1486,7 @@ function renderNow(){
     cap.textContent = m.status === "done" ? "FINAL" : "SETS";
   }
 
-  var n = matches.length, i = matches.indexOf(m);
+  var v = view(), n = v.length, i = v.indexOf(m);
   var srcName = demoOn ? "デモ" : (chosen ? nameOfSource(chosen.srcId) : "—");
   $("nowFoot").textContent =
     (i >= 0 ? (i+1) + " / " + n : "—") + "   ·   " + srcName +
@@ -1325,22 +1698,39 @@ function scoreLine(m){
   return out.join(" ") || "—";
 }
 
+function hhmmOf(ts){
+  if(!ts) return "";
+  var d = new Date(ts);
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+
 function renderList(){
-  var box = $("list");
+  var box = $("list"), note = $("listNote");
   box.textContent = "";
-  if(!matches.length){
-    var p = el("p", "note");
-    p.textContent = chosen ? "いま進行中の試合が見つかりません。時間帯によっては空になります。"
-                           : "情報源をさがしています…";
-    box.appendChild(p);
+  var v = view();
+
+  if(!v.length){
+    note.textContent = matches.length
+      ? "この帯域・大会には試合がありません。上のつまみを戻してください。"
+      : (chosen ? "この日のカードが取れていません。日を送るか、情報源をさがし直してください。"
+                : "情報源をさがしています…");
     return;
   }
-  matches.slice(0, 40).forEach(function(m, i){
+  var live = v.filter(function(m){ return m.status === "live"; }).length;
+  var soon = v.filter(function(m){ return m.status === "soon"; }).length;
+  var done = v.filter(function(m){ return m.status === "done"; }).length;
+  note.textContent = "進行中 " + live + " · 開始前 " + soon + " · 終了 " + done +
+    (v.length > 60 ? "（上から 60 件を表示）" : "");
+
+  v.slice(0, 60).forEach(function(m, i){
     var b = el("button", "track" + (m.id === curId ? " cur" : ""));
     b.type = "button";
 
     var no = el("span", "no");
-    no.textContent = m.status === "live" ? String(i+1) : "▪";
+    no.textContent = m.status === "live" ? String(i+1)
+                   : m.status === "soon" ? (hhmmOf(m.startTs) || "–")
+                   : "\u25aa";
+    if(m.status === "soon") no.style.fontSize = "8.5px";
     b.appendChild(no);
 
     var body = el("div", "body");
@@ -1351,14 +1741,16 @@ function renderList(){
       var nm = el("span", "nm" + (m.status === "done" && m.winner === (1-side) ? " dim" : ""));
       nm.textContent = m.players[side].short;
       var sc = el("span", "sc");
-      sc.textContent = m.sets.map(function(s){ return s[side]; }).join(" ") || "–";
+      sc.textContent = m.sets.map(function(st){ return st[side]; }).join(" ") || "–";
       if(m.status === "live") sc.textContent += "  " + m.point[side];
       ln.appendChild(dot); ln.appendChild(nm); ln.appendChild(sc);
       body.appendChild(ln);
     });
     var meta = el("div", "meta");
-    meta.textContent = [ m.tour !== "—" ? m.tour : "", m.tournament, m.round,
-                         m.status === "done" ? "終了" : "" ].filter(Boolean).join(" · ");
+    meta.textContent = [ m.tour !== "\u2014" ? m.tour : "", m.tournament, m.round,
+                         m.status === "done" ? "終了" :
+                         m.status === "soon" ? (hhmmOf(m.startTs) ? hhmmOf(m.startTs) + " 開始" : "開始前") : ""
+                       ].filter(Boolean).join(" · ");
     body.appendChild(meta);
     b.appendChild(body);
 
@@ -1369,6 +1761,69 @@ function renderList(){
     });
     box.appendChild(b);
   });
+}
+
+/* ── つまみ：帯域と大会 ──────────────────────────────────── */
+var BANDS = [
+  { id:"ALL", name:"すべて" },
+  { id:"ATP", name:"ATP" },
+  { id:"WTA", name:"WTA" },
+  { id:"CH",  name:"チャレンジャー" },
+  { id:"ITF", name:"ITF" },
+  { id:"CUP", name:"団体戦" }
+];
+
+function chip(label, count, on, fn){
+  var b = el("button", "chip2" + (on ? " on" : ""));
+  b.type = "button";
+  var t = el("b"); t.textContent = label; b.appendChild(t);
+  if(count != null){ var i = el("i"); i.textContent = count; b.appendChild(i); }
+  b.addEventListener("click", fn);
+  return b;
+}
+
+function renderChips(){
+  var counts = bandCounts();
+  var bb = $("bandChips");
+  bb.textContent = "";
+  BANDS.forEach(function(x){
+    var n = counts[x.id] || 0;
+    if(x.id !== "ALL" && !n) return;             /* 今日ない区分は出さない */
+    bb.appendChild(chip(x.name, n, band === x.id, function(){
+      band = x.id; tourPick = null;
+      store.set("band", band); store.set("tourPick", null);
+      renderAll();
+      bb.scrollTo({ left:0, behavior:"smooth" });
+    }));
+  });
+
+  var tb = $("tourChips");
+  tb.textContent = "";
+  var list = tourList();
+  if(list.length <= 1){ tb.classList.add("hide"); return; }
+  tb.classList.remove("hide");
+  tb.appendChild(chip("大会すべて", list.length, !tourPick, function(){
+    tourPick = null; store.set("tourPick", null); renderAll();
+  }));
+  list.slice(0, 40).forEach(function(t){
+    tb.appendChild(chip(t.name, t.live ? t.live + "/" + t.n : t.n, tourPick === t.name, function(){
+      tourPick = (tourPick === t.name) ? null : t.name;
+      store.set("tourPick", tourPick);
+      renderAll();
+    }));
+  });
+}
+
+/* ── 日を送る ────────────────────────────────────────────── */
+var WD = ["日","月","火","水","木","金","土"];
+function renderDay(){
+  var lab = $("dayLabel");
+  var d = new Date(dayDate + "T12:00:00");
+  var today = ymd(new Date());
+  var diff = Math.round((new Date(dayDate + "T12:00:00") - new Date(today + "T12:00:00")) / 86400000);
+  var when = diff === 0 ? "今日" : diff === -1 ? "昨日" : diff === 1 ? "明日" : "";
+  lab.textContent = (d.getMonth()+1) + "/" + d.getDate() + "（" + WD[d.getDay()] + "）" + (when ? " " + when : "");
+  lab.className = "dlabel" + (diff === 0 ? " today" : "");
 }
 
 function renderSources(){
@@ -1405,7 +1860,8 @@ function renderSources(){
       demoOn = false;
       chosen = { srcId:src.id, relayId:st.relay.id };
       store.set("chosen", chosen);
-      pull(true);
+      daySet = {};
+      pull(true).then(pullDay);
     });
   });
 
@@ -1422,8 +1878,10 @@ function pick(src, relay, list){
   demoOn = false;
   chosen = { srcId:src.id, relayId:relay.id };
   store.set("chosen", chosen);
-  ingest(list);
+  daySet = {};
+  ingestLive(list);
   renderSources();
+  pullDay();
 }
 
 var INTERVALS = [ 10000, 20000, 60000 ];
@@ -1451,7 +1909,338 @@ function renderIntervals(){
   });
 }
 
-function renderAll(){ renderNow(); renderDeck(); renderList(); renderSources(); }
+/* ── 3-4 名簿：選手を引き、直近の戦績を見る ────────────────
+   検索と戦績は SofaScore の口でしか引けない。持っていない配信元の
+   ときは、その旨を出して機能を伏せる。
+   ─────────────────────────────────────────────────────────── */
+function activeSource(){ return chosen ? srcById(chosen.srcId) : null; }
+
+/* 例外を、画面に出せる短い言葉に直す。何が起きたか分からないまま
+   「失敗しました」とだけ出すと、次に直しようがない。 */
+function reasonOf(err){
+  var m = err && err.message ? String(err.message) : "";
+  if(!m) return "理由不明";
+  if(/^HTTP 4\d\d/.test(m)) return m + " — 配信元に断られた";
+  if(/^HTTP 5\d\d/.test(m)) return m + " — 配信元の不調";
+  if(/^HTTP/.test(m)) return m;
+  if(/abort/i.test(m)) return "時間切れ";
+  if(/JSON|Unexpected token/i.test(m)) return "応答の形が読めない";
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "届かない（CORS か回線）";
+  return m.slice(0, 40);
+}
+function canSearch(){ var s = activeSource(); return !!(s && s.search && s.history); }
+
+/* 口は一つとは限らない。配列で返ってきたら、実りのあるものが出るまで
+   上から順に当てる。全部だめなら、最後の理由を添えて投げ返す。 */
+function askSource(urlFn, arg, parse, wantRows){
+  var src = activeSource();
+  if(!src || !urlFn) return Promise.reject(new Error("配信元がありません"));
+  var got = urlFn.call(src, arg);
+  var urls = Array.isArray(got) ? got.slice() : [got];
+  var relay = relayById(chosen.relayId);
+  var lastErr = null, i = 0;
+
+  function step(){
+    if(i >= urls.length){
+      return Promise.reject(lastErr || new Error("どの経路でも読めませんでした"));
+    }
+    var u = urls[i++];
+    return fetchJSON(relay.wrap(u), 12000).then(function(j){
+      var rows = parse.call(src, j);
+      /* 中身が空でも、まだ試す口が残っていれば次を当てる */
+      if(wantRows && (!rows || !rows.length) && i < urls.length){
+        lastErr = new Error("空の応答");
+        return step();
+      }
+      return rows;
+    }).catch(function(err){
+      lastErr = err;
+      return step();
+    });
+  }
+  return step();
+}
+
+var qTimer = null, qSeq = 0;
+
+function renderRoster(){
+  var note = $("qNote"), seek = document.querySelector(".seek");
+  if(!canSearch()){
+    seek.classList.add("hide");
+    $("qResult").textContent = "";
+    note.textContent = demoOn
+      ? "デモの試合では選手を引けません。配信元につながると使えるようになります。"
+      : "いまの配信元（" + nameOfSource(chosen && chosen.srcId) + "）は選手の検索に対応していません。"
+        + "選局の面で SofaScore が通っていれば使えます。";
+  }else{
+    seek.classList.remove("hide");
+    if(!$("q").value.trim()) note.textContent = "名前の一部でかまいません。押すとその選手の直近の戦績が出ます。";
+  }
+  $("rosterSub").textContent = canSearch() ? "選手を引く" : "この配信元では引けません";
+  renderRecent();
+  renderToday();
+}
+
+function runSearch(q){
+  var seq = ++qSeq;
+  var box = $("qResult");
+  box.textContent = "";
+  if(!q){ $("qNote").textContent = "名前の一部でかまいません。押すとその選手の直近の戦績が出ます。"; return; }
+  var l = el("div", "loading"); l.textContent = "さがしています…";
+  box.appendChild(l);
+
+  askSource(activeSource().search, q, activeSource().parseSearch, true).then(function(rows){
+    if(seq !== qSeq) return;                     /* 打っている途中の古い結果は捨てる */
+    box.textContent = "";
+    if(!rows.length){ $("qNote").textContent = "「" + q + "」に当たる選手が見つかりませんでした。"; return; }
+    $("qNote").textContent = rows.length + " 人。押すと戦績が出ます。";
+    rows.slice(0, 20).forEach(function(p){
+      box.appendChild(playerRow(p));
+    });
+  }).catch(function(err){
+    if(seq !== qSeq) return;
+    box.textContent = "";
+    /* 何が起きたかを残す。次に直すとき、これが手がかりになる。 */
+    $("qNote").textContent = "検索が届きませんでした（" + reasonOf(err) + "）。"
+      + "回線か中継の具合かもしれません。もう一度お試しください。";
+  });
+}
+
+function playerRow(p){
+  var b = el("button", "prow");
+  b.type = "button";
+  var rk = el("span", "rk");
+  rk.textContent = p.rank ? String(p.rank) : "–";
+  var body = el("div", "body");
+  var nm = el("div", "nm"); nm.textContent = p.name;
+  var mt = el("div", "meta");
+  mt.textContent = [ p.country, p.rank ? "世界 " + p.rank + " 位" : "", p.gender === "F" ? "女子" : p.gender === "M" ? "男子" : "" ]
+                   .filter(Boolean).join(" · ") || "—";
+  body.appendChild(nm); body.appendChild(mt);
+  var go = el("span", "go"); go.textContent = "戦績";
+  b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+  b.addEventListener("click", function(){ openPlayer(p); });
+  return b;
+}
+
+/* 最近みた選手を覚えておく。名簿を開いてすぐ戻れるように。 */
+function renderRecent(){
+  var box = $("recentList"), panel = $("favPanel");
+  var rec = store.get("recent", []) || [];
+  box.textContent = "";
+  if(!rec.length || !canSearch()){ panel.classList.add("hide"); return; }
+  panel.classList.remove("hide");
+  rec.slice(0, 8).forEach(function(p){ box.appendChild(playerRow(p)); });
+}
+/* いま台帳にある試合から、選手を重複なく拾う。
+   検索を打たなくても、今日出ている人はここから引ける。 */
+function todayPlayers(){
+  var seen = {}, out = [];
+  matches.forEach(function(m){
+    m.players.forEach(function(p){
+      var key = p.name;
+      if(!key || key === "—" || seen[key]) return;
+      seen[key] = 1;
+      out.push({
+        id: null, name: p.name, short: p.short, country: p.country || "",
+        rank: null, gender: "",
+        live: m.status === "live" ? 1 : 0,
+        where: m.tournament
+      });
+    });
+  });
+  out.sort(function(a,b){ return (b.live - a.live) || a.short.localeCompare(b.short); });
+  return out;
+}
+
+function renderToday(){
+  var box = $("todayList"), panel = $("todayPanel");
+  box.textContent = "";
+  var list = todayPlayers();
+  if(!list.length || !canSearch()){ panel.classList.add("hide"); return; }
+  panel.classList.remove("hide");
+  list.slice(0, 30).forEach(function(p){
+    var b = el("button", "prow");
+    b.type = "button";
+    var rk = el("span", "rk");
+    rk.textContent = p.live ? "\u25cf" : "\u25aa";
+    if(p.live) rk.style.color = "var(--hot)";
+    var body = el("div", "body");
+    var nm = el("div", "nm"); nm.textContent = p.short;
+    var mt = el("div", "meta");
+    mt.textContent = [ p.live ? "進行中" : "", p.where ].filter(Boolean).join(" · ");
+    body.appendChild(nm); body.appendChild(mt);
+    var go = el("span", "go"); go.textContent = "戦績";
+    b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+    b.addEventListener("click", function(){ openPlayerByName(p.name); });
+    box.appendChild(b);
+  });
+}
+
+function pushRecent(p){
+  var rec = (store.get("recent", []) || []).filter(function(x){ return x.id !== p.id; });
+  rec.unshift({ id:p.id, name:p.name, short:p.short || surname(p.name), country:p.country||"", rank:p.rank||null, gender:p.gender||"" });
+  store.set("recent", rec.slice(0, 8));
+}
+
+/* ── 選手の札 ────────────────────────────────────────────── */
+function openSheet(){
+  $("sheetWrap").hidden = false;
+  document.documentElement.style.overflow = "hidden";
+}
+function closeSheet(){
+  $("sheetWrap").hidden = true;
+  document.documentElement.style.overflow = "";
+}
+
+function openPlayer(p){
+  pushRecent(p);
+  renderRecent();
+  var body = $("sheetBody");
+  body.textContent = "";
+
+  var h = el("h2"); h.textContent = p.name; body.appendChild(h);
+  var w = el("p", "who2");
+  w.textContent = [ p.country, p.rank ? "世界 " + p.rank + " 位" : "" ].filter(Boolean).join(" · ") || "—";
+  body.appendChild(w);
+
+  var l = el("div", "loading"); l.textContent = "直近の試合を取っています…";
+  body.appendChild(l);
+  openSheet();
+
+  var src = activeSource();
+  if(!src || !src.history){
+    l.textContent = "この配信元では戦績を引けません。";
+    return;
+  }
+  askSource(src.history, p.id, src.parseHistory).then(function(evts){
+    var list = (evts || []).filter(function(m){ return m && m.status === "done"; });
+    /* 新しい順に */
+    list.sort(function(a,b){ return (b.startTs||0) - (a.startTs||0); });
+    l.remove();
+    paintPlayer(body, p, list.slice(0, 14));
+  }).catch(function(err){
+    l.textContent = "直近の試合が取れませんでした（" + reasonOf(err) + "）。";
+  });
+}
+
+/* その選手から見た勝敗を求める。名前で照合する（配信元によって
+   id の粒度がちがうため、名前のほうが取り違えにくい）。 */
+function sideOf(m, p){
+  var target = String(p.name || "").toLowerCase();
+  var a = String(m.players[0].name || "").toLowerCase();
+  var b = String(m.players[1].name || "").toLowerCase();
+  if(a === target) return 0;
+  if(b === target) return 1;
+  if(a.indexOf(target) >= 0 || target.indexOf(a) >= 0) return 0;
+  if(b.indexOf(target) >= 0 || target.indexOf(b) >= 0) return 1;
+  return -1;
+}
+
+function paintPlayer(body, p, list){
+  if(!list.length){
+    var n = el("p", "note");
+    n.textContent = "直近の終了した試合が見つかりませんでした。";
+    body.appendChild(n);
+    return;
+  }
+  var wins = 0, losses = 0, results = [];
+  list.forEach(function(m){
+    var side = sideOf(m, p);
+    if(side < 0 || m.winner < 0) { results.push(null); return; }
+    var won = (m.winner === side);
+    if(won) wins++; else losses++;
+    results.push({ m:m, side:side, won:won });
+  });
+
+  /* 連勝・連敗。新しいほうから同じ結果が続いた数を数える。 */
+  var streak = 0, streakWon = null;
+  for(var i=0; i<results.length; i++){
+    var r = results[i];
+    if(!r) continue;
+    if(streakWon === null){ streakWon = r.won; streak = 1; }
+    else if(r.won === streakWon) streak++;
+    else break;
+  }
+
+  var row = el("div", "statrow");
+  function stat(v, unit, cap){
+    var d = el("div", "stat");
+    var vv = el("div", "v");
+    vv.appendChild(document.createTextNode(v));
+    if(unit){ var sm = el("small"); sm.textContent = unit; vv.appendChild(sm); }
+    var c = el("div", "c"); c.textContent = cap;
+    d.appendChild(vv); d.appendChild(c);
+    return d;
+  }
+  row.appendChild(stat(wins + " – " + losses, "", "Recent — 直近の勝敗"));
+  row.appendChild(stat(streak ? String(streak) : "–", streak ? (streakWon ? "勝" : "敗") : "",
+                       streakWon === false ? "Streak — 連敗" : "Streak — 連勝"));
+  body.appendChild(row);
+
+  /* 直近の並び。左が新しい。 */
+  var form = el("div", "form");
+  results.slice(0, 10).forEach(function(r){
+    var sp = el("span", r ? (r.won ? "w" : "l") : "");
+    sp.textContent = r ? (r.won ? "W" : "L") : "–";
+    form.appendChild(sp);
+  });
+  body.appendChild(form);
+
+  var head = el("h3");
+  head.style.cssText = "margin:20px 0 2px;font-family:var(--mono);font-size:9px;letter-spacing:.17em;text-transform:uppercase;color:var(--ghost);font-weight:600";
+  head.textContent = "History — 直近の試合";
+  body.appendChild(head);
+
+  results.forEach(function(r){
+    if(!r) return;
+    var m = r.m, opp = m.players[1 - r.side];
+    var h = el("div", "hrow");
+    var res = el("span", "res" + (r.won ? "" : " l"));
+    res.textContent = r.won ? "W" : "L";
+    var bd = el("div", "body");
+    var op = el("div", "op"); op.textContent = "vs " + (opp.short || opp.name);
+    var mt = el("div", "mt");
+    mt.textContent = [ dateShort(m.startTs), m.tour !== "—" ? m.tour : "", m.tournament, m.round ]
+                     .filter(Boolean).join(" · ");
+    bd.appendChild(op); bd.appendChild(mt);
+    var sc = el("span", "sc2");
+    sc.textContent = m.sets.map(function(st){
+      return r.side === 0 ? (st[0] + "-" + st[1]) : (st[1] + "-" + st[0]);
+    }).join(" ") || "—";
+    h.appendChild(res); h.appendChild(bd); h.appendChild(sc);
+    body.appendChild(h);
+  });
+}
+
+function dateShort(ts){
+  if(!ts) return "";
+  var d = new Date(ts);
+  return (d.getMonth()+1) + "/" + d.getDate();
+}
+
+/* 試合の選手名から、その選手の札を開く。id を持たない配信元でも
+   名前で引き直せるよう、まず検索を通す。 */
+function openPlayerByName(name){
+  if(!canSearch()) return;
+  var src = activeSource();
+  /* ダブルスの組は一人の選手としては引けない。組の先頭で当たる。 */
+  var one = String(name).split("/")[0].trim();
+  askSource(src.search, surname(one) || one, src.parseSearch, true).then(function(rows){
+    var lower = one.toLowerCase();
+    var hit = rows.filter(function(r){
+      var n = String(r.name).toLowerCase();
+      return n === lower || n.indexOf(lower) >= 0 || lower.indexOf(n) >= 0;
+    })[0] || rows[0];
+    if(hit) openPlayer(hit);
+  }).catch(function(){});
+}
+
+function renderAll(){
+  ensureInView();
+  renderNow(); renderDeck(); renderList();
+  renderChips(); renderDay(); renderSources(); renderRoster();
+}
 
 /* ── 4. 動かす ───────────────────────────────────────────────
    取りに行く・止める・面を送る
@@ -1476,7 +2265,7 @@ function pull(force){
   pulling = true;
   return fetchJSON(relayById(chosen.relayId).wrap(src.url), 12000).then(function(j){
     pulling = false; misses = 0; lastAt = Date.now();
-    ingest((src.parse(j) || []).filter(Boolean));
+    ingestLive((src.parse(j) || []).filter(Boolean));
   }).catch(function(){
     pulling = false;
     misses++;
@@ -1484,6 +2273,34 @@ function pull(force){
     if(misses >= 3){ misses = 0; probeAll(); }
     renderNow();
   });
+}
+
+/* その日のカード丸ごと。件数が多く、秒単位で変わるものでもないので
+   短い間隔では叩かない。日を送ったときと、開いたときだけ取る。 */
+var dayPulling = false;
+function pullDay(){
+  if(demoOn) return Promise.resolve();
+  var src = activeSource();
+  if(!src || !src.day || dayPulling) return Promise.resolve();
+  dayPulling = true;
+  $("listNote").textContent = "この日のカードを取っています…";
+  return fetchJSON(relayById(chosen.relayId).wrap(src.day(dayDate)), 15000).then(function(j){
+    dayPulling = false;
+    ingestDay(((src.parseDay || src.parse).call(src, j) || []).filter(Boolean));
+  }).catch(function(){
+    dayPulling = false;
+    ingestDay([]);
+    $("listNote").textContent = "この日のカードが取れませんでした。進行中の試合だけを出しています。";
+  });
+}
+
+function goDay(delta){
+  var d = new Date(dayDate + "T12:00:00");
+  d.setDate(d.getDate() + delta);
+  dayDate = ymd(d);
+  daySet = {};
+  renderDay(); rebuild();
+  pullDay();
 }
 
 function restartTimer(){
@@ -1503,19 +2320,47 @@ function paneIndex(){
   var strip = $("strip");
   return Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
 }
+/* 面ごとの地色。下端の帯・body・状態バーが、送っている面に追従する。
+   帯を黒で固定していたため、黄と生成りの面では下端が黒く潰れていた。 */
+var SKIN = [
+  { bg:"#f5d312", ink:"rgba(16,16,16,.26)",   on:"#101010" },   /* いま   */
+  { bg:"#d9d2c5", ink:"rgba(16,16,16,.24)",   on:"#101010" },   /* デッキ */
+  { bg:"#101010", ink:"rgba(242,239,230,.24)", on:"#f2efe6" },  /* 選局   */
+  { bg:"#f2efe6", ink:"rgba(16,16,16,.24)",   on:"#101010" }    /* 名簿   */
+];
+var themeMeta = document.querySelector('meta[name="theme-color"]');
+var lastPane = -1;
+
+function paintSkin(i){
+  var sk = SKIN[i] || SKIN[0];
+  var rail = $("rail");
+  rail.style.setProperty("--railbg", sk.bg);
+  rail.style.setProperty("--railink", sk.ink);
+  rail.style.setProperty("--railon", sk.on);
+  document.body.style.background = sk.bg;
+  if(themeMeta) themeMeta.setAttribute("content", sk.bg);
+}
+
 $("strip").addEventListener("scroll", function(){
-  var i = clamp(paneIndex(), 0, 2);
+  var i = clamp(paneIndex(), 0, SKIN.length - 1);
+  if(i === lastPane) return;
+  lastPane = i;
   var dots = $("rail").children;
   for(var k=0;k<dots.length;k++) dots[k].className = (k === i ? "on" : "");
+  paintSkin(i);
 }, { passive:true });
+paintSkin(0);
 
 /* ── 操作輪 ───────────────────────────────────────────────── */
 function step(dir){
-  if(!matches.length) return;
-  var i = matches.indexOf(cur());
+  /* 送る先は、いま絞り込んでいる範囲のなか。大会を選んでいれば
+     その大会の試合だけを順に送る。 */
+  var v = view();
+  if(!v.length) return;
+  var i = v.indexOf(cur());
   if(i < 0) i = 0;
-  i = (i + dir + matches.length) % matches.length;
-  curId = matches[i].id;
+  else i = (i + dir + v.length) % v.length;
+  curId = v[i].id;
   store.set("cur", curId);
   renderAll();
 }
@@ -1545,7 +2390,7 @@ $("hub").addEventListener("click", function(){
 
 /* 左下の鍵：いちばん競っている試合へ跳ぶ */
 $("cornerSets").addEventListener("click", function(){
-  var live = matches.filter(function(m){ return m.status === "live"; });
+  var live = view().filter(function(m){ return m.status === "live"; });
   if(!live.length) return;
   live.sort(function(a,b){ return tension(b) - tension(a); });
   curId = live[0].id; store.set("cur", curId);
@@ -1561,7 +2406,57 @@ $("cornerFav").addEventListener("click", function(){
   renderNow();
 });
 
+$("toNow3").addEventListener("click", function(){ goPane(0); });
 $("btnProbe").addEventListener("click", function(){ probeAll(); });
+
+/* 日を送る。ラベルを押すと今日へ戻る。 */
+$("dayPrev").addEventListener("click", function(){ goDay(-1); });
+$("dayNext").addEventListener("click", function(){ goDay(1); });
+$("dayLabel").addEventListener("click", function(){
+  var t = ymd(new Date());
+  if(dayDate === t){ pullDay(); return; }
+  dayDate = t; daySet = {}; renderDay(); rebuild(); pullDay();
+});
+
+/* 選手をさがす。打つたびに叩かないよう、少し置いてから走らせる。 */
+var qBox = $("q");
+qBox.addEventListener("input", function(){
+  var v = qBox.value.trim();
+  document.querySelector(".seek").classList.toggle("filled", !!v);
+  if(qTimer) clearTimeout(qTimer);
+  if(v.length < 2){ qSeq++; $("qResult").textContent = ""; renderRoster(); return; }
+  qTimer = setTimeout(function(){ runSearch(v); }, 380);
+});
+qBox.addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); qBox.blur();
+    if(qTimer) clearTimeout(qTimer);
+    var v = qBox.value.trim(); if(v) runSearch(v); }
+});
+$("qClear").addEventListener("click", function(){
+  qBox.value = ""; qSeq++;
+  document.querySelector(".seek").classList.remove("filled");
+  $("qResult").textContent = "";
+  renderRoster(); qBox.focus();
+});
+
+/* 選手の札を閉じる */
+$("sheetScrim").addEventListener("click", closeSheet);
+$("sheetClose").addEventListener("click", closeSheet);
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && !$("sheetWrap").hidden) closeSheet();
+});
+
+/* 「いま」「デッキ」の選手名を押すと、その選手の札が上がる */
+["nameA","nameB","dNameA","dNameB"].forEach(function(id){
+  var n = $(id);
+  n.classList.add("tap");
+  n.addEventListener("click", function(){
+    var m = cur();
+    if(!m) return;
+    var side = (id === "nameA" || id === "dNameA") ? 0 : 1;
+    openPlayerByName(m.players[side].name);
+  });
+});
 
 /* 画面に戻ってきたら、まず一度取りに行く */
 document.addEventListener("visibilitychange", function(){
@@ -1588,6 +2483,7 @@ if(chosen && chosen.srcId === "demo"){
         count: matches.filter(function(m){ return m.status==="live"; }).length };
       $("srcNote").textContent = nameOfSource(chosen.srcId) + " につながっています。";
       renderSources();
+      pullDay();
     }
   });
 }else{
