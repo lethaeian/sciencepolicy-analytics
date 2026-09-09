@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="速報">
+<meta name="description" content="進行中のテニスの試合を、オーディオ機器の面として見る速報。局はグリルの点で埋まり、試合はテープの波形になる。">
+<title>速報 — テニスをオーディオ機器として聴く</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  /* ── 設計の方針 ───────────────────────────────
+     テニスの試合を、一台のオーディオ機器として扱う。
+     ・スピーカーのグリル ＝ 経過した局。中心から外へ、一局ごとに点が濃く灯る。
+     ・黒い操作輪         ＝ いまのポイント。左右で試合を送り、上で自動更新を止める。
+     ・二つのリール       ＝ 二人の選手。巻き取った量が獲得ゲーム、回転が直近の勢い。
+     ・波形               ＝ 試合そのもの。一本が一ゲーム、上下が勝った側、丈が競り具合。
+     言葉は最小限にし、読ませるのは点数と選手名だけにする。
+     三つの面を横に送る作りは、この site の他のアプリ（家計）と揃えてある。
+     ───────────────────────────────────────── */
+  :root{
+    color-scheme: dark;
+
+    --yellow:  #f5d312;   /* 「いま」の地 */
+    --cream:   #d9d2c5;   /* 「デッキ」の地 */
+    --ink:     #101010;   /* 黒。器の色 */
+    --paper:   #f2efe6;
+
+    --hot:     #ff5b34;   /* サーブ権・ブレークポイントの差し色 */
+    --cool:    #8ab4ff;
+
+    --grot:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
+    --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    background:var(--ink); color:var(--paper);
+    font-family:var(--grot);
+    font-feature-settings:"palt" 1; font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+  button{ font-family:inherit; color:inherit; border:0; background:none; padding:0; cursor:pointer; }
+
+  .shell{ position:fixed; inset:0; display:flex; flex-direction:column; max-width:560px; margin:0 auto; }
+
+  /* ── 三つの面を横に送る ───────────────────── */
+  .strip{
+    flex:1 1 auto; min-height:0;
+    display:flex; overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    scrollbar-width:none; -ms-overflow-style:none;
+    overscroll-behavior-x:contain;
+  }
+  .strip::-webkit-scrollbar{ display:none; }
+  .pane{
+    flex:0 0 100%; width:100%; height:100%;
+    scroll-snap-align:center; scroll-snap-stop:always;
+    display:flex; flex-direction:column;
+    overflow-y:auto; overscroll-behavior-y:contain;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px);
+  }
+  .pane.now  { background:var(--yellow); color:var(--ink); --rule:rgba(16,16,16,.22); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.09); }
+  .pane.deck { background:var(--cream);  color:var(--ink); --rule:rgba(16,16,16,.20); --ghost:rgba(16,16,16,.40); --soft:rgba(16,16,16,.08); }
+  .pane.dial { background:var(--ink);    color:var(--paper); --rule:rgba(242,239,230,.16); --ghost:rgba(242,239,230,.40); --soft:rgba(242,239,230,.07); }
+
+  /* ── 見出しの帯 ───────────────────────────── */
+  .top{ display:flex; align-items:flex-start; gap:10px; }
+  .top .grow{ flex:1 1 auto; min-width:0; }
+  .title{
+    margin:0; font-weight:800; letter-spacing:-.03em; line-height:1.02;
+    font-size:clamp(21px,6.4vw,29px);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sub{
+    margin:3px 0 0; font-size:11.5px; line-height:1.3; color:var(--ghost);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .micro{
+    font-family:var(--mono); font-size:9px; letter-spacing:.17em;
+    text-transform:uppercase; color:var(--ghost);
+  }
+
+  /* 右上の小さな鍵（開く・畳む） */
+  .caret{
+    width:30px; height:30px; flex:0 0 30px; display:grid; place-items:center;
+    border-radius:50%; transition:transform .18s ease, background .18s ease;
+  }
+  .caret:active{ background:var(--soft); }
+  .caret svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
+  .caret.open{ transform:rotate(180deg); }
+
+  /* ── スピーカーのグリル ───────────────────── */
+  .grille{ margin:14px auto 0; width:min(72vw, 25vh, 300px); }
+  .grille svg{ display:block; width:100%; height:auto; }
+  .grille circle{ fill:var(--ink); }
+  .grille circle.off{ opacity:.11; }
+  .grille circle.home{ opacity:1; }
+  .grille circle.away{ opacity:.42; }
+  .grille circle.live{ animation:beat 1.15s ease-in-out infinite; }
+  @keyframes beat{ 0%,100%{ opacity:1; } 50%{ opacity:.22; } }
+
+  /* ── 操作輪 ───────────────────────────────── */
+  /* 輪の寸法を一箇所に持ち、中の字もこれに従わせる。
+     幅だけで決めると、背の低い端末で輪が縮んだときに字がはみ出す。 */
+  .wheel{ --wsz:min(72vw, 30vh, 296px);
+          position:relative; margin:12px auto 0; width:var(--wsz); aspect-ratio:1; }
+  .wheel .ring{
+    position:absolute; inset:0; border-radius:50%;
+    background:var(--ink);
+  }
+  .wheel .hub{
+    position:absolute; inset:26%; border-radius:50%;
+    background:var(--yellow); color:var(--ink);
+    display:grid; place-items:center; text-align:center; line-height:1;
+    transition:transform .12s ease;
+  }
+  .pane.deck .wheel .hub{ background:var(--cream); }
+  .wheel .hub:active{ transform:scale(.94); }
+  .wheel .hub .pts{ font-size:calc(var(--wsz) * .11); font-weight:800; letter-spacing:-.04em; }
+  .wheel .hub .pts .vs{ opacity:.34; margin:0 .12em; font-weight:600; }
+  .wheel .hub .cap{ margin-top:5px; font-family:var(--mono); opacity:.55;
+    font-size:max(7px, calc(var(--wsz) * .029)); letter-spacing:.11em; }
+
+  /* 輪の上の四つの鍵 */
+  .wheel .key{
+    position:absolute; display:grid; place-items:center;
+    color:var(--paper); border-radius:50%;
+    width:23%; height:23%;
+  }
+  .wheel .key:active{ opacity:.5; }
+  .wheel .key.up   { left:38.5%; top:3.5%; }
+  .wheel .key.down { left:38.5%; bottom:3.5%; }
+  .wheel .key.left { left:3.5%;  top:38.5%; }
+  .wheel .key.right{ right:3.5%; top:38.5%; }
+  .wheel .key svg{ width:52%; height:52%; fill:currentColor; }
+  .wheel .key.on{ color:var(--hot); }
+
+  /* 輪の四隅に置く小さな鍵 */
+  .corners{ display:flex; justify-content:space-between; margin:10px 2px 0; }
+  .corner{
+    width:42px; height:42px; border-radius:50%; display:grid; place-items:center;
+    border:1.4px solid var(--rule); transition:background .15s ease;
+  }
+  .corner:active{ background:var(--soft); }
+  .corner svg{ width:19px; height:19px; fill:currentColor; }
+  .corner.on{ background:var(--ink); color:var(--yellow); border-color:var(--ink); }
+
+  /* ── セットのスコア（小さな数字の列） ─────── */
+  .sets{ display:flex; gap:7px; align-items:center; }
+  .setcol{ text-align:center; min-width:19px; }
+  .setcol b{ display:block; font-size:15px; font-weight:800; line-height:1.22; }
+  .setcol b.lost{ opacity:.36; font-weight:600; }
+  .setcol i{ display:block; font-style:normal; font-family:var(--mono); font-size:8px; letter-spacing:.1em; color:var(--ghost); margin-top:2px; }
+  .setcol sup{ font-size:.62em; vertical-align:super; opacity:.7; margin-left:.5px; }
+  .setcol.cur b{ color:var(--hot); }
+
+  /* 選手の行（サーブ権を丸で示す） */
+  .who{ display:flex; align-items:center; gap:9px; min-width:0; }
+  .who .dot{ width:9px; height:9px; flex:0 0 9px; border-radius:50%; border:1.4px solid var(--ink); }
+  .pane.dial .who .dot{ border-color:var(--paper); }
+  .who .dot.serving{ background:var(--hot); border-color:var(--hot); }
+  .who .nm{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .who .nm .sd{ font-size:.72em; font-weight:600; color:var(--ghost); margin-left:.4em; }
+
+  /* ── リール（デッキの面） ─────────────────── */
+  .reels{ display:flex; gap:14px; justify-content:center; margin-top:14px; }
+  .reel{ flex:1 1 0; max-width:150px; }
+  .reel svg{ display:block; width:100%; height:auto; }
+  .reel .plate{ fill:rgba(16,16,16,.06); }
+  /* テープの巻きは「太い線の円」で描く。塗りではなく線なので fill は外す */
+  .reel .tape { fill:none; stroke:var(--ink); }
+  .reel .spin circle{ fill:none; stroke:var(--ink); }
+  .reel .hubc { fill:var(--cream); }
+  .reel .spin{ transform-origin:50% 50%; animation:spin var(--rpm,6s) linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .reel .mark{ fill:var(--ink); }
+  .reel.serving .mark{ fill:var(--hot); }
+
+  /* ── 波形（一本＝一ゲーム） ───────────────── */
+  .wave{ margin-top:16px; }
+  .wave svg{ display:block; width:100%; height:78px; }
+  .wave .mid{ stroke:var(--rule); stroke-width:1; }
+  .wave line{ vector-effect:non-scaling-stroke; }
+  .wave rect{ fill:var(--ink); }
+  .wave rect.away{ opacity:.34; }
+  .wave rect.pre{ opacity:.26; }          /* 聴き始める前の、順序の分からない局 */
+  .wave .tick{ stroke:var(--ink); stroke-width:1; opacity:.30; }  /* セットの切れ目 */
+  .wave rect.brk{ fill:var(--hot); opacity:1; }   /* ブレーク */
+  .wave rect.brk.down{ opacity:.72; }
+  .wave .head{ stroke:var(--ink); stroke-width:1.4; }
+  .timeline{ display:flex; justify-content:space-between; align-items:center; margin-top:7px; }
+
+  /* ── 計器（黒い二つの円） ─────────────────── */
+  .meters{ display:flex; gap:12px; margin-top:16px; }
+  .meter{
+    flex:1 1 0; background:var(--ink); color:var(--paper);
+    border-radius:14px; padding:13px 14px 12px;
+  }
+  .pane.deck .meter{ border-radius:14px; }
+  .meter .val{ font-size:26px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .meter .val small{ font-size:.5em; font-weight:600; opacity:.55; margin-left:.16em; letter-spacing:0; }
+  .meter .cap{ font-family:var(--mono); font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin-top:7px; }
+  .meter .bar{ height:3px; border-radius:2px; background:rgba(242,239,230,.18); margin-top:9px; overflow:hidden; }
+  .meter .bar span{ display:block; height:100%; background:var(--hot); border-radius:2px; transition:width .5s ease; }
+
+  /* ── セットごとの取り合い（水準計の帯） ───── */
+  .bands{ margin-top:18px; display:flex; flex-direction:column; gap:9px; }
+  .bandrow{ display:flex; align-items:center; gap:11px; }
+  .bandrow .lb{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--ghost); flex:0 0 22px; }
+  .bandrow .tr{ flex:1 1 auto; height:9px; border-radius:5px; background:var(--soft); overflow:hidden; display:flex; }
+  .bandrow .tr span{ display:block; height:100%; transition:width .45s ease; }
+  .bandrow .tr .a{ background:var(--ink); }
+  .bandrow .tr .b{ background:rgba(16,16,16,.28); }
+  .bandrow.cur .tr .a{ background:var(--hot); }
+  .bandrow .sc{ font-family:var(--mono); font-size:11.5px; flex:0 0 48px; text-align:right; letter-spacing:.02em; }
+
+  /* ── 選局の面：トラック一覧 ───────────────── */
+  .list{ margin-top:12px; display:flex; flex-direction:column; }
+  .track{
+    display:flex; align-items:center; gap:12px;
+    padding:11px 2px; border-top:1px solid var(--rule);
+    text-align:left; width:100%;
+  }
+  .track:last-child{ border-bottom:1px solid var(--rule); }
+  .track:active{ background:var(--soft); }
+  .track.cur .no{ background:var(--hot); color:var(--ink); }
+  .track .no{
+    width:26px; height:26px; flex:0 0 26px; border-radius:50%;
+    display:grid; place-items:center; background:var(--soft);
+    font-family:var(--mono); font-size:10px; letter-spacing:0;
+  }
+  .track .body{ flex:1 1 auto; min-width:0; }
+  .track .ln{ display:flex; align-items:center; gap:7px; }
+  .track .nm{ flex:1 1 auto; min-width:0; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track .nm.dim{ opacity:.5; font-weight:600; }
+  .track .sc{ font-family:var(--mono); font-size:12.5px; letter-spacing:.02em; flex:0 0 auto; }
+  .track .meta{ margin-top:4px; font-size:10px; color:var(--ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track .srv{ width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--hot); }
+  .track .srv.off{ background:none; }
+
+  /* ── 情報源のパネル ───────────────────────── */
+  .panel{ margin-top:14px; border:1px solid var(--rule); border-radius:14px; padding:14px; }
+  .panel h3{ margin:0 0 10px; font-family:var(--mono); font-size:9px; letter-spacing:.17em; text-transform:uppercase; color:var(--ghost); font-weight:600; }
+  .srcrow{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:9px 0; border-top:1px solid var(--rule); text-align:left;
+  }
+  .srcrow:first-of-type{ border-top:0; }
+  .srcrow .led{ width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:var(--soft); }
+  .srcrow .led.ok{ background:#3ddc84; }
+  .srcrow .led.no{ background:rgba(242,239,230,.2); }
+  .srcrow .led.busy{ background:var(--hot); animation:beat 1s ease-in-out infinite; }
+  .srcrow .body{ flex:1 1 auto; min-width:0; }
+  .srcrow .nm{ font-size:13px; font-weight:700; }
+  .srcrow .meta{ font-size:10px; color:var(--ghost); margin-top:2px;
+                 white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .srcrow .pick{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--ghost); flex:0 0 auto; }
+  .srcrow.on .pick{ color:var(--hot); }
+
+  .btn{
+    display:block; width:100%; margin-top:12px; padding:12px;
+    border-radius:11px; border:1.4px solid var(--rule);
+    font-size:13px; font-weight:700; letter-spacing:.02em;
+  }
+  .btn:active{ background:var(--soft); }
+  .btn.solid{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
+
+  .note{ margin:12px 0 0; font-size:10.5px; line-height:1.62; color:var(--ghost); }
+  .note a{ color:inherit; }
+
+  /* ── 下の帯（面の位置） ───────────────────── */
+  .rail{
+    flex:0 0 auto; display:flex; justify-content:center; gap:7px;
+    padding:9px 0 calc(env(safe-area-inset-bottom) + 9px);
+    background:var(--ink);
+  }
+  .rail i{ width:5px; height:5px; border-radius:50%; background:rgba(242,239,230,.24); transition:background .2s ease, width .2s ease; }
+  .rail i.on{ background:var(--paper); width:17px; border-radius:3px; }
+
+  .spacer{ flex:1 1 auto; min-height:6px; }
+
+  /* 背の低い端末（SE など）。「いま」の面は一目で収まることを優先する。 */
+  @media (max-height: 700px){
+    .pane{ padding-top:calc(env(safe-area-inset-top) + 10px); padding-bottom:calc(env(safe-area-inset-bottom) + 12px); }
+    .title{ font-size:20px; }
+    .sub{ font-size:10.5px; }
+    .grille{ margin-top:8px; }
+    .wheel{ margin-top:8px; }
+    .corners{ margin-top:6px; }
+    .corner{ width:36px; height:36px; }
+    .corner svg{ width:16px; height:16px; }
+    .who .nm{ font-size:13.5px; }
+    .setcol b{ font-size:13px; }
+  }
+  .hide{ display:none !important; }
+
+  /* 動きを好まない人には、回転と明滅を止める */
+  @media (prefers-reduced-motion: reduce){
+    .grille circle.live, .srcrow .led.busy{ animation:none; }
+    .reel .spin{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="strip" id="strip">
+
+    <!-- ── 一枚目：いま ───────────────────────── -->
+    <section class="pane now" id="paneNow">
+      <div class="top">
+        <div class="grow">
+          <h1 class="title" id="nowTitle">読み込み中</h1>
+          <p class="sub" id="nowSub">情報源をさがしています</p>
+        </div>
+        <button class="caret" id="toDial" aria-label="選局の面へ">
+          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+
+      <div class="grille" id="grille"></div>
+
+      <div class="wheel">
+        <div class="ring"></div>
+        <button class="key up" id="keyHold" aria-label="自動更新の停止と再開">
+          <svg viewBox="0 0 24 24" id="keyHoldIcon"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg>
+        </button>
+        <button class="key left" id="keyPrev" aria-label="前の試合">
+          <svg viewBox="0 0 24 24"><path d="M11 12L20 6v12zM2 12l9-6v12z"/></svg>
+        </button>
+        <button class="key right" id="keyNext" aria-label="次の試合">
+          <svg viewBox="0 0 24 24"><path d="M13 12L4 6v12zM22 12l-9-6v12z"/></svg>
+        </button>
+        <button class="key down" id="keyDeck" aria-label="デッキの面へ">
+          <svg viewBox="0 0 24 24"><path d="M12 16l-6-7h12z"/></svg>
+        </button>
+        <button class="hub" id="hub" aria-label="いまのポイント">
+          <span class="pts" id="hubPts">–</span>
+          <span class="cap" id="hubCap">POINT</span>
+        </button>
+      </div>
+
+      <div class="corners">
+        <button class="corner" id="cornerSets" aria-label="セットの並びを読み上げ">
+          <svg viewBox="0 0 24 24"><path d="M3 14h2v6H3zM7 9h2v11H7zM11 4h2v16h-2zM15 11h2v9h-2zM19 7h2v13h-2z"/></svg>
+        </button>
+        <div class="sets" id="nowSets"></div>
+        <button class="corner" id="cornerFav" aria-label="この試合を覚えておく">
+          <svg viewBox="0 0 24 24" id="favIcon"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>
+        </button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="who"><span class="dot" id="srvA"></span><span class="nm" id="nameA">—</span></div>
+        <div class="who"><span class="dot" id="srvB"></span><span class="nm" id="nameB">—</span></div>
+      </div>
+      <p class="micro" id="nowFoot" style="margin:11px 0 0">—</p>
+    </section>
+
+    <!-- ── 二枚目：デッキ ─────────────────────── -->
+    <section class="pane deck" id="paneDeck">
+      <div class="top">
+        <div class="grow">
+          <h1 class="title" id="deckTitle">デッキ</h1>
+          <p class="sub" id="deckSub">試合をテープとして見る</p>
+        </div>
+        <button class="caret" id="toNow" aria-label="いまの面へ">
+          <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="reels" id="reels"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:13px">
+        <div class="who" style="flex:1 1 0;min-width:0"><span class="dot" id="dSrvA"></span><span class="nm" id="dNameA">—</span></div>
+        <div class="sets" id="deckSets"></div>
+        <div class="who" style="flex:1 1 0;min-width:0;justify-content:flex-end"><span class="nm" id="dNameB" style="text-align:right">—</span><span class="dot" id="dSrvB"></span></div>
+      </div>
+
+      <div class="wave" id="wave"></div>
+      <div class="timeline">
+        <span class="micro" id="tlLeft">00:00</span>
+        <span class="micro" id="tlMid">—</span>
+        <span class="micro" id="tlRight">—</span>
+      </div>
+
+      <div class="meters" id="meters"></div>
+      <div class="bands" id="bands"></div>
+
+      <div class="spacer"></div>
+      <p class="note" id="deckNote">波形は一本が一ゲーム。上が上段の選手、下が下段の選手。丈はその局の競り具合を示す。</p>
+    </section>
+
+    <!-- ── 三枚目：選局 ───────────────────────── -->
+    <section class="pane dial" id="paneDial">
+      <div class="top">
+        <div class="grow">
+          <h1 class="title">選局</h1>
+          <p class="sub" id="dialSub">—</p>
+        </div>
+        <button class="caret" id="toNow2" aria-label="いまの面へ">
+          <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="panel">
+        <h3>Source — 情報源</h3>
+        <div id="srcList"></div>
+        <button class="btn" id="btnProbe">もう一度さがす</button>
+        <p class="note" id="srcNote">この端末のブラウザから各配信元に実際に当たり、いちばん多くの試合が取れたものを自動で選びます。</p>
+      </div>
+
+      <div class="panel">
+        <h3>Interval — 更新の間隔</h3>
+        <div id="ivList"></div>
+      </div>
+
+      <p class="note">
+        スコアは各配信元の公開データをそのまま表示しています。数値の正確さと更新の早さは配信元に依存します。
+        本アプリは端末内でのみ動き、閲覧内容をどこにも送りません。
+      </p>
+      <div class="spacer"></div>
+    </section>
+
+  </div>
+
+  <div class="rail" id="rail"><i class="on"></i><i></i><i></i></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   速報 — テニスをオーディオ機器として聴く
+
+   構成は三層。
+     1. 情報源  … 配信元ごとのアダプタ＋CORS中継。端末上で実測して選ぶ
+     2. 台帳    … 取れた試合を一つの形に正規化し、局の推移を記録に残す
+     3. 面      … いま／デッキ／選局の三枚を描く
+
+   静的なページなので、サーバを持たない。配信元がブラウザからの直接取得を
+   許していない場合に備え、中継を数種類ためし、通った組合せを覚えておく。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+
+/* ── 小さな道具 ───────────────────────────────────────────── */
+function $(id){ return document.getElementById(id); }
+function el(tag, cls){ var n = document.createElement(tag); if(cls) n.className = cls; return n; }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function pad2(n){ return (n<10?"0":"") + n; }
+
+function hhmm(sec){
+  if(sec == null || !isFinite(sec) || sec < 0) return "--:--";
+  var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+  return h + ":" + pad2(m);
+}
+
+/* 姓だけを短く出す。"Carlos Alcaraz" → "Alcaraz"、"C. Alcaraz" もそのまま扱う。
+   ダブルスは "Siniakova / Townsend" のように二人ぶん並べる。 */
+function surname(name){
+  if(!name) return "—";
+  var s = String(name).trim();
+  if(s.indexOf("/") >= 0){
+    return s.split("/").map(function(one){ return surname(one); }).join(" / ");
+  }
+  var parts = s.split(/\s+/);
+  if(parts.length === 1) return parts[0];
+  return parts.slice(1).join(" ");
+}
+
+var store = {
+  get: function(k, dflt){
+    try{
+      var raw = localStorage.getItem("tennis:" + k);
+      return raw == null ? dflt : JSON.parse(raw);
+    }catch(e){ return dflt; }
+  },
+  set: function(k, v){
+    try{ localStorage.setItem("tennis:" + k, JSON.stringify(v)); }catch(e){}
+  }
+};
+
+/* ── 1. 情報源 ────────────────────────────────────────────────
+   中継は上から順にためす。direct が通るならそれがいちばん速い。
+   ─────────────────────────────────────────────────────────── */
+var RELAYS = [
+  { id:"direct",     name:"直接",            wrap:function(u){ return u; } },
+  { id:"allorigins", name:"allorigins 経由", wrap:function(u){ return "https://api.allorigins.win/raw?url=" + encodeURIComponent(u); } },
+  { id:"codetabs",   name:"codetabs 経由",   wrap:function(u){ return "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u); } },
+  { id:"corsproxy",  name:"corsproxy 経由",  wrap:function(u){ return "https://corsproxy.io/?url=" + encodeURIComponent(u); } }
+];
+
+function fetchJSON(url, ms){
+  var ctl = ("AbortController" in window) ? new AbortController() : null;
+  var timer = setTimeout(function(){ if(ctl) ctl.abort(); }, ms || 9000);
+  var opt = { cache:"no-store", credentials:"omit" };
+  if(ctl) opt.signal = ctl.signal;
+  return fetch(url, opt).then(function(res){
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    return res.text();
+  }).then(function(txt){
+    clearTimeout(timer);
+    return JSON.parse(txt);                   /* 中継が文字列で包む場合があるので text 経由 */
+  }).catch(function(err){
+    clearTimeout(timer);
+    throw err;
+  });
+}
+
+/* 情報源ごとの取得先と読み方。normalize は共通の Match 形を返す。 */
+var SOURCES = [
+  {
+    id: "sofascore",
+    name: "SofaScore",
+    /* ATP・WTA に加え、チャレンジャー、ITF、団体戦まで進行中の全試合が並ぶ。
+       通常いちばん試合数が多い。 */
+    note: "ATP・WTA・チャレンジャー・ITF",
+    url: "https://api.sofascore.com/api/v1/sport/tennis/events/live",
+    parse: function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; }
+  },
+  {
+    id: "espn-atp",
+    name: "ESPN (ATP)",
+    note: "ATP 本戦のみ",
+    url: "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard",
+    parse: function(j){ return fromEspn(j, "ATP"); }
+  },
+  {
+    id: "espn-wta",
+    name: "ESPN (WTA)",
+    note: "WTA 本戦のみ",
+    url: "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard",
+    parse: function(j){ return fromEspn(j, "WTA"); }
+  }
+];
+
+/* 大会名からツアーの区分を推す。表示の見出しに使うだけで、判定には使わない。 */
+function tourOf(tournamentName, categoryName){
+  var s = ((tournamentName||"") + " " + (categoryName||"")).toLowerCase();
+  if(s.indexOf("challenger") >= 0) return "CH";
+  if(s.indexOf("itf") >= 0) return "ITF";
+  if(s.indexOf("wta") >= 0) return "WTA";
+  if(s.indexOf("atp") >= 0) return "ATP";
+  if(s.indexOf("united cup") >= 0 || s.indexOf("davis") >= 0 || s.indexOf("billie jean") >= 0) return "CUP";
+  return "—";
+}
+
+/* SofaScore の event を共通の形に直す */
+function fromSofa(ev){
+  if(!ev || !ev.homeTeam || !ev.awayTeam) return null;
+  var hs = ev.homeScore || {}, as = ev.awayScore || {};
+  var sets = [], tbs = [];
+  for(var i=1; i<=5; i++){
+    var h = hs["period"+i], a = as["period"+i];
+    if(h == null && a == null) continue;
+    sets.push([ h||0, a||0 ]);
+    var th = hs["period"+i+"TieBreak"], ta = as["period"+i+"TieBreak"];
+    tbs.push((th != null || ta != null) ? [ th||0, ta||0 ] : null);
+  }
+  var st = (ev.status && ev.status.type) || "";
+  var status = st === "inprogress" ? "live" : (st === "finished" ? "done" : "soon");
+  var cat = ev.tournament && ev.tournament.category ? ev.tournament.category.name : "";
+  var tname = ev.tournament ? ev.tournament.name : "";
+
+  return {
+    id: "sofa:" + ev.id,
+    tour: tourOf(tname, cat),
+    tournament: tname || cat || "—",
+    round: (ev.roundInfo && (ev.roundInfo.name || ("Round " + ev.roundInfo.round))) || "",
+    ground: ev.groundType || "",
+    players: [ playerOf(ev.homeTeam), playerOf(ev.awayTeam) ],
+    sets: sets,
+    tbs: tbs,
+    point: [ ptStr(hs.point), ptStr(as.point) ],
+    /* 現在のサーバは直接は来ない。第一サーバと消化ゲーム数の偶奇から求める。 */
+    firstServer: ev.firstToServe === 1 ? 0 : (ev.firstToServe === 2 ? 1 : -1),
+    status: status,
+    statusText: (ev.status && ev.status.description) || "",
+    startTs: ev.startTimestamp ? ev.startTimestamp * 1000 : null,
+    winner: ev.winnerCode === 1 ? 0 : (ev.winnerCode === 2 ? 1 : -1)
+  };
+}
+function playerOf(t){
+  var full = t.name || "—";
+  return {
+    name: full,
+    /* ダブルスは配信元の短縮形が "A/B" だったり "A / B" だったりする。
+       表記を揃えるため、組の場合はこちらで作り直す。 */
+    short: (full.indexOf("/") >= 0) ? surname(full) : (t.shortName || surname(full)),
+    country: (t.country && (t.country.alpha3 || t.country.alpha2)) || "",
+    seed: null
+  };
+}
+function ptStr(p){
+  if(p == null || p === "") return "0";
+  var s = String(p);
+  if(s === "AD" || s === "A") return "A";
+  return s;
+}
+
+/* ESPN の scoreboard を共通の形に直す。
+   競技の入れ子が版によって events[].competitions と
+   events[].groupings[].competitions の二通りあるため、両方を拾う。 */
+function fromEspn(j, tour){
+  var out = [];
+  var events = (j && j.events) || [];
+  events.forEach(function(evt){
+    var comps = [];
+    if(evt.competitions) comps = comps.concat(evt.competitions);
+    if(evt.groupings) evt.groupings.forEach(function(g){
+      if(g.competitions) comps = comps.concat(g.competitions);
+    });
+    comps.forEach(function(c){
+      var m = espnComp(c, evt, tour);
+      if(m) out.push(m);
+    });
+  });
+  return out;
+}
+function espnComp(c, evt, tour){
+  var cs = c.competitors || [];
+  if(cs.length < 2) return null;
+  var A = cs[0], B = cs[1];
+
+  function nameOf(x){
+    if(x.athlete && x.athlete.displayName) return x.athlete.displayName;
+    if(x.roster && x.roster.length){
+      return x.roster.map(function(r){
+        return (r.athlete && r.athlete.displayName) || "";
+      }).filter(Boolean).join(" / ");
+    }
+    if(x.team && x.team.displayName) return x.team.displayName;
+    return "—";
+  }
+  function linesOf(x){ return (x.linescores || []).map(function(l){ return Number(l.value) || 0; }); }
+
+  var la = linesOf(A), lb = linesOf(B), sets = [], tbs = [];
+  var n = Math.max(la.length, lb.length);
+  for(var i=0; i<n; i++){ sets.push([ la[i]||0, lb[i]||0 ]); tbs.push(null); }
+
+  var state = (c.status && c.status.type && c.status.type.state) || "";
+  var status = state === "in" ? "live" : (state === "post" ? "done" : "soon");
+
+  return {
+    id: "espn:" + (c.id || evt.id) ,
+    tour: tour,
+    tournament: (evt.name || evt.shortName || "—")
+                  .replace(/\s*[-–]\s*(Men|Women|Mixed)('s)?\s+(Singles|Doubles).*$/i, ""),
+    round: (c.round && c.round.displayName) || (evt.season && evt.season.type && evt.season.type.name) || "",
+    ground: (evt.groundType) || "",
+    players: [
+      { name:nameOf(A), short:surname(nameOf(A)), country:(A.athlete&&A.athlete.flag&&A.athlete.flag.alt)||"", seed:A.curatedRank&&A.curatedRank.current||null },
+      { name:nameOf(B), short:surname(nameOf(B)), country:(B.athlete&&B.athlete.flag&&B.athlete.flag.alt)||"", seed:B.curatedRank&&B.curatedRank.current||null }
+    ],
+    sets: sets,
+    tbs: tbs,
+    point: [ ptStr(A.score), ptStr(B.score) ],
+    firstServer: -1,
+    status: status,
+    statusText: (c.status && c.status.type && c.status.type.shortDetail) || "",
+    startTs: c.date ? Date.parse(c.date) : (evt.date ? Date.parse(evt.date) : null),
+    winner: A.winner ? 0 : (B.winner ? 1 : -1)
+  };
+}
+
+/* ── 情報源の実測 ────────────────────────────────────────────
+   配信元 × 中継 の組合せを、この端末のブラウザから実際に当たって
+   ためす。通ったもののうち「進行中の試合がいちばん多く取れた」
+   組合せを採る。結果は覚えておき、次回はそこから始める。
+   ─────────────────────────────────────────────────────────── */
+var probeState = {};                          /* sourceId → {state, count, relay, err} */
+
+function tryOne(src, relay){
+  return fetchJSON(relay.wrap(src.url), 9000).then(function(j){
+    var list = (src.parse(j) || []).filter(Boolean);
+    return { ok:true, relay:relay, list:list };
+  });
+}
+
+/* 中継を上から順に。通ったところで止める。 */
+function probeSource(src){
+  probeState[src.id] = { state:"busy", count:0, relay:null, err:"" };
+  renderSources();
+  var i = 0;
+  function step(){
+    if(i >= RELAYS.length){
+      probeState[src.id] = { state:"no", count:0, relay:null, err:"どの経路でも届きませんでした" };
+      renderSources();
+      return Promise.resolve(null);
+    }
+    var relay = RELAYS[i++];
+    return tryOne(src, relay).then(function(r){
+      var live = r.list.filter(function(m){ return m.status === "live"; });
+      probeState[src.id] = { state:"ok", count:live.length, total:r.list.length, relay:relay, err:"" };
+      renderSources();
+      return { src:src, relay:relay, list:r.list, live:live.length };
+    }).catch(function(){
+      return step();
+    });
+  }
+  return step();
+}
+
+function probeAll(){
+  $("srcNote").textContent = "各配信元に順に当たっています…";
+  return Promise.all(SOURCES.map(probeSource)).then(function(results){
+    var hits = results.filter(Boolean);
+    if(!hits.length){
+      $("srcNote").textContent =
+        "どの配信元にも届きませんでした。回線か、配信元側の遮断が考えられます。デモの試合で動かします。";
+      useDemo();
+      return null;
+    }
+    /* 試合数がいちばん多いものを採る。同数なら並び順（網羅の広い順）を優先。 */
+    hits.sort(function(a,b){ return b.live - a.live; });
+    var win = hits[0];
+    chosen = { srcId:win.src.id, relayId:win.relay.id };
+    store.set("chosen", chosen);
+    demoOn = false;
+    $("srcNote").textContent =
+      win.src.name + "（" + win.relay.name + "）を採用。進行中 " + win.live + " 試合。";
+    ingest(win.list);
+    renderSources();
+    return win;
+  });
+}
+
+/* ── デモの試合 ──────────────────────────────────────────────
+   配信元に届かないときでも器が動くように、テニスの数え方どおりに
+   点を刻む簡単な機構を積んでおく。名前は実在の人物ではない。
+   ─────────────────────────────────────────────────────────── */
+var DEMO_SEEDS = [
+  { t:"Metropolitan Open",  r:"準々決勝", a:"K. Aotani",   b:"L. Ferreira", g:"Hard"  },
+  { t:"Riviera Classic",    r:"2回戦",   a:"M. Solberg",  b:"D. Ivanek",   g:"Clay"  },
+  { t:"Harbourside 250",    r:"1回戦",   a:"R. Nakagawa", b:"T. Villard",  g:"Hard"  },
+  { t:"Northgate Challenger", r:"準決勝", a:"S. Okonkwo",  b:"P. Halvorsen",g:"Indoor"},
+  { t:"Lakeside Cup",       r:"決勝",     a:"E. Marchetti",b:"Y. Sugimoto", g:"Grass" }
+];
+
+function DemoMatch(seed, idx){
+  this.id = "demo:" + idx;
+  this.seed = seed;
+  this.p = [0,0];                              /* いまのポイント（0,1,2,3=40, 4=A） */
+  this.g = [0,0];                              /* いまのセットのゲーム */
+  this.sets = [];                              /* 決着したセット */
+  this.tb = null;                              /* タイブレーク中の点 */
+  this.server = idx % 2;
+  this.firstServer = this.server;
+  this.done = false;
+  this.strength = 0.5 + (idx % 3) * 0.06;      /* 力の差。毎回同じ試合にならない程度に */
+  this.startTs = Date.now() - (8 + idx*7) * 60000;
+  this.next = Date.now() + 1500 + idx * 900;
+}
+DemoMatch.prototype.tick = function(now){
+  if(this.done || now < this.next) return false;
+  this.next = now + 2200 + Math.random()*4200;
+  /* サーバがやや有利、という程度の偏りを置く */
+  var pServer = 0.62 * this.strength + 0.19;
+  var winner = (Math.random() < pServer) ? this.server : (1 - this.server);
+  this.point(winner);
+  return true;
+};
+DemoMatch.prototype.point = function(w){
+  var l = 1 - w;
+  if(this.tb){
+    this.tb[w]++;
+    var hi = Math.max(this.tb[0], this.tb[1]), lo = Math.min(this.tb[0], this.tb[1]);
+    /* タイブレークは最初の1本のあと2本ずつサーブが替わる */
+    if((this.tb[0] + this.tb[1]) % 2 === 1) this.server = 1 - this.server;
+    if(hi >= 7 && hi - lo >= 2){
+      this.g[w]++;
+      this.closeSet(this.tb.slice());
+      this.tb = null;
+    }
+    return;
+  }
+  if(this.p[w] >= 3 || this.p[l] >= 3){        /* デュース周辺 */
+    if(this.p[w] === 4){ this.game(w); return; }        /* アドバンテージから */
+    if(this.p[l] === 4){ this.p[l] = 3; return; }       /* アドバンテージを戻す */
+    if(this.p[w] === 3 && this.p[l] < 3){ this.game(w); return; }
+    this.p[w] = 4; return;                               /* デュース → アドバンテージ */
+  }
+  this.p[w]++;
+  if(this.p[w] === 4) this.game(w);
+};
+DemoMatch.prototype.game = function(w){
+  this.p = [0,0];
+  this.g[w]++;
+  this.server = 1 - this.server;
+  var hi = Math.max(this.g[0], this.g[1]), lo = Math.min(this.g[0], this.g[1]);
+  if(this.g[0] === 6 && this.g[1] === 6){ this.tb = [0,0]; return; }
+  if(hi >= 6 && hi - lo >= 2) this.closeSet(null);
+};
+DemoMatch.prototype.closeSet = function(tb){
+  this.sets.push({ g:this.g.slice(), tb:tb });
+  this.g = [0,0];
+  var won = [0,0];
+  this.sets.forEach(function(s){ won[ s.g[0] > s.g[1] ? 0 : 1 ]++; });
+  if(won[0] === 2 || won[1] === 2) this.done = true;
+};
+DemoMatch.prototype.toMatch = function(){
+  var sets = [], tbs = [];
+  this.sets.forEach(function(s){ sets.push(s.g.slice()); tbs.push(s.tb); });
+  if(!this.done){ sets.push(this.g.slice()); tbs.push(this.tb ? this.tb.slice() : null); }
+  var PT = ["0","15","30","40","A"];
+  var pt = this.tb ? [ String(this.tb[0]), String(this.tb[1]) ] : [ PT[this.p[0]], PT[this.p[1]] ];
+  return {
+    id: this.id,
+    tour: "DEMO",
+    tournament: this.seed.t,
+    round: this.seed.r,
+    ground: this.seed.g,
+    players: [
+      { name:this.seed.a, short:surname(this.seed.a), country:"", seed:null },
+      { name:this.seed.b, short:surname(this.seed.b), country:"", seed:null }
+    ],
+    sets: sets, tbs: tbs, point: pt,
+    firstServer: this.firstServer,
+    status: this.done ? "done" : "live",
+    statusText: this.done ? "終了" : "進行中",
+    startTs: this.startTs,
+    winner: -1
+  };
+};
+
+var demoOn = false, demoMatches = [];
+function useDemo(){
+  demoOn = true;
+  if(!demoMatches.length){
+    demoMatches = DEMO_SEEDS.map(function(s,i){
+      var d = new DemoMatch(s, i);
+      /* 実際の速報と同じく、途中から見はじめる状況を作る。
+         ここまでの局は順序が分からない扱いにし、本番と同じ見え方にする。 */
+      var n = 30 + Math.floor(Math.random() * 150);
+      for(var k=0; k<n && !d.done; k++){
+        var pServer = 0.62 * d.strength + 0.19;
+        d.point(Math.random() < pServer ? d.server : (1 - d.server));
+      }
+      return d;
+    });
+  }
+  chosen = { srcId:"demo", relayId:"demo" };
+  ingest(demoMatches.map(function(d){ return d.toMatch(); }));
+  renderSources();
+}
+function demoTick(){
+  if(!demoOn) return;
+  var now = Date.now(), moved = false;
+  demoMatches.forEach(function(d){ if(d.tick(now)) moved = true; });
+  if(moved) ingest(demoMatches.map(function(d){ return d.toMatch(); }));
+}
+
+/* ── 2. 台帳 ─────────────────────────────────────────────────
+   配信元は「セットごとのゲーム数」しか出さない。局が決まった順序も、
+   どちらがサーブしていたかも、そのままでは分からない。
+   そこで、こちらで見張って差分を取り、聴いている間の局を順に書き足す。
+   聴き始める前の分は順序が分からないので、セットごとにまとめた
+   「巻かれた分」として、区別のつく形で置いておく。
+   ─────────────────────────────────────────────────────────── */
+var logs = store.get("logs", {}) || {};
+
+function totalGames(sets){
+  var n = 0;
+  (sets||[]).forEach(function(s){ n += (s[0]||0) + (s[1]||0); });
+  return n;
+}
+
+/* 第一サーバが分かっていれば、消化ゲーム数の偶奇でいまのサーバが決まる */
+function serverAt(m, gameIndex){
+  if(m.firstServer !== 0 && m.firstServer !== 1) return -1;
+  return (m.firstServer + gameIndex) % 2;
+}
+function serverNow(m){
+  if(inTiebreak(m)) return -1;                 /* タイブレーク中は数え方が変わるので示さない */
+  return serverAt(m, totalGames(m.sets));
+}
+function inTiebreak(m){
+  var i = m.sets.length - 1;
+  if(i < 0) return false;
+  var s = m.sets[i];
+  return s[0] === 6 && s[1] === 6;
+}
+function setsWon(m){
+  var w = [0,0];
+  (m.sets||[]).forEach(function(s, i){
+    var last = (i === m.sets.length - 1);
+    var decided = (Math.max(s[0],s[1]) >= 6 && Math.abs(s[0]-s[1]) >= 2) || Math.max(s[0],s[1]) >= 7;
+    if(!last || m.status === "done"){ if(s[0] !== s[1]) w[ s[0] > s[1] ? 0 : 1 ]++; }
+    else if(decided){ w[ s[0] > s[1] ? 0 : 1 ]++; }
+  });
+  return w;
+}
+
+function updateLog(m){
+  var rec = logs[m.id];
+  if(!rec){
+    /* 初見。すでに済んだ分はセット単位の census として置く（順序は不明） */
+    rec = { games:[], seen:[] };
+    (m.sets||[]).forEach(function(s, si){
+      for(var i=0; i<(s[0]||0); i++) rec.games.push({ s:si, w:0, srv:-1, brk:null, pre:1 });
+      for(var j=0; j<(s[1]||0); j++) rec.games.push({ s:si, w:1, srv:-1, brk:null, pre:1 });
+    });
+    rec.seen = (m.sets||[]).map(function(s){ return [s[0]||0, s[1]||0]; });
+    logs[m.id] = rec;
+    return rec;
+  }
+  /* 前回との差だけを、順に書き足す */
+  (m.sets||[]).forEach(function(s, si){
+    var was = rec.seen[si] || [0,0];
+    var dh = (s[0]||0) - was[0], da = (s[1]||0) - was[1];
+    var add = [];
+    for(var i=0; i<dh; i++) add.push(0);
+    for(var j=0; j<da; j++) add.push(1);
+    add.forEach(function(w){
+      var idx = rec.games.length;
+      var srv = serverAt(m, idx);
+      rec.games.push({ s:si, w:w, srv:srv, brk:(srv < 0 ? null : (w !== srv ? 1 : 0)), pre:0 });
+    });
+  });
+  rec.seen = (m.sets||[]).map(function(s){ return [s[0]||0, s[1]||0]; });
+  return rec;
+}
+
+/* ブレークの回数。順序の分かっている局からしか数えない。 */
+function breakCount(m){
+  var rec = logs[m.id];
+  var out = [0,0];
+  if(!rec) return out;
+  rec.games.forEach(function(g){ if(g.brk) out[g.w]++; });
+  return out;
+}
+
+/* 直近の勢い。末尾いくつかの局の取り合いを −1〜+1 で返す。 */
+function momentum(m){
+  var rec = logs[m.id];
+  if(!rec || !rec.games.length) return 0;
+  var tail = rec.games.slice(-6), sum = 0, wsum = 0;
+  tail.forEach(function(g, i){
+    var w = i + 1;
+    sum += (g.w === 0 ? w : -w); wsum += w;
+  });
+  return wsum ? sum / wsum : 0;
+}
+
+/* ── 台帳への取り込み ────────────────────────────────────── */
+var matches = [], byId = {}, curId = store.get("cur", null), chosen = store.get("chosen", null);
+
+function ingest(list){
+  var live = [], rest = [];
+  (list||[]).forEach(function(m){
+    if(!m) return;
+    updateLog(m);
+    byId[m.id] = m;
+    (m.status === "live" ? live : rest).push(m);
+  });
+  /* 進行中を先に。同じ区分のなかでは、決着に近い試合ほど上に。 */
+  live.sort(function(a,b){ return tension(b) - tension(a); });
+  matches = live.concat(rest.filter(function(m){ return m.status === "done"; }));
+  if(!byId[curId]){
+    var fav = store.get("fav", null);
+    curId = (fav && byId[fav]) ? fav : (matches[0] ? matches[0].id : null);
+  }
+  trimLogs();
+  store.set("logs", logs);
+  renderAll();
+}
+
+/* 競り具合。セットを取り合っていて、いまのセットも近いほど大きい。 */
+function tension(m){
+  var w = setsWon(m), t = 0;
+  t += 3 - Math.abs(w[0] - w[1]);
+  var s = m.sets[m.sets.length-1];
+  if(s) t += 3 - Math.min(3, Math.abs(s[0] - s[1]));
+  if(inTiebreak(m)) t += 4;
+  return t;
+}
+
+/* 見なくなった試合の記録は溜めない */
+function trimLogs(){
+  var keys = Object.keys(logs);
+  if(keys.length <= 60) return;
+  keys.forEach(function(k){ if(!byId[k]) delete logs[k]; });
+}
+
+function cur(){ return byId[curId] || matches[0] || null; }
+
+/* ── 3. 面を描く ─────────────────────────────────────────────
+   3-1 いま：グリルと操作輪
+   ─────────────────────────────────────────────────────────── */
+var SVGNS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs){
+  var n = document.createElementNS(SVGNS, tag);
+  for(var k in attrs) if(attrs.hasOwnProperty(k)) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+/* グリルの点を、中心から外へ環状に並べる。一つの点が一つの局。 */
+var grilleDots = [];
+function buildGrille(){
+  var box = $("grille");
+  var s = svg("svg", { viewBox:"0 0 200 200", "aria-hidden":"true" });
+  var pitch = 12.6, rings = 7;
+  grilleDots = [];
+  for(var k=0; k<rings; k++){
+    var rad = k * 14;
+    var n = k === 0 ? 1 : Math.round(2 * Math.PI * rad / pitch);
+    for(var i=0; i<n; i++){
+      var ang = (-Math.PI/2) + (2 * Math.PI * i / n);
+      var c = svg("circle", {
+        cx:(100 + rad * Math.cos(ang)).toFixed(2),
+        cy:(100 + rad * Math.sin(ang)).toFixed(2),
+        r:"4.4", "class":"off"
+      });
+      s.appendChild(c);
+      grilleDots.push(c);
+    }
+  }
+  box.appendChild(s);
+}
+
+function paintGrille(m){
+  var rec = m ? logs[m.id] : null;
+  var games = rec ? rec.games : [];
+  var live = m && m.status === "live";
+  for(var i=0; i<grilleDots.length; i++){
+    var g = games[i];
+    var cls;
+    if(g) cls = (g.w === 0 ? "home" : "away");
+    else if(live && i === games.length) cls = "off live";   /* いま争っている局 */
+    else cls = "off";
+    if(grilleDots[i].getAttribute("class") !== cls) grilleDots[i].setAttribute("class", cls);
+  }
+}
+
+/* セットの並び。上が先手側、下が後手側。タイブレークは肩に小さく。 */
+function paintSets(box, m){
+  box.textContent = "";
+  if(!m) return;
+  var last = m.sets.length - 1;
+  m.sets.forEach(function(s, i){
+    var col = el("div", "setcol" + (i === last && m.status === "live" ? " cur" : ""));
+    var tb = m.tbs && m.tbs[i];
+    [0,1].forEach(function(side){
+      var b = el("b");
+      b.textContent = s[side];
+      if(tb && s[side] < s[1-side]){
+        var sup = el("sup"); sup.textContent = tb[side]; b.appendChild(sup);
+      }
+      if(i !== last && s[side] < s[1-side]) b.className = "lost";
+      col.appendChild(b);
+    });
+    var lab = el("i"); lab.textContent = "S" + (i+1);
+    col.appendChild(lab);
+    box.appendChild(col);
+  });
+}
+
+function paintWho(dotEl, nameEl, m, side){
+  if(!m){ nameEl.textContent = "—"; dotEl.className = "dot"; return; }
+  var p = m.players[side];
+  nameEl.textContent = "";
+  nameEl.appendChild(document.createTextNode(p.short || p.name));
+  if(p.country || p.seed){
+    var sd = el("span", "sd");
+    sd.textContent = (p.seed ? "[" + p.seed + "] " : "") + (p.country || "");
+    nameEl.appendChild(sd);
+  }
+  var srv = serverNow(m);
+  dotEl.className = "dot" + (srv === side && m.status === "live" ? " serving" : "");
+}
+
+function renderNow(){
+  var m = cur();
+  if(!m){
+    $("nowTitle").textContent = "進行中の試合なし";
+    $("nowSub").textContent = chosen ? "配信元に進行中の試合が並んでいません" : "情報源をさがしています";
+    $("hubPts").textContent = "–";
+    paintGrille(null);
+    return;
+  }
+  $("nowTitle").textContent = m.tournament;
+  $("nowSub").textContent = [m.tour !== "—" ? m.tour : "", m.round, m.ground].filter(Boolean).join(" · ") || "—";
+
+  paintGrille(m);
+  paintSets($("nowSets"), m);
+  paintWho($("srvA"), $("nameA"), m, 0);
+  paintWho($("srvB"), $("nameB"), m, 1);
+
+  /* 輪の中心：進行中はいまのポイント、終わっていればセットの取得数 */
+  var pts = $("hubPts"), cap = $("hubCap");
+  if(m.status === "live"){
+    pts.textContent = "";
+    pts.appendChild(document.createTextNode(m.point[0]));
+    var vs = el("span", "vs"); vs.textContent = "·"; pts.appendChild(vs);
+    pts.appendChild(document.createTextNode(m.point[1]));
+    cap.textContent = inTiebreak(m) ? "TIE BREAK" : "POINT";
+  }else{
+    var w = setsWon(m);
+    pts.textContent = w[0] + " · " + w[1];
+    cap.textContent = m.status === "done" ? "FINAL" : "SETS";
+  }
+
+  var n = matches.length, i = matches.indexOf(m);
+  var srcName = demoOn ? "デモ" : (chosen ? nameOfSource(chosen.srcId) : "—");
+  $("nowFoot").textContent =
+    (i >= 0 ? (i+1) + " / " + n : "—") + "   ·   " + srcName +
+    "   ·   " + (holding ? "更新 停止中" : "更新 " + (interval/1000) + "秒") +
+    (lastAt ? "   ·   " + pad2(new Date(lastAt).getHours()) + ":" + pad2(new Date(lastAt).getMinutes()) : "");
+
+  $("favIcon").style.opacity = (store.get("fav", null) === m.id) ? "1" : ".38";
+}
+
+function nameOfSource(id){
+  if(id === "demo") return "デモ";
+  for(var i=0;i<SOURCES.length;i++) if(SOURCES[i].id === id) return SOURCES[i].name;
+  return id || "—";
+}
+
+/* ── 3-2 デッキ：二つのリールと波形 ──────────────────────── */
+function buildReels(){
+  var box = $("reels");
+  box.textContent = "";
+  [0,1].forEach(function(side){
+    var d = el("div", "reel");
+    d.id = "reel" + side;
+    var s = svg("svg", { viewBox:"0 0 100 100", "aria-hidden":"true" });
+    s.appendChild(svg("circle", { "class":"plate", cx:50, cy:50, r:46 }));
+    /* テープの巻き量。内側の径を細らせて表すため、太い線の円で描く */
+    var tape = svg("circle", { "class":"tape", cx:50, cy:50, r:34, fill:"none",
+      stroke:"currentColor", "stroke-width":0 });
+    tape.setAttribute("id", "tape" + side);
+    s.appendChild(tape);
+    /* 三つの窓。回るのはこの群れだけ */
+    var g = svg("g", { "class":"spin" });
+    g.setAttribute("id", "spin" + side);
+    var C = 2 * Math.PI * 26;
+    g.appendChild(svg("circle", { cx:50, cy:50, r:26, fill:"none",
+      stroke:"currentColor", "stroke-width":13,
+      "stroke-dasharray":(C/3 - 7).toFixed(2) + " 7" }));
+    s.appendChild(g);
+    s.appendChild(svg("circle", { "class":"hubc", cx:50, cy:50, r:12.5 }));
+    var mark = svg("path", { "class":"mark", d:"M46 44l10 6-10 6z" });
+    mark.setAttribute("id", "mark" + side);
+    s.appendChild(mark);
+    d.appendChild(s);
+    box.appendChild(d);
+  });
+}
+
+/* 直近の局をどれだけ取れているか。リールの回る速さに使う。 */
+function recentShare(m, side){
+  var rec = logs[m.id];
+  if(!rec || !rec.games.length) return .5;
+  var tail = rec.games.slice(-8), n = 0;
+  tail.forEach(function(g){ if(g.w === side) n++; });
+  return n / tail.length;
+}
+
+function paintReels(m){
+  [0,1].forEach(function(side){
+    var reel = $("reel" + side), tape = $("tape" + side), spin = $("spin" + side), mark = $("mark" + side);
+    if(!m){ tape.setAttribute("stroke-width", 0); return; }
+    var g = totalGames(m.sets) || 1, mine = 0;
+    (m.sets||[]).forEach(function(s){ mine += s[side] || 0; });
+    var fill = clamp(mine / Math.max(g, 24), 0, 1);        /* 24局ぶんで満巻になる目盛り */
+    /* テープは縁に外から巻かれてゆく。三つの窓（内側）には掛からないようにする。 */
+    var outer = 45, inner = 43 - fill * 9;
+    tape.setAttribute("stroke-width", (outer - inner).toFixed(2));
+    tape.setAttribute("r", ((outer + inner) / 2).toFixed(2));
+
+    var share = recentShare(m, side);
+    var dur = m.status === "live" ? clamp(11 - share * 8, 2.6, 13) : 0;
+    if(dur){ spin.style.animationDuration = dur.toFixed(1) + "s"; spin.style.animationPlayState = "running"; }
+    else spin.style.animationPlayState = "paused";
+
+    var srv = serverNow(m);
+    reel.className = "reel" + (srv === side && m.status === "live" ? " serving" : "");
+    /* サーブ側は ▶、そうでなければ ■ */
+    mark.setAttribute("d", (srv === side && m.status === "live")
+      ? "M46 44l10 6-10 6z" : "M46 45h8v10h-8z");
+  });
+}
+
+function paintWave(m){
+  var box = $("wave");
+  box.textContent = "";
+  var rec = m ? logs[m.id] : null;
+  var games = rec ? rec.games.slice() : [];
+  var n = Math.max(games.length + 1, 24);
+  var W = n * 4, H = 78, MID = H/2;
+
+  var s = svg("svg", { viewBox:"0 0 " + W + " " + H, preserveAspectRatio:"none", "aria-hidden":"true" });
+  var mid = svg("line", { "class":"mid", x1:0, y1:MID, x2:W, y2:MID });
+  s.appendChild(mid);
+
+  /* セットの切れ目に細い縦線を入れる。巻かれた分でも構造が読めるように。 */
+  var seen = -1;
+  games.forEach(function(g, i){
+    if(g.s !== seen && i > 0){
+      s.appendChild(svg("line", { "class":"tick", x1:(i*4 - 0.8).toFixed(2), y1:8,
+                                  x2:(i*4 - 0.8).toFixed(2), y2:H-8 }));
+    }
+    seen = g.s;
+    var h = g.pre ? 13 : (g.brk ? 32 : 19);
+    var up = (g.w === 0);
+    var r = svg("rect", {
+      x:(i*4).toFixed(2), width:2.4,
+      y:(up ? MID - h : MID).toFixed(2), height:h.toFixed(2), rx:1.2
+    });
+    var cls = up ? "" : "away";
+    if(g.pre) cls += " pre";
+    else if(g.brk) cls = "brk" + (up ? "" : " down");
+    r.setAttribute("class", cls.trim());
+    s.appendChild(r);
+  });
+
+  if(m && m.status === "live"){
+    var x = games.length * 4 + 1.2;
+    s.appendChild(svg("line", { "class":"head", x1:x, y1:6, x2:x, y2:H-6 }));
+  }
+  box.appendChild(s);
+}
+
+function paintMeters(m){
+  var box = $("meters");
+  box.textContent = "";
+  if(!m) return;
+  var br = breakCount(m);
+  var gm = [0,0];
+  (m.sets||[]).forEach(function(s){ gm[0] += s[0]||0; gm[1] += s[1]||0; });
+
+  function meter(cap, a, b, hint){
+    var d = el("div", "meter");
+    var v = el("div", "val");
+    v.appendChild(document.createTextNode(a + " · " + b));
+    if(hint){ var sm = el("small"); sm.textContent = hint; v.appendChild(sm); }
+    var c = el("div", "cap"); c.textContent = cap;
+    var bar = el("div", "bar"), sp = el("span");
+    sp.style.width = ((a + b) ? (a/(a+b)*100) : 50).toFixed(1) + "%";
+    bar.appendChild(sp);
+    d.appendChild(v); d.appendChild(c); d.appendChild(bar);
+    return d;
+  }
+  box.appendChild(meter("Games — 獲得ゲーム", gm[0], gm[1], ""));
+  box.appendChild(meter("Breaks — ブレーク", br[0], br[1], ""));
+}
+
+function paintBands(m){
+  var box = $("bands");
+  box.textContent = "";
+  if(!m) return;
+  var last = m.sets.length - 1;
+  m.sets.forEach(function(st, i){
+    var row = el("div", "bandrow" + (i === last && m.status === "live" ? " cur" : ""));
+    var lb = el("span", "lb"); lb.textContent = "S" + (i+1);
+    var tr = el("span", "tr");
+    var tot = (st[0] + st[1]) || 1;
+    var a = el("span", "a"); a.style.width = (st[0] / tot * 100).toFixed(1) + "%";
+    var b = el("span", "b"); b.style.width = (st[1] / tot * 100).toFixed(1) + "%";
+    tr.appendChild(a); tr.appendChild(b);
+    var sc = el("span", "sc");
+    var tb = m.tbs && m.tbs[i];
+    sc.textContent = st[0] + "–" + st[1] + (tb ? "(" + Math.min(tb[0], tb[1]) + ")" : "");
+    row.appendChild(lb); row.appendChild(tr); row.appendChild(sc);
+    box.appendChild(row);
+  });
+}
+
+function renderDeck(){
+  var m = cur();
+  if(!m){
+    $("deckTitle").textContent = "デッキ";
+    $("deckSub").textContent = "試合が選ばれていません";
+    paintWave(null); paintReels(null); paintBands(null);
+    return;
+  }
+  $("deckTitle").textContent = m.players[0].short + " — " + m.players[1].short;
+  $("deckSub").textContent = [m.tournament, m.round].filter(Boolean).join(" · ");
+
+  paintReels(m);
+  paintWave(m);
+  paintMeters(m);
+  paintBands(m);
+  paintSets($("deckSets"), m);
+  paintWho($("dSrvA"), $("dNameA"), m, 0);
+  paintWho($("dSrvB"), $("dNameB"), m, 1);
+
+  var el0 = m.startTs ? (Date.now() - m.startTs) / 1000 : null;
+  $("tlLeft").textContent = m.status === "soon" ? "開始前" : hhmm(el0);
+  $("tlMid").textContent = "SET " + Math.max(1, m.sets.length) + (inTiebreak(m) ? " · TB" : "");
+  $("tlRight").textContent = totalGames(m.sets) + " GAMES";
+
+  var rec = logs[m.id];
+  var pre = rec ? rec.games.filter(function(g){ return g.pre; }).length : 0;
+  $("deckNote").textContent = pre
+    ? ("波形は一本が一ゲーム。上が " + m.players[0].short + "、下が " + m.players[1].short +
+       "。開いてから決まった局は、ブレークを高く赤で示す。開く前の " + pre +
+       " 局は順序が配信元から得られないため、薄く均した形で置いてある。")
+    : "波形は一本が一ゲーム。上が " + m.players[0].short + "、下が " + m.players[1].short +
+      "。ブレークは高く赤で示す。";
+}
+
+/* ── 3-3 選局：試合の一覧と、情報源の設定 ────────────────── */
+function scoreLine(m){
+  var out = [];
+  m.sets.forEach(function(s, i){
+    var tb = m.tbs && m.tbs[i];
+    var t = s[0] + "-" + s[1];
+    if(tb) t += "(" + Math.min(tb[0], tb[1]) + ")";
+    out.push(t);
+  });
+  return out.join(" ") || "—";
+}
+
+function renderList(){
+  var box = $("list");
+  box.textContent = "";
+  if(!matches.length){
+    var p = el("p", "note");
+    p.textContent = chosen ? "いま進行中の試合が見つかりません。時間帯によっては空になります。"
+                           : "情報源をさがしています…";
+    box.appendChild(p);
+    return;
+  }
+  matches.slice(0, 40).forEach(function(m, i){
+    var b = el("button", "track" + (m.id === curId ? " cur" : ""));
+    b.type = "button";
+
+    var no = el("span", "no");
+    no.textContent = m.status === "live" ? String(i+1) : "▪";
+    b.appendChild(no);
+
+    var body = el("div", "body");
+    var srv = serverNow(m);
+    [0,1].forEach(function(side){
+      var ln = el("div", "ln");
+      var dot = el("span", "srv" + (srv === side && m.status === "live" ? "" : " off"));
+      var nm = el("span", "nm" + (m.status === "done" && m.winner === (1-side) ? " dim" : ""));
+      nm.textContent = m.players[side].short;
+      var sc = el("span", "sc");
+      sc.textContent = m.sets.map(function(s){ return s[side]; }).join(" ") || "–";
+      if(m.status === "live") sc.textContent += "  " + m.point[side];
+      ln.appendChild(dot); ln.appendChild(nm); ln.appendChild(sc);
+      body.appendChild(ln);
+    });
+    var meta = el("div", "meta");
+    meta.textContent = [ m.tour !== "—" ? m.tour : "", m.tournament, m.round,
+                         m.status === "done" ? "終了" : "" ].filter(Boolean).join(" · ");
+    body.appendChild(meta);
+    b.appendChild(body);
+
+    b.addEventListener("click", function(){
+      curId = m.id; store.set("cur", curId);
+      renderAll();
+      goPane(0);
+    });
+    box.appendChild(b);
+  });
+}
+
+function renderSources(){
+  var box = $("srcList");
+  if(!box) return;
+  box.textContent = "";
+
+  function row(id, name, note, st, onPick){
+    var b = el("button", "srcrow" + (chosen && chosen.srcId === id ? " on" : ""));
+    b.type = "button";
+    var led = el("span", "led " + (st.state || ""));
+    var body = el("div", "body");
+    var nm = el("div", "nm"); nm.textContent = name;
+    var mt = el("div", "meta");
+    if(st.state === "busy") mt.textContent = "確認中…";
+    else if(st.state === "ok") mt.textContent = note + " — 進行中 " + st.count + " 試合" +
+      (st.relay && st.relay.id !== "direct" ? "（" + st.relay.name + "）" : "");
+    else if(st.state === "no") mt.textContent = st.err || "届きません";
+    else mt.textContent = note;
+    body.appendChild(nm); body.appendChild(mt);
+    var pick = el("span", "pick");
+    pick.textContent = (chosen && chosen.srcId === id) ? "使用中"
+                     : (st.state === "ok" || id === "demo") ? "選ぶ" : "";
+    b.appendChild(led); b.appendChild(body); b.appendChild(pick);
+    if(onPick) b.addEventListener("click", onPick);
+    box.appendChild(b);
+  }
+
+  SOURCES.forEach(function(src){
+    var st = probeState[src.id] || { state:"" };
+    row(src.id, src.name, src.note, st, function(){
+      if(st.state !== "ok") { probeSource(src).then(function(r){ if(r) pick(r.src, r.relay, r.list); }); return; }
+      /* すでに通っている経路で選び直す */
+      demoOn = false;
+      chosen = { srcId:src.id, relayId:st.relay.id };
+      store.set("chosen", chosen);
+      pull(true);
+    });
+  });
+
+  row("demo", "デモの試合", "実在の試合ではありません",
+      { state: demoOn ? "ok" : "no", count: demoMatches.length }, function(){ useDemo(); });
+
+  $("dialSub").textContent = demoOn
+    ? "デモ · " + matches.length + " 試合"
+    : (chosen ? nameOfSource(chosen.srcId) + " · 進行中 " +
+        matches.filter(function(m){ return m.status==="live"; }).length + " 試合" : "—");
+}
+
+function pick(src, relay, list){
+  demoOn = false;
+  chosen = { srcId:src.id, relayId:relay.id };
+  store.set("chosen", chosen);
+  ingest(list);
+  renderSources();
+}
+
+var INTERVALS = [ 10000, 20000, 60000 ];
+var interval = store.get("interval", 20000);
+function renderIntervals(){
+  var box = $("ivList");
+  box.textContent = "";
+  INTERVALS.forEach(function(ms){
+    var b = el("button", "srcrow" + (interval === ms ? " on" : ""));
+    b.type = "button";
+    var led = el("span", "led " + (interval === ms ? "ok" : "no"));
+    var body = el("div", "body");
+    var nm = el("div", "nm"); nm.textContent = (ms/1000) + " 秒ごと";
+    var mt = el("div", "meta");
+    mt.textContent = ms === 10000 ? "いちばん早いが、通信も電池もいちばん使う"
+                   : ms === 20000 ? "ふだんはこれで足りる"
+                   : "電池を使わない。ながら見に";
+    body.appendChild(nm); body.appendChild(mt);
+    b.appendChild(led); b.appendChild(body);
+    b.addEventListener("click", function(){
+      interval = ms; store.set("interval", ms);
+      renderIntervals(); restartTimer();
+    });
+    box.appendChild(b);
+  });
+}
+
+function renderAll(){ renderNow(); renderDeck(); renderList(); renderSources(); }
+
+/* ── 4. 動かす ───────────────────────────────────────────────
+   取りに行く・止める・面を送る
+   ─────────────────────────────────────────────────────────── */
+var holding = false, lastAt = 0, timer = null, pulling = false, misses = 0;
+
+function srcById(id){
+  for(var i=0;i<SOURCES.length;i++) if(SOURCES[i].id === id) return SOURCES[i];
+  return null;
+}
+function relayById(id){
+  for(var i=0;i<RELAYS.length;i++) if(RELAYS[i].id === id) return RELAYS[i];
+  return RELAYS[0];
+}
+
+function pull(force){
+  if(demoOn){ demoTick(); return Promise.resolve(); }
+  if(pulling || (holding && !force)) return Promise.resolve();
+  if(!chosen) return Promise.resolve();
+  var src = srcById(chosen.srcId);
+  if(!src) return Promise.resolve();
+  pulling = true;
+  return fetchJSON(relayById(chosen.relayId).wrap(src.url), 12000).then(function(j){
+    pulling = false; misses = 0; lastAt = Date.now();
+    ingest((src.parse(j) || []).filter(Boolean));
+  }).catch(function(){
+    pulling = false;
+    misses++;
+    /* 三度続けて取れなければ、経路を選び直す */
+    if(misses >= 3){ misses = 0; probeAll(); }
+    renderNow();
+  });
+}
+
+function restartTimer(){
+  if(timer) clearInterval(timer);
+  timer = setInterval(function(){
+    if(document.hidden || holding) return;
+    if(demoOn) demoTick(); else pull(false);
+  }, demoOn ? 1000 : interval);
+}
+
+/* ── 面を送る ─────────────────────────────────────────────── */
+function goPane(i){
+  var strip = $("strip");
+  strip.scrollTo({ left: i * strip.clientWidth, behavior:"smooth" });
+}
+function paneIndex(){
+  var strip = $("strip");
+  return Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
+}
+$("strip").addEventListener("scroll", function(){
+  var i = clamp(paneIndex(), 0, 2);
+  var dots = $("rail").children;
+  for(var k=0;k<dots.length;k++) dots[k].className = (k === i ? "on" : "");
+}, { passive:true });
+
+/* ── 操作輪 ───────────────────────────────────────────────── */
+function step(dir){
+  if(!matches.length) return;
+  var i = matches.indexOf(cur());
+  if(i < 0) i = 0;
+  i = (i + dir + matches.length) % matches.length;
+  curId = matches[i].id;
+  store.set("cur", curId);
+  renderAll();
+}
+$("keyPrev").addEventListener("click", function(){ step(-1); });
+$("keyNext").addEventListener("click", function(){ step(1); });
+$("keyDeck").addEventListener("click", function(){ goPane(1); });
+$("toDial").addEventListener("click", function(){ goPane(2); });
+$("toNow").addEventListener("click", function(){ goPane(0); });
+$("toNow2").addEventListener("click", function(){ goPane(0); });
+
+$("keyHold").addEventListener("click", function(){
+  holding = !holding;
+  $("keyHold").className = "key up" + (holding ? " on" : "");
+  /* 止めているあいだは ▶、動いているあいだは ⏸ を出す */
+  $("keyHoldIcon").innerHTML = holding
+    ? '<path d="M8 5l11 7-11 7z"/>'
+    : '<path d="M8 5h3v14H8zM13 5h3v14h-3z"/>';
+  renderNow();
+});
+
+/* 輪の中心を押すと、いますぐ取りに行く */
+$("hub").addEventListener("click", function(){
+  if(demoOn){ demoTick(); return; }
+  $("hubCap").textContent = "…";
+  pull(true).then(function(){ renderNow(); });
+});
+
+/* 左下の鍵：いちばん競っている試合へ跳ぶ */
+$("cornerSets").addEventListener("click", function(){
+  var live = matches.filter(function(m){ return m.status === "live"; });
+  if(!live.length) return;
+  live.sort(function(a,b){ return tension(b) - tension(a); });
+  curId = live[0].id; store.set("cur", curId);
+  renderAll();
+});
+
+/* 右下の鍵：この試合を覚えておく（次に開いたときここから始める） */
+$("cornerFav").addEventListener("click", function(){
+  var m = cur();
+  if(!m) return;
+  var fav = store.get("fav", null);
+  store.set("fav", fav === m.id ? null : m.id);
+  renderNow();
+});
+
+$("btnProbe").addEventListener("click", function(){ probeAll(); });
+
+/* 画面に戻ってきたら、まず一度取りに行く */
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && !holding){ if(demoOn) demoTick(); else pull(false); }
+});
+
+/* ── 起動 ─────────────────────────────────────────────────── */
+buildGrille();
+buildReels();
+renderIntervals();
+renderAll();
+
+if(chosen && chosen.srcId === "demo"){
+  useDemo();
+}else if(chosen && srcById(chosen.srcId)){
+  /* 前に通った経路をまず試す。だめならあらためて全部さがす。 */
+  $("srcNote").textContent = "前回つながった経路をためしています…";
+  probeState[chosen.srcId] = { state:"busy", count:0, relay:relayById(chosen.relayId) };
+  renderSources();
+  pull(true).then(function(){
+    if(!matches.length && !lastAt) probeAll();
+    else{
+      probeState[chosen.srcId] = { state:"ok", relay:relayById(chosen.relayId),
+        count: matches.filter(function(m){ return m.status==="live"; }).length };
+      $("srcNote").textContent = nameOfSource(chosen.srcId) + " につながっています。";
+      renderSources();
+    }
+  });
+}else{
+  probeAll();
+}
+restartTimer();
+
+/* デモは自前で刻むので、専用の短い拍を持たせる */
+setInterval(function(){ if(!document.hidden && !holding) demoTick(); }, 1000);
+
+/* Service Worker。オフラインでも器だけは開くようにする。 */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+
+})();
+</script>
+</body>
+</html>

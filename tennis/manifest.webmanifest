@@ -1,0 +1,19 @@
+{
+  "name": "速報 — テニスをオーディオ機器として聴く",
+  "short_name": "速報",
+  "description": "進行中のテニスの試合を、一台のオーディオ機器の面として見る。局はスピーカーのグリルを中心から埋め、試合はテープの波形になる。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "categories": ["sports", "news", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
