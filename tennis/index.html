@@ -731,7 +731,15 @@ var SOURCES = [
     note: "ATP・WTA・チャレンジャー・ITF",
     url: SOFA + "/sport/tennis/events/live",
     day: function(d){ return SOFA + "/sport/tennis/scheduled-events/" + d; },
-    search: function(q){ return SOFA + "/search/all?q=" + encodeURIComponent(q) + "&page=0"; },
+    search: function(q){
+      var e = encodeURIComponent(q);
+      return [                                   /* 上から順に当てる */
+        SOFA + "/search/all?q=" + e + "&page=0",
+        SOFA + "/search/all/?q=" + e + "&page=0",
+        SOFA + "/search/teams?q=" + e + "&page=0",
+        SOFA + "/search/player-teams?q=" + e + "&page=0"
+      ];
+    },
     history: function(id){ return SOFA + "/team/" + id + "/events/last/0"; },
     profile: function(id){ return SOFA + "/team/" + id; },
     parse:        function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
@@ -763,19 +771,32 @@ var SOURCES = [
 /* SofaScore の検索。テニスでは選手も「チーム」として返るので、
    競技がテニスのものだけを拾う。 */
 function sofaSearch(j){
-  var rows = (j && (j.results || j.teams)) || [];
-  var out = [];
+  /* 包み方は一つに決まっていない。考えられる置き場所をすべて見る。 */
+  var rows = [];
+  if(Array.isArray(j)) rows = j;
+  else if(j) rows = j.results || j.teams || j.players || j.playerTeams || [];
+  if(!Array.isArray(rows)) rows = [];
+
+  var out = [], seen = {};
   rows.forEach(function(r){
-    var e = r.entity || r;
+    if(!r) return;
+    var e = r.entity || r.team || r.player || r;
+    if(!e || e.id == null || !e.name) return;
+    /* 競技が読めるならテニスに限る。読めない包みのときは、
+       種別で弾いてから通す（大会やニュースを混ぜないため）。 */
+    var sport = e.sport && (e.sport.slug || e.sport.name);
+    if(sport && String(sport).toLowerCase() !== "tennis") return;
     var type = r.type || (e.sport ? "team" : "");
-    if(type !== "team" && type !== "player") return;
-    if(!e || !e.sport || e.sport.slug !== "tennis") return;
+    if(type && type !== "team" && type !== "player" && type !== "playerTeam") return;
+    if(!sport && !r.type) return;                /* 何の entity か分からないものは採らない */
+    if(seen[e.id]) return;
+    seen[e.id] = 1;
     out.push({
       id: e.id,
       name: e.name || "—",
       short: e.shortName || surname(e.name),
       country: (e.country && (e.country.alpha3 || e.country.alpha2 || e.country.name)) || "",
-      rank: (e.ranking != null) ? e.ranking : null,
+      rank: (e.ranking != null) ? e.ranking : (e.rank != null ? e.rank : null),
       gender: e.gender || ""
     });
   });
@@ -1893,14 +1914,51 @@ function renderIntervals(){
    ときは、その旨を出して機能を伏せる。
    ─────────────────────────────────────────────────────────── */
 function activeSource(){ return chosen ? srcById(chosen.srcId) : null; }
+
+/* 例外を、画面に出せる短い言葉に直す。何が起きたか分からないまま
+   「失敗しました」とだけ出すと、次に直しようがない。 */
+function reasonOf(err){
+  var m = err && err.message ? String(err.message) : "";
+  if(!m) return "理由不明";
+  if(/^HTTP 4\d\d/.test(m)) return m + " — 配信元に断られた";
+  if(/^HTTP 5\d\d/.test(m)) return m + " — 配信元の不調";
+  if(/^HTTP/.test(m)) return m;
+  if(/abort/i.test(m)) return "時間切れ";
+  if(/JSON|Unexpected token/i.test(m)) return "応答の形が読めない";
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "届かない（CORS か回線）";
+  return m.slice(0, 40);
+}
 function canSearch(){ var s = activeSource(); return !!(s && s.search && s.history); }
 
-function askSource(urlFn, arg, parse){
+/* 口は一つとは限らない。配列で返ってきたら、実りのあるものが出るまで
+   上から順に当てる。全部だめなら、最後の理由を添えて投げ返す。 */
+function askSource(urlFn, arg, parse, wantRows){
   var src = activeSource();
-  if(!src || !urlFn) return Promise.reject(new Error("no source"));
-  return fetchJSON(relayById(chosen.relayId).wrap(urlFn.call(src, arg)), 12000).then(function(j){
-    return parse.call(src, j);
-  });
+  if(!src || !urlFn) return Promise.reject(new Error("配信元がありません"));
+  var got = urlFn.call(src, arg);
+  var urls = Array.isArray(got) ? got.slice() : [got];
+  var relay = relayById(chosen.relayId);
+  var lastErr = null, i = 0;
+
+  function step(){
+    if(i >= urls.length){
+      return Promise.reject(lastErr || new Error("どの経路でも読めませんでした"));
+    }
+    var u = urls[i++];
+    return fetchJSON(relay.wrap(u), 12000).then(function(j){
+      var rows = parse.call(src, j);
+      /* 中身が空でも、まだ試す口が残っていれば次を当てる */
+      if(wantRows && (!rows || !rows.length) && i < urls.length){
+        lastErr = new Error("空の応答");
+        return step();
+      }
+      return rows;
+    }).catch(function(err){
+      lastErr = err;
+      return step();
+    });
+  }
+  return step();
 }
 
 var qTimer = null, qSeq = 0;
@@ -1931,7 +1989,7 @@ function runSearch(q){
   var l = el("div", "loading"); l.textContent = "さがしています…";
   box.appendChild(l);
 
-  askSource(activeSource().search, q, activeSource().parseSearch).then(function(rows){
+  askSource(activeSource().search, q, activeSource().parseSearch, true).then(function(rows){
     if(seq !== qSeq) return;                     /* 打っている途中の古い結果は捨てる */
     box.textContent = "";
     if(!rows.length){ $("qNote").textContent = "「" + q + "」に当たる選手が見つかりませんでした。"; return; }
@@ -1939,10 +1997,12 @@ function runSearch(q){
     rows.slice(0, 20).forEach(function(p){
       box.appendChild(playerRow(p));
     });
-  }).catch(function(){
+  }).catch(function(err){
     if(seq !== qSeq) return;
     box.textContent = "";
-    $("qNote").textContent = "検索が届きませんでした。回線か中継の具合かもしれません。もう一度お試しください。";
+    /* 何が起きたかを残す。次に直すとき、これが手がかりになる。 */
+    $("qNote").textContent = "検索が届きませんでした（" + reasonOf(err) + "）。"
+      + "回線か中継の具合かもしれません。もう一度お試しください。";
   });
 }
 
@@ -2059,8 +2119,8 @@ function openPlayer(p){
     list.sort(function(a,b){ return (b.startTs||0) - (a.startTs||0); });
     l.remove();
     paintPlayer(body, p, list.slice(0, 14));
-  }).catch(function(){
-    l.textContent = "直近の試合が取れませんでした。";
+  }).catch(function(err){
+    l.textContent = "直近の試合が取れませんでした（" + reasonOf(err) + "）。";
   });
 }
 
@@ -2166,7 +2226,7 @@ function openPlayerByName(name){
   var src = activeSource();
   /* ダブルスの組は一人の選手としては引けない。組の先頭で当たる。 */
   var one = String(name).split("/")[0].trim();
-  askSource(src.search, surname(one) || one, src.parseSearch).then(function(rows){
+  askSource(src.search, surname(one) || one, src.parseSearch, true).then(function(rows){
     var lower = one.toLowerCase();
     var hit = rows.filter(function(r){
       var n = String(r.name).toLowerCase();
