@@ -406,6 +406,65 @@
   .tap{ cursor:pointer; }
   .tap:active{ opacity:.55; }
 
+  /* ── 顔 ───────────────────────────────────── */
+  .face{
+    position:relative; flex:0 0 auto; border-radius:50%; overflow:hidden;
+    background:var(--soft); width:34px; height:34px;
+  }
+  /* 写真は丸いっぱいに重ねる。grid で並べると頭文字と上下に割れる。 */
+  .face img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  /* 写真が来ないときは、下に敷いた頭文字がそのまま見える */
+  .face .ini{
+    position:absolute; inset:0; display:grid; place-items:center;
+    font-size:12px; font-weight:800; letter-spacing:.02em; opacity:.55;
+  }
+  .face.lg{ width:64px; height:64px; }
+  .face.lg .ini{ font-size:22px; }
+  .face.sm{ width:26px; height:26px; }
+  .face.sm .ini{ font-size:10px; }
+
+  /* ── 計器盤（試合の詳細な数字） ───────────── */
+  .opener{
+    display:flex; align-items:center; gap:10px; width:100%;
+    margin-top:11px; padding:11px 13px; border-radius:12px;
+    border:1.3px solid var(--rule); text-align:left;
+  }
+  .opener:active{ background:var(--soft); }
+  .opener .lb{ flex:1 1 auto; font-size:13px; font-weight:700; }
+  .opener .hint{ font-family:var(--mono); font-size:9px; letter-spacing:.13em; color:var(--ghost); }
+  .opener .arw{ font-size:15px; opacity:.45; }
+
+  .panelhead{
+    display:flex; align-items:center; gap:12px; margin-top:4px;
+  }
+  .panelhead .side{ flex:1 1 0; min-width:0; display:flex; align-items:center; gap:9px; }
+  .panelhead .side.r{ flex-direction:row-reverse; text-align:right; }
+  .panelhead .nm2{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:800;
+                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .panelhead .mid{ flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ghost); }
+
+  .sect{ margin:20px 0 4px; font-family:var(--mono); font-size:9px; letter-spacing:.17em;
+         text-transform:uppercase; color:var(--ghost); font-weight:600; }
+
+  /* 一項目＝二者を左右に振った水準計 */
+  .lvl{ padding:9px 0 10px; border-top:1px solid var(--rule); }
+  .lvl .top2{ display:flex; align-items:baseline; gap:8px; }
+  .lvl .v{ font-size:14px; font-weight:800; letter-spacing:-.01em; flex:0 0 auto; }
+  .lvl .cap2{ flex:1 1 auto; text-align:center; font-size:10.5px; color:var(--ghost);
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lvl .tr2{ display:flex; height:7px; border-radius:4px; overflow:hidden; margin-top:7px; background:var(--soft); }
+  .lvl .tr2 span{ display:block; height:100%; transition:width .45s ease; }
+  .lvl .tr2 .a2{ background:var(--ink); }
+  .lvl .tr2 .b2{ background:rgba(16,16,16,.24); }
+
+  /* 狭い画面では、項目名を値の上の行に送る。三つを一行に並べると窮屈になる。 */
+  @media (max-width: 372px){
+    .lvl .top2{ flex-wrap:wrap; }
+    .lvl .cap2{ order:-1; flex:1 0 100%; text-align:left; margin-bottom:4px; }
+    .lvl .va{ flex:1 1 0; text-align:left; }
+    .lvl .vb{ flex:1 1 0; text-align:right; }
+  }
+
   /* ── 下の帯（面の位置） ───────────────────── */
   .rail{
     flex:0 0 auto; display:flex; justify-content:center; gap:7px;
@@ -531,6 +590,12 @@
 
       <div class="meters" id="meters"></div>
       <div class="bands" id="bands"></div>
+
+      <button class="opener" id="openStats" type="button">
+        <span class="lb">計器盤</span>
+        <span class="hint">ACES · SERVE · POINTS</span>
+        <span class="arw">▸</span>
+      </button>
 
       <div class="spacer"></div>
       <p class="note" id="deckNote">波形は一本が一ゲーム。上が上段の選手、下が下段の選手。丈はその局の競り具合を示す。</p>
@@ -742,11 +807,15 @@ var SOURCES = [
     },
     history: function(id){ return SOFA + "/team/" + id + "/events/last/0"; },
     profile: function(id){ return SOFA + "/team/" + id; },
+    /* 画像は <img> で読む。画素に触らない限り CORS を要さないので、中継を通さない。 */
+    image:   function(id){ return SOFA + "/team/" + id + "/image"; },
+    stats:   function(raw){ return SOFA + "/event/" + raw + "/statistics"; },
     parse:        function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
     parseDay:     function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
     parseSearch:  sofaSearch,
     parseHistory: function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
-    parseProfile: sofaProfile
+    parseProfile: sofaProfile,
+    parseStats:   sofaStats
   },
   {
     id: "espn-atp",
@@ -803,6 +872,96 @@ function sofaSearch(j){
   return out;
 }
 
+/* ── 試合の詳細な数字 ────────────────────────────────────────
+   配信元は項目を英語名と鍵で返すが、その綴りは版によって揺れる。
+   鍵と名前の両方に当て、拾えたものだけを出す。当たらなかった項目も
+   捨てずに「その他」に残す（こちらの当て方が古いだけかもしれない）。
+   ─────────────────────────────────────────────────────────── */
+var STAT_SPECS = [
+  { id:"aces", ja:"エース",                   sec:"serve",  re:[/^aces?$/, /^ace$/] },
+  { id:"df",   ja:"ダブルフォルト",            sec:"serve",  re:[/double\s*faults?/] },
+  { id:"fsw",  ja:"ファーストサーブ得点率",     sec:"serve",  re:[/(1st|first)\s*serve\s*points?\s*won/] },
+  { id:"ssw",  ja:"セカンドサーブ得点率",       sec:"serve",  re:[/(2nd|second)\s*serve\s*points?\s*won/] },
+  { id:"fs",   ja:"ファーストサーブ率",         sec:"serve",  re:[/(1st|first)\s*serve(\s*percentage)?$/, /^first\s*serve$/] },
+  { id:"spw",  ja:"サービスポイント率",         sec:"serve",  re:[/service\s*points?\s*won/, /^serve\s*points?\s*won/] },
+  { id:"sgw",  ja:"サービスゲーム獲得数",       sec:"serve",  re:[/service\s*games?\s*won/] },
+  { id:"bps",  ja:"ブレイクポイントを凌いだ数", sec:"serve",  re:[/break\s*points?\s*saved/] },
+
+  { id:"bp",   ja:"ブレイクポイント",           sec:"return", re:[/break\s*points?\s*(converted|won|scored)/, /^break\s*points?$/] },
+  { id:"rpw",  ja:"リターンゲーム得点数",       sec:"return", re:[/receiver\s*points?\s*won/, /return(ing)?\s*(games?\s*)?points?\s*won/] },
+  { id:"rgw",  ja:"リターンゲーム獲得数",       sec:"return", re:[/return(ing)?\s*games?\s*won/, /receiver\s*games?\s*won/] },
+
+  { id:"tb",   ja:"タイブレイク勝利数",         sec:"total",  re:[/tie\s*-?\s*breaks?(\s*won)?/] },
+  { id:"tpw",  ja:"ポイント獲得数",             sec:"total",  re:[/total\s*points?\s*won/, /^points?\s*won$/] },
+  { id:"gw",   ja:"ゲーム獲得数",               sec:"total",  re:[/total\s*games?\s*won/, /^games?\s*won$/] },
+  { id:"mpr",  ja:"連続獲得ポイント数",         sec:"total",  re:[/max(imum)?\s*points?\s*in\s*a\s*row/, /points?\s*in\s*a\s*row/] },
+  { id:"mgr",  ja:"連続獲得ゲーム数",           sec:"total",  re:[/max(imum)?\s*games?\s*in\s*a\s*row/, /games?\s*in\s*a\s*row/] }
+];
+
+/* 表示は "23/40 (58%)" のような文字列で来る。棒の長さに使う数を取り出す。 */
+function statNum(item, side){
+  var v = item[side + "Value"];
+  if(typeof v === "number" && isFinite(v)) return v;
+  var t = String(item[side] == null ? "" : item[side]);
+  var pct = t.match(/(\d+(?:\.\d+)?)\s*%/);
+  if(pct) return parseFloat(pct[1]);
+  var n = t.match(/-?\d+(?:\.\d+)?/);
+  return n ? parseFloat(n[0]) : 0;
+}
+
+function sofaStats(j){
+  var periods = (j && j.statistics) || [];
+  if(!Array.isArray(periods) || !periods.length) return { rows:[], other:[] };
+  /* 試合ぜんぶの数字を使う。無ければ最初の期間で代える。 */
+  var all = periods.filter(function(p){ return p && p.period === "ALL"; })[0] || periods[0];
+  var items = [];
+  ((all && all.groups) || []).forEach(function(g){
+    ((g && g.statisticsItems) || []).forEach(function(it){
+      if(it && (it.name || it.key)) items.push(it);
+    });
+  });
+
+  var used = {}, rows = [];
+  STAT_SPECS.forEach(function(spec){
+    for(var i=0; i<items.length; i++){
+      if(used[i]) continue;
+      var it = items[i];
+      /* 鍵と名前は別々に当てる。連結すると "aces Aces" のようになり、
+         前後を締めた当て方（^…$）がことごとく外れる。 */
+      var hays = [ it.key, it.name ].filter(Boolean).map(function(x){
+        return String(x).replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+                        .replace(/[_\-]+/g, " ")
+                        .replace(/\s+/g, " ").trim().toLowerCase();
+      });
+      var hitted = hays.some(function(h){
+        return spec.re.some(function(r){ return r.test(h); });
+      });
+      if(!hitted) continue;
+      used[i] = 1;
+      rows.push({
+        id: spec.id, ja: spec.ja, sec: spec.sec, name: it.name || spec.ja,
+        home: it.home != null ? String(it.home) : "—",
+        away: it.away != null ? String(it.away) : "—",
+        hv: statNum(it, "home"), av: statNum(it, "away")
+      });
+      return;
+    }
+  });
+
+  /* 当たらなかったものも残す。こちらの当て方が古いだけの場合に効く。 */
+  var other = [];
+  items.forEach(function(it, i){
+    if(used[i]) return;
+    other.push({
+      id: "x" + i, ja: it.name || String(it.key || "—"), sec:"other", name: it.name || "",
+      home: it.home != null ? String(it.home) : "—",
+      away: it.away != null ? String(it.away) : "—",
+      hv: statNum(it, "home"), av: statNum(it, "away")
+    });
+  });
+  return { rows:rows, other:other };
+}
+
 function sofaProfile(j){
   var t = (j && j.team) || {};
   var info = t.playerTeamInfo || {};
@@ -848,6 +1007,7 @@ function fromSofa(ev){
 
   return {
     id: "sofa:" + ev.id,
+    raw: ev.id,                                 /* 詳細な数字を引くのに使う */
     tour: tourOf(tname, cat),
     tournament: tname || cat || "—",
     round: (ev.roundInfo && (ev.roundInfo.name || ("Round " + ev.roundInfo.round))) || "",
@@ -867,6 +1027,8 @@ function fromSofa(ev){
 function playerOf(t){
   var full = t.name || "—";
   return {
+    id: (t.id != null) ? t.id : null,          /* 写真と戦績を引く鍵 */
+    photo: null,                                /* 配信元が直接くれる場合のみ */
     name: full,
     /* ダブルスは配信元の短縮形が "A/B" だったり "A / B" だったりする。
        表記を揃えるため、組の場合はこちらで作り直す。 */
@@ -901,21 +1063,28 @@ function fromEspn(j, tour){
   });
   return out;
 }
+/* ESPN は選手の顔写真（headshot）を応答に含めることがある。あれば使う。 */
+function espnPlayer(x){
+  var a = x.athlete || {};
+  var name = (a.displayName) ? a.displayName
+           : (x.roster && x.roster.length)
+             ? x.roster.map(function(r){ return (r.athlete && r.athlete.displayName) || ""; }).filter(Boolean).join(" / ")
+             : (x.team && x.team.displayName) || "—";
+  return {
+    id: (a.id != null) ? a.id : null,
+    photo: (a.headshot && (a.headshot.href || a.headshot)) || null,
+    name: name,
+    short: surname(name),
+    country: (a.flag && a.flag.alt) || "",
+    seed: (x.curatedRank && x.curatedRank.current) || null
+  };
+}
+
 function espnComp(c, evt, tour){
   var cs = c.competitors || [];
   if(cs.length < 2) return null;
   var A = cs[0], B = cs[1];
 
-  function nameOf(x){
-    if(x.athlete && x.athlete.displayName) return x.athlete.displayName;
-    if(x.roster && x.roster.length){
-      return x.roster.map(function(r){
-        return (r.athlete && r.athlete.displayName) || "";
-      }).filter(Boolean).join(" / ");
-    }
-    if(x.team && x.team.displayName) return x.team.displayName;
-    return "—";
-  }
   function linesOf(x){ return (x.linescores || []).map(function(l){ return Number(l.value) || 0; }); }
 
   var la = linesOf(A), lb = linesOf(B), sets = [], tbs = [];
@@ -926,16 +1095,14 @@ function espnComp(c, evt, tour){
   var status = state === "in" ? "live" : (state === "post" ? "done" : "soon");
 
   return {
-    id: "espn:" + (c.id || evt.id) ,
+    id: "espn:" + (c.id || evt.id),
+    raw: c.id || evt.id,
     tour: tour,
     tournament: (evt.name || evt.shortName || "—")
                   .replace(/\s*[-–]\s*(Men|Women|Mixed)('s)?\s+(Singles|Doubles).*$/i, ""),
     round: (c.round && c.round.displayName) || (evt.season && evt.season.type && evt.season.type.name) || "",
     ground: (evt.groundType) || "",
-    players: [
-      { name:nameOf(A), short:surname(nameOf(A)), country:(A.athlete&&A.athlete.flag&&A.athlete.flag.alt)||"", seed:A.curatedRank&&A.curatedRank.current||null },
-      { name:nameOf(B), short:surname(nameOf(B)), country:(B.athlete&&B.athlete.flag&&B.athlete.flag.alt)||"", seed:B.curatedRank&&B.curatedRank.current||null }
-    ],
+    players: [ espnPlayer(A), espnPlayer(B) ],
     sets: sets,
     tbs: tbs,
     point: [ ptStr(A.score), ptStr(B.score) ],
@@ -1525,9 +1692,29 @@ function buildReels(){
       "stroke-dasharray":(C/3 - 7).toFixed(2) + " 7" }));
     s.appendChild(g);
     s.appendChild(svg("circle", { "class":"hubc", cx:50, cy:50, r:12.5 }));
+    /* 軸に選手の顔を嵌める。レコードの中心ラベルのつもり。 */
+    var defs = svg("defs");
+    var cp = svg("clipPath", { id:"hubclip" + side });
+    cp.appendChild(svg("circle", { cx:50, cy:50, r:12.5 }));
+    defs.appendChild(cp);
+    s.appendChild(defs);
+    var face = svg("image", {
+      x:37.5, y:37.5, width:25, height:25,
+      "clip-path":"url(#hubclip" + side + ")",
+      preserveAspectRatio:"xMidYMid slice"
+    });
+    face.setAttribute("id", "face" + side);
+    face.style.display = "none";
+    s.appendChild(face);
+    /* 顔が出ないときは、これまでどおり ▶ / ■ を出す */
     var mark = svg("path", { "class":"mark", d:"M46 44l10 6-10 6z" });
     mark.setAttribute("id", "mark" + side);
     s.appendChild(mark);
+    /* サーブ側は軸の縁を色で示す */
+    var ring = svg("circle", { "class":"hubring", cx:50, cy:50, r:13.6,
+                               fill:"none", stroke:"none", "stroke-width":2.2 });
+    ring.setAttribute("id", "ring" + side);
+    s.appendChild(ring);
     d.appendChild(s);
     box.appendChild(d);
   });
@@ -1560,10 +1747,27 @@ function paintReels(m){
     else spin.style.animationPlayState = "paused";
 
     var srv = serverNow(m);
-    reel.className = "reel" + (srv === side && m.status === "live" ? " serving" : "");
+    var serving = (srv === side && m.status === "live");
+    reel.className = "reel" + (serving ? " serving" : "");
+
+    /* 軸の顔。読めたら ▶ / ■ は引っ込め、サーブは縁の色で示す。 */
+    var face = $("face" + side), ring = $("ring" + side);
+    var url = photoUrl(m.players[side]);
+    if(url && face.getAttribute("href") !== url){
+      face.setAttribute("href", url);
+      face.setAttributeNS("http://www.w3.org/1999/xlink", "href", url);
+      face.style.display = "";
+      face.addEventListener("error", function(){ face.style.display = "none"; }, { once:true });
+    }else if(!url){
+      face.removeAttribute("href");
+      face.style.display = "none";
+    }
+    var hasFace = (face.style.display !== "none");
+    mark.style.display = hasFace ? "none" : "";
+    ring.setAttribute("stroke", serving ? "var(--hot)" : "none");
+
     /* サーブ側は ▶、そうでなければ ■ */
-    mark.setAttribute("d", (srv === side && m.status === "live")
-      ? "M46 44l10 6-10 6z" : "M46 45h8v10h-8z");
+    mark.setAttribute("d", serving ? "M46 44l10 6-10 6z" : "M46 45h8v10h-8z");
   });
 }
 
@@ -2009,6 +2213,7 @@ function runSearch(q){
 function playerRow(p){
   var b = el("button", "prow");
   b.type = "button";
+  b.appendChild(faceEl(p, "sm"));
   var rk = el("span", "rk");
   rk.textContent = p.rank ? String(p.rank) : "–";
   var body = el("div", "body");
@@ -2042,7 +2247,8 @@ function todayPlayers(){
       if(!key || key === "—" || seen[key]) return;
       seen[key] = 1;
       out.push({
-        id: null, name: p.name, short: p.short, country: p.country || "",
+        id: (p.id != null) ? p.id : null, photo: p.photo || null,
+        name: p.name, short: p.short, country: p.country || "",
         rank: null, gender: "",
         live: m.status === "live" ? 1 : 0,
         where: m.tournament
@@ -2062,6 +2268,7 @@ function renderToday(){
   list.slice(0, 30).forEach(function(p){
     var b = el("button", "prow");
     b.type = "button";
+    b.appendChild(faceEl(p, "sm"));
     var rk = el("span", "rk");
     rk.textContent = p.live ? "\u25cf" : "\u25aa";
     if(p.live) rk.style.color = "var(--hot)";
@@ -2099,7 +2306,12 @@ function openPlayer(p){
   var body = $("sheetBody");
   body.textContent = "";
 
-  var h = el("h2"); h.textContent = p.name; body.appendChild(h);
+  var top = el("div", "panelhead");
+  top.appendChild(faceEl(p, "lg"));
+  var hw = el("div", "side"); hw.style.flexDirection = "column"; hw.style.alignItems = "flex-start"; hw.style.gap = "3px";
+  var h = el("h2"); h.textContent = p.name; hw.appendChild(h);
+  top.appendChild(hw);
+  body.appendChild(top);
   var w = el("p", "who2");
   w.textContent = [ p.country, p.rank ? "世界 " + p.rank + " 位" : "" ].filter(Boolean).join(" · ") || "—";
   body.appendChild(w);
@@ -2234,6 +2446,146 @@ function openPlayerByName(name){
     })[0] || rows[0];
     if(hit) openPlayer(hit);
   }).catch(function(){});
+}
+
+/* ── 顔 ──────────────────────────────────────────────────────
+   画像は <img> で読む。画素に触らない限り CORS は要らないので、
+   中継を通さず配信元から直に取る。届かなければ頭文字の丸に落とす。
+   ─────────────────────────────────────────────────────────── */
+function photoUrl(p){
+  if(!p) return null;
+  if(p.photo) return p.photo;                  /* 配信元が直接くれる場合 */
+  var src = activeSource();
+  if(src && src.image && p.id != null) return src.image(p.id);
+  return null;
+}
+
+function initials(name){
+  var s = String(name || "").trim();
+  if(!s) return "—";
+  if(s.indexOf("/") >= 0){                     /* ダブルスは二人の頭文字 */
+    return s.split("/").map(function(one){ return initials(one); }).join("");
+  }
+  var parts = s.split(/\s+/);
+  var last = parts[parts.length - 1] || "";
+  return (last[0] || "—").toUpperCase();
+}
+
+function faceEl(p, size){
+  var d = el("span", "face" + (size ? " " + size : ""));
+  var ini = el("span", "ini");
+  ini.textContent = initials(p && (p.name || p.short));
+  d.appendChild(ini);
+  var url = photoUrl(p);
+  if(url){
+    var img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    /* 届かなかったら、そのまま頭文字を残す */
+    img.addEventListener("error", function(){ if(img.parentNode) img.parentNode.removeChild(img); });
+    img.src = url;
+    d.appendChild(img);
+  }
+  return d;
+}
+
+/* ── 計器盤：試合の詳細な数字 ────────────────────────────── */
+function canStats(){ var s = activeSource(); return !!(s && s.stats && s.parseStats); }
+
+function openStats(){
+  var m = cur();
+  if(!m) return;
+  var body = $("sheetBody");
+  body.textContent = "";
+
+  var head = el("div", "panelhead");
+  [0,1].forEach(function(side){
+    var w = el("div", "side" + (side ? " r" : ""));
+    w.appendChild(faceEl(m.players[side]));
+    var nm = el("div", "nm2"); nm.textContent = m.players[side].short;
+    w.appendChild(nm);
+    if(side === 0){
+      head.appendChild(w);
+      var mid = el("div", "mid");
+      mid.textContent = m.sets.map(function(st){ return st[0] + "-" + st[1]; }).join(" ") || "—";
+      head.appendChild(mid);
+    }else head.appendChild(w);
+  });
+  body.appendChild(head);
+
+  var sub = el("p", "who2");
+  sub.textContent = [m.tour !== "—" ? m.tour : "", m.tournament, m.round].filter(Boolean).join(" · ");
+  body.appendChild(sub);
+
+  var l = el("div", "loading"); l.textContent = "数字を取っています…";
+  body.appendChild(l);
+  openSheet();
+
+  if(!canStats()){
+    l.textContent = "この配信元は試合の詳細な数字を出していません。";
+    return;
+  }
+  var src = activeSource();
+  askSource(src.stats, m.raw, src.parseStats).then(function(res){
+    l.remove();
+    paintStats(body, m, res);
+  }).catch(function(err){
+    l.textContent = "数字が取れませんでした（" + reasonOf(err) + "）。";
+  });
+}
+
+var SECTS = [
+  { id:"serve",  ja:"Service — サービス" },
+  { id:"return", ja:"Return — リターン" },
+  { id:"total",  ja:"Total — 通算" },
+  { id:"other",  ja:"Other — そのほか" }
+];
+
+function paintStats(body, m, res){
+  var rows = (res && res.rows) || [], other = (res && res.other) || [];
+  if(!rows.length && !other.length){
+    var n = el("p", "note");
+    n.textContent = "この試合の数字はまだ出ていません。始まって間もない試合では、しばらく空のことがあります。";
+    body.appendChild(n);
+    return;
+  }
+  var all = rows.concat(other);
+  SECTS.forEach(function(sec){
+    var mine = all.filter(function(r){ return r.sec === sec.id; });
+    if(!mine.length) return;
+    var h = el("div", "sect"); h.textContent = sec.ja;
+    body.appendChild(h);
+    mine.forEach(function(r){ body.appendChild(levelRow(r)); });
+  });
+
+  var foot = el("p", "note");
+  foot.textContent = "数字は配信元がそのまま出しているもの。棒は左右の比で、値そのものの大小ではない。";
+  body.appendChild(foot);
+}
+
+/* 一項目を、二者を左右に振った水準計として描く */
+function levelRow(r){
+  var d = el("div", "lvl");
+  var tot = (r.hv || 0) + (r.av || 0);
+  var share = tot > 0 ? (r.hv / tot) : 0.5;
+
+  /* どちらが「良い」かは項目による（ダブルフォルトは少ないほうが良い）。
+     こちらで優劣を決めず、数も色も等しく置いて、分かれ目だけを示す。 */
+  var top = el("div", "top2");
+  var a = el("span", "v va"); a.textContent = r.home;
+  var c = el("span", "cap2"); c.textContent = r.ja;
+  var b = el("span", "v vb"); b.textContent = r.away;
+  top.appendChild(a); top.appendChild(c); top.appendChild(b);
+
+  var tr = el("div", "tr2");
+  var sa = el("span", "a2"); sa.style.width = (share * 100).toFixed(1) + "%";
+  var sb = el("span", "b2"); sb.style.width = ((1 - share) * 100).toFixed(1) + "%";
+  tr.appendChild(sa); tr.appendChild(sb);
+
+  d.appendChild(top); d.appendChild(tr);
+  return d;
 }
 
 function renderAll(){
@@ -2407,6 +2759,7 @@ $("cornerFav").addEventListener("click", function(){
 });
 
 $("toNow3").addEventListener("click", function(){ goPane(0); });
+$("openStats").addEventListener("click", openStats);
 $("btnProbe").addEventListener("click", function(){ probeAll(); });
 
 /* 日を送る。ラベルを押すと今日へ戻る。 */
