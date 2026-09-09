@@ -593,7 +593,7 @@
 
       <button class="opener" id="openStats" type="button">
         <span class="lb">計器盤</span>
-        <span class="hint">ACES · SERVE · POINTS</span>
+        <span class="hint" id="openStatsHint">ACES · SERVE · POINTS</span>
         <span class="arw">▸</span>
       </button>
 
@@ -809,7 +809,7 @@ var SOURCES = [
     profile: function(id){ return SOFA + "/team/" + id; },
     /* 画像は <img> で読む。画素に触らない限り CORS を要さないので、中継を通さない。 */
     image:   function(id){ return SOFA + "/team/" + id + "/image"; },
-    stats:   function(raw){ return SOFA + "/event/" + raw + "/statistics"; },
+    stats:   function(m){ return SOFA + "/event/" + m.raw + "/statistics"; },
     parse:        function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
     parseDay:     function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
     parseSearch:  sofaSearch,
@@ -823,6 +823,13 @@ var SOURCES = [
     note: "ATP 本戦のみ",
     url: ESPN + "/atp/scoreboard",
     day: function(d){ return ESPN + "/atp/scoreboard?dates=" + d.replace(/-/g, ""); },
+    stats: function(m){
+      /* テニスの ESPN は「大会」が event、「試合」が competition。
+         まとめの口は大会単位なので、そこから当の試合を拾い直す。 */
+      return [ ESPN + "/atp/summary?event=" + (m.evtId || m.raw),
+               ESPN + "/atp/summary?event=" + m.raw ];
+    },
+    parseStats: espnStats,
     parse:    function(j){ return fromEspn(j, "ATP"); },
     parseDay: function(j){ return fromEspn(j, "ATP"); }
   },
@@ -832,6 +839,11 @@ var SOURCES = [
     note: "WTA 本戦のみ",
     url: ESPN + "/wta/scoreboard",
     day: function(d){ return ESPN + "/wta/scoreboard?dates=" + d.replace(/-/g, ""); },
+    stats: function(m){
+      return [ ESPN + "/wta/summary?event=" + (m.evtId || m.raw),
+               ESPN + "/wta/summary?event=" + m.raw ];
+    },
+    parseStats: espnStats,
     parse:    function(j){ return fromEspn(j, "WTA"); },
     parseDay: function(j){ return fromEspn(j, "WTA"); }
   }
@@ -920,7 +932,13 @@ function sofaStats(j){
       if(it && (it.name || it.key)) items.push(it);
     });
   });
+  return mapStats(items);
+}
 
+/* 項目の並びを、こちらの章立てに当てはめる。配信元によらず共用する。
+   items は { key, name, home, away, homeValue, awayValue } の並び。 */
+function mapStats(items){
+  items = (items || []).filter(Boolean);
   var used = {}, rows = [];
   STAT_SPECS.forEach(function(spec){
     for(var i=0; i<items.length; i++){
@@ -961,6 +979,72 @@ function sofaStats(j){
   });
   return { rows:rows, other:other };
 }
+
+/* ── ESPN の数字 ─────────────────────────────────────────────
+   ESPN は選手ごとに statistics の並びを返す。置き場所が版によって
+   ちがう（試合の中／boxscore／header）ので、考えられる場所をすべて
+   見て、両者を突き合わせて一つの項目にする。
+   ─────────────────────────────────────────────────────────── */
+function espnStatPairs(homeArr, awayArr){
+  function index(arr){
+    var m = {};
+    (arr || []).forEach(function(x){
+      if(!x) return;
+      var k = String(x.name || x.abbreviation || x.label || "").toLowerCase();
+      if(!k) return;
+      m[k] = x;
+    });
+    return m;
+  }
+  var H = index(homeArr), A = index(awayArr), out = [];
+  Object.keys(H).forEach(function(k){
+    var h = H[k], a = A[k] || {};
+    out.push({
+      key: h.name || "", name: h.displayName || h.label || h.name || h.abbreviation || "",
+      home: (h.displayValue != null) ? h.displayValue : h.value,
+      away: (a.displayValue != null) ? a.displayValue : a.value,
+      homeValue: (typeof h.value === "number") ? h.value : undefined,
+      awayValue: (typeof a.value === "number") ? a.value : undefined
+    });
+  });
+  return out;
+}
+
+/* 応答のどこかにある、その試合の両者の statistics をさがす */
+function espnFindStats(j, m){
+  var comps = [];
+  function collect(o){
+    if(!o) return;
+    if(o.competitions) comps = comps.concat(o.competitions);
+    if(o.groupings) o.groupings.forEach(collect);
+  }
+  collect(j);
+  if(j && j.header) collect(j.header);
+  if(j && j.events) j.events.forEach(collect);
+
+  var want = m && m.raw != null ? String(m.raw) : null;
+  var hit = comps.filter(function(c){ return want && String(c.id) === want; })[0] || comps[0];
+  if(hit && hit.competitors && hit.competitors.length >= 2){
+    var pair = espnStatPairs(hit.competitors[0].statistics, hit.competitors[1].statistics);
+    if(pair.length) return pair;
+  }
+  /* boxscore に入っている版 */
+  var bs = j && j.boxscore;
+  if(bs && bs.players && bs.players.length >= 2){
+    function flat(p){
+      var out = [];
+      ((p && p.statistics) || []).forEach(function(g){
+        ((g && g.stats) || g.statisticsItems || []).forEach(function(x){ out.push(x); });
+      });
+      return out;
+    }
+    var pair2 = espnStatPairs(flat(bs.players[0]), flat(bs.players[1]));
+    if(pair2.length) return pair2;
+  }
+  return [];
+}
+
+function espnStats(j, m){ return mapStats(espnFindStats(j, m)); }
 
 function sofaProfile(j){
   var t = (j && j.team) || {};
@@ -1097,6 +1181,9 @@ function espnComp(c, evt, tour){
   return {
     id: "espn:" + (c.id || evt.id),
     raw: c.id || evt.id,
+    evtId: evt.id,
+    /* 一覧の応答に数字が入っていれば、そのまま持っておく */
+    rawStats: espnStatPairs(A.statistics, B.statistics),
     tour: tour,
     tournament: (evt.name || evt.shortName || "—")
                   .replace(/\s*[-–]\s*(Men|Women|Mixed)('s)?\s+(Singles|Doubles).*$/i, ""),
@@ -1880,6 +1967,13 @@ function renderDeck(){
   $("tlMid").textContent = "SET " + Math.max(1, m.sets.length) + (inTiebreak(m) ? " · TB" : "");
   $("tlRight").textContent = totalGames(m.sets) + " GAMES";
 
+  /* 数字が取れない見込みのときは、入口にもそう出しておく */
+  var hint = $("openStatsHint");
+  if(hint){
+    var missed = !canStats(m) || (!embeddedStats(m) && statsMiss[(chosen && chosen.srcId) || ""]);
+    hint.textContent = missed ? "この配信元では出ないかもしれません" : "ACES · SERVE · POINTS";
+  }
+
   var rec = logs[m.id];
   var pre = rec ? rec.games.filter(function(g){ return g.pre; }).length : 0;
   $("deckNote").textContent = pre
@@ -2150,7 +2244,7 @@ function askSource(urlFn, arg, parse, wantRows){
     }
     var u = urls[i++];
     return fetchJSON(relay.wrap(u), 12000).then(function(j){
-      var rows = parse.call(src, j);
+      var rows = parse.call(src, j, arg);
       /* 中身が空でも、まだ試す口が残っていれば次を当てる */
       if(wantRows && (!rows || !rows.length) && i < urls.length){
         lastErr = new Error("空の応答");
@@ -2609,7 +2703,28 @@ function faceEl(p, size){
 }
 
 /* ── 計器盤：試合の詳細な数字 ────────────────────────────── */
-function canStats(){ var s = activeSource(); return !!(s && s.stats && s.parseStats); }
+/* 数字が出せるか。試合そのものが数字を抱えている場合もあるので、
+   配信元の口の有無だけでは決めない。 */
+function embeddedStats(m){
+  return (m && m.rawStats && m.rawStats.length) ? m.rawStats : null;
+}
+function canStats(m){
+  if(embeddedStats(m)) return true;
+  var s = activeSource();
+  return !!(s && s.stats && s.parseStats);
+}
+
+/* 取りに行くまで、数字があるかは分からない。ただ「この配信元では一度も
+   取れなかった」ことは覚えておける。入口の副題に控えめに出す。 */
+var statsMiss = store.get("statsMiss", {}) || {};
+function noteStatsMiss(missed){
+  var id = (chosen && chosen.srcId) || "";
+  if(!id) return;
+  if(missed) statsMiss[id] = 1; else delete statsMiss[id];
+  store.set("statsMiss", statsMiss);
+  var hint = $("openStatsHint");
+  if(hint) hint.textContent = statsMiss[id] ? "この配信元では出ないかもしれません" : "ACES · SERVE · POINTS";
+}
 
 function openStats(){
   var m = cur();
@@ -2640,17 +2755,65 @@ function openStats(){
   body.appendChild(l);
   openSheet();
 
-  if(!canStats()){
-    l.textContent = "この配信元は試合の詳細な数字を出していません。";
+  /* 一覧の応答に数字が入っていれば、網に出ずにそのまま出す */
+  var emb = embeddedStats(m);
+  if(emb){
+    var got = mapStats(emb);
+    if(got.rows.length || got.other.length){
+      l.remove(); noteStatsMiss(false); paintStats(body, m, got); return;
+    }
+  }
+
+  var src = activeSource();
+  if(!src || !src.stats || !src.parseStats){
+    l.remove();
+    noteStatsMiss(true);
+    body.appendChild(noStatsNote());
     return;
   }
-  var src = activeSource();
-  askSource(src.stats, m.raw, src.parseStats).then(function(res){
+  askSource(src.stats, m, src.parseStats).then(function(res){
     l.remove();
+    if(!res || (!res.rows.length && !res.other.length)){
+      noteStatsMiss(true);
+      body.appendChild(noStatsNote());
+      return;
+    }
+    noteStatsMiss(false);
     paintStats(body, m, res);
   }).catch(function(err){
-    l.textContent = "数字が取れませんでした（" + reasonOf(err) + "）。";
+    l.remove();
+    noteStatsMiss(true);
+    var n = el("p", "note");
+    n.textContent = "数字が取れませんでした（" + reasonOf(err) + "）。";
+    body.appendChild(n);
+    body.appendChild(noStatsNote());
   });
+}
+
+/* 数字が出せないときの案内。「出していません」だけでは、どこにつながって
+   いるのかも、どうすれば見られるのかも分からない。 */
+function noStatsNote(){
+  var wrap = el("div");
+  var n = el("p", "note");
+  var who = demoOn ? "デモの試合" : nameOfSource(chosen && chosen.srcId);
+  if(demoOn){
+    n.textContent = "デモの試合には詳細な数字がありません。配信元につながると出ます。";
+  }else{
+    n.textContent = "いまつながっている「" + who + "」からは、この試合の詳細な数字が取れませんでした。"
+      + "SofaScore につながると、エースやサーブの率まで揃います。"
+      + "選局の面のいちばん下「情報源」で、SofaScore が緑になっているかを確かめてください。";
+  }
+  wrap.appendChild(n);
+  var b = el("button", "btn");
+  b.type = "button";
+  b.textContent = "情報源をさがし直す";
+  b.addEventListener("click", function(){
+    closeSheet();
+    goPane(2);
+    probeAll();
+  });
+  wrap.appendChild(b);
+  return wrap;
 }
 
 var SECTS = [
