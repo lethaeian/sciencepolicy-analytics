@@ -662,12 +662,12 @@
       <div class="seek">
         <svg class="lens" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
         <input id="q" type="search" inputmode="search" autocomplete="off" autocorrect="off"
-               spellcheck="false" placeholder="選手の名（例: Alcaraz）" aria-label="選手を検索">
+               spellcheck="false" placeholder="選手の名、または試合の住所" aria-label="選手や試合を検索">
         <button class="clr" id="qClear" aria-label="消す"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
 
       <div id="qResult"></div>
-      <p class="note" id="qNote">名前の一部でかまいません。押すとその選手の直近の戦績が出ます。</p>
+      <p class="note" id="qNote">名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。</p>
 
       <div class="panel" id="favPanel">
         <h3>Recent — 最近みた選手</h3>
@@ -2178,35 +2178,151 @@ function renderRoster(){
         + "選局の面で SofaScore が通っていれば使えます。";
   }else{
     seek.classList.remove("hide");
-    if(!$("q").value.trim()) note.textContent = "名前の一部でかまいません。押すとその選手の直近の戦績が出ます。";
+    if(!$("q").value.trim()) note.textContent = "名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。";
   }
   $("rosterSub").textContent = canSearch() ? "選手を引く" : "この配信元では引けません";
   renderRecent();
   renderToday();
 }
 
+/* ── 貼ったリンクから、その試合を引く ────────────────────────
+   試合ページの住所には選手名が入っている。たとえば
+     /match/tennis/blockx-alexander-xLl0TzGG/khachanov-karen-4bNPtZT5/
+   から「blockx alexander」「khachanov karen」を取り出し、いま台帳に
+   ある試合から同じ顔合わせをさがす。配信元そのものは叩かないので、
+   どの配信元につながっていても効く。
+   ─────────────────────────────────────────────────────────── */
+function namesFromLink(text){
+  var t = String(text || "").trim();
+  if(!/^https?:\/\//i.test(t) && t.indexOf("/") < 0) return [];
+  var out = [];
+  /* 先に「https://」を落とす。これを残すと "https:" が名前として拾われる。 */
+  t = t.replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "");
+  t.replace(/[?#].*$/, "").split("/").forEach(function(seg){
+    try{ seg = decodeURIComponent(seg); }catch(e){}
+    seg = seg.trim();
+    if(!seg || seg.indexOf(".") >= 0) return;          /* ホスト名は落とす */
+    if(seg.indexOf(":") >= 0) return;                  /* 「https:」のような欠片も落とす */
+    if(/^(match|tennis|atp|wta|player|team|event|game|h2h|ja|en|www)$/i.test(seg)) return;
+    var cleaned = seg.replace(/-[A-Za-z0-9]{6,}$/, "");   /* 末尾の識別子を落とす */
+    if(cleaned === seg && /^[A-Za-z0-9]+$/.test(seg)) return;
+    cleaned = cleaned.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+    if(cleaned.length < 3) return;
+    if(!/[A-Za-z぀-ヿ一-鿿]/.test(cleaned)) return;
+    out.push(cleaned);
+  });
+  return out;
+}
+
+/* 名前のかけらから、台帳にある試合をさがす。
+   どちらの選手にも当たる試合を上に置く。 */
+function matchesFor(frags){
+  if(!frags || !frags.length) return [];
+  var keys = frags.map(function(f){ return String(f).toLowerCase().split(/\s+/); });
+  var scored = [];
+  matches.forEach(function(m){
+    var names = m.players.map(function(p){ return String(p.name || "").toLowerCase(); });
+    var hit = 0;
+    keys.forEach(function(words){
+      var any = names.some(function(n){
+        return words.some(function(w){ return w.length >= 3 && n.indexOf(w) >= 0; });
+      });
+      if(any) hit++;
+    });
+    if(hit) scored.push({ m:m, hit:hit });
+  });
+  scored.sort(function(a,b){ return (b.hit - a.hit) || (rankOf(a.m) - rankOf(b.m)); });
+  return scored.map(function(x){ return x.m; });
+}
+function rankOf(m){ return m.status === "live" ? 0 : m.status === "soon" ? 1 : 2; }
+
+/* 検索結果に出す「試合」の行 */
+function matchRow(m){
+  var b = el("button", "prow");
+  b.type = "button";
+  var rk = el("span", "rk");
+  rk.textContent = m.status === "live" ? "●" : m.status === "soon" ? "○" : "▪";
+  if(m.status === "live") rk.style.color = "var(--hot)";
+  var body = el("div", "body");
+  var nm = el("div", "nm");
+  nm.textContent = m.players[0].short + " — " + m.players[1].short;
+  var mt = el("div", "meta");
+  mt.textContent = [ m.tour !== "—" ? m.tour : "", m.tournament, m.round,
+                     m.status === "done" ? "終了" : m.status === "soon" ? "開始前" :
+                     (m.sets.map(function(st){ return st[0] + "-" + st[1]; }).join(" ") || "進行中")
+                   ].filter(Boolean).join(" · ");
+  body.appendChild(nm); body.appendChild(mt);
+  var go = el("span", "go"); go.textContent = "ひらく";
+  b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+  b.addEventListener("click", function(){
+    /* 絞りの外にある試合でも開けるよう、絞りを外してから移る */
+    if(!view().some(function(x){ return x.id === m.id; })){
+      band = "ALL"; tourPick = null;
+      store.set("band", band); store.set("tourPick", null);
+    }
+    curId = m.id; store.set("cur", curId);
+    renderAll();
+    goPane(0);
+  });
+  return b;
+}
+
+/* 案内文を一箇所で組み立てる。試合と選手の二つの結果を、どちらも殺さずに伝える。 */
+function searchNote(frags, found, rows){
+  var parts = [];
+  if(frags.length && !found.length){
+    parts.push("この住所の顔合わせ（" + frags.join(" と ") +
+               "）は、いま取れている試合の中にありません。日を送るか、帯域の絞りを外してみてください。");
+  }else if(found.length){
+    parts.push("試合 " + found.length + " 件。");
+  }
+  if(rows && rows.length) parts.push(rows.length + " 人。押すと戦績が出ます。");
+  return parts.join(" ");
+}
+
 function runSearch(q){
   var seq = ++qSeq;
   var box = $("qResult");
   box.textContent = "";
-  if(!q){ $("qNote").textContent = "名前の一部でかまいません。押すとその選手の直近の戦績が出ます。"; return; }
+  if(!q){ $("qNote").textContent = "名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。"; return; }
+  /* 住所が貼られたら、そこに含まれる選手名で台帳の試合を当てる。
+     網には出ないので、これは必ず先に済ませる。 */
+  var frags = namesFromLink(q);
+  var found = matchesFor(frags.length ? frags : [q]);
+  if(found.length){
+    var h = el("div", "sect"); h.textContent = "Match — この顔合わせ";
+    box.appendChild(h);
+    found.slice(0, 6).forEach(function(m){ box.appendChild(matchRow(m)); });
+  }
+  $("qNote").textContent = searchNote(frags, found, null);
+
+  /* 選手そのものの検索は、網に出す */
+  var pq = frags.length ? (frags[0].split(/\s+/)[0] || q) : q;
+  if(!canSearch()){
+    if(!found.length && !frags.length) $("qNote").textContent = "この配信元は選手の検索に対応していません。";
+    return;
+  }
   var l = el("div", "loading"); l.textContent = "さがしています…";
   box.appendChild(l);
 
-  askSource(activeSource().search, q, activeSource().parseSearch, true).then(function(rows){
+  askSource(activeSource().search, pq, activeSource().parseSearch, true).then(function(rows){
     if(seq !== qSeq) return;                     /* 打っている途中の古い結果は捨てる */
-    box.textContent = "";
-    if(!rows.length){ $("qNote").textContent = "「" + q + "」に当たる選手が見つかりませんでした。"; return; }
-    $("qNote").textContent = rows.length + " 人。押すと戦績が出ます。";
-    rows.slice(0, 20).forEach(function(p){
-      box.appendChild(playerRow(p));
-    });
+    l.remove();
+    if(!rows.length){
+      $("qNote").textContent = searchNote(frags, found, null) ||
+        ("「" + pq + "」に当たる選手が見つかりませんでした。");
+      return;
+    }
+    var h2 = el("div", "sect"); h2.textContent = "Player — 選手";
+    box.appendChild(h2);
+    rows.slice(0, 20).forEach(function(p){ box.appendChild(playerRow(p)); });
+    $("qNote").textContent = searchNote(frags, found, rows);
   }).catch(function(err){
     if(seq !== qSeq) return;
-    box.textContent = "";
+    var lg = box.querySelector(".loading"); if(lg) lg.remove();
     /* 何が起きたかを残す。次に直すとき、これが手がかりになる。 */
-    $("qNote").textContent = "検索が届きませんでした（" + reasonOf(err) + "）。"
-      + "回線か中継の具合かもしれません。もう一度お試しください。";
+    $("qNote").textContent = "選手の検索は届きませんでした（" + reasonOf(err) + "）。"
+      + (found.length ? "試合のほうは上に出ています。" : "回線か中継の具合かもしれません。");
   });
 }
 
@@ -2214,8 +2330,6 @@ function playerRow(p){
   var b = el("button", "prow");
   b.type = "button";
   b.appendChild(faceEl(p, "sm"));
-  var rk = el("span", "rk");
-  rk.textContent = p.rank ? String(p.rank) : "–";
   var body = el("div", "body");
   var nm = el("div", "nm"); nm.textContent = p.name;
   var mt = el("div", "meta");
@@ -2223,7 +2337,7 @@ function playerRow(p){
                    .filter(Boolean).join(" · ") || "—";
   body.appendChild(nm); body.appendChild(mt);
   var go = el("span", "go"); go.textContent = "戦績";
-  b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+  b.appendChild(body); b.appendChild(go);
   b.addEventListener("click", function(){ openPlayer(p); });
   return b;
 }
@@ -2269,16 +2383,19 @@ function renderToday(){
     var b = el("button", "prow");
     b.type = "button";
     b.appendChild(faceEl(p, "sm"));
-    var rk = el("span", "rk");
-    rk.textContent = p.live ? "\u25cf" : "\u25aa";
-    if(p.live) rk.style.color = "var(--hot)";
     var body = el("div", "body");
     var nm = el("div", "nm"); nm.textContent = p.short;
     var mt = el("div", "meta");
-    mt.textContent = [ p.live ? "進行中" : "", p.where ].filter(Boolean).join(" · ");
+    /* 進行中は言葉ではなく、頭の赤い点で示す */
+    if(p.live){
+      var dot = el("span", "srv");
+      dot.style.cssText = "display:inline-block;vertical-align:middle;margin-right:6px";
+      mt.appendChild(dot);
+    }
+    mt.appendChild(document.createTextNode(p.where || ""));
     body.appendChild(nm); body.appendChild(mt);
     var go = el("span", "go"); go.textContent = "戦績";
-    b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+    b.appendChild(body); b.appendChild(go);
     b.addEventListener("click", function(){ openPlayerByName(p.name); });
     box.appendChild(b);
   });
