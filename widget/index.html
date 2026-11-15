@@ -568,7 +568,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v43";
+  var BUILD = "v44";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -623,6 +623,21 @@
     });
   }
 
+  // fetch は返らないまま止まることがある（復帰直後の iOS、圏外から
+  // つながりかけの瞬間など）。待ち続けると取得中の印が立ったままになり、
+  // 以後の更新が素通りしてしまうので、実時間で打ち切って中断する。
+  var NET_MS = 15000;
+  function netFetch(url, opts){
+    var ctrl = (typeof AbortController === "function") ? new AbortController() : null;
+    var o = { cache: "no-store" };
+    if(opts){ for(var k in opts){ if(Object.prototype.hasOwnProperty.call(opts,k)) o[k] = opts[k]; } }
+    if(ctrl) o.signal = ctrl.signal;
+    return withDeadline(fetch(url, o), NET_MS).catch(function(e){
+      if(ctrl){ try{ ctrl.abort(); }catch(_){} }
+      throw e;
+    });
+  }
+
   function getCurrentPosition(){
     return withDeadline(new Promise(function(resolve, reject){
       if(!("geolocation" in navigator)){ reject(new Error("unsupported")); return; }
@@ -635,7 +650,7 @@
   }
 
   function reverseName(lat, lon){
-    return fetch("https://geocoding-api.open-meteo.com/v1/search?latitude=" + lat +
+    return netFetch("https://geocoding-api.open-meteo.com/v1/search?latitude=" + lat +
       "&longitude=" + lon + "&count=1&language=ja&format=json")
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(j){ return (j && j.results && j.results[0] && j.results[0].name) || "現在地"; })
@@ -643,7 +658,7 @@
   }
 
   function geocodeSearch(q){
-    return fetch("https://geocoding-api.open-meteo.com/v1/search?name=" +
+    return netFetch("https://geocoding-api.open-meteo.com/v1/search?name=" +
       encodeURIComponent(q) + "&count=5&language=ja&format=json")
       .then(function(r){ if(!r.ok) throw new Error("geocode"); return r.json(); })
       .then(function(j){ return j.results || []; });
@@ -667,14 +682,14 @@
   }
 
   function fetchWeather(lat, lon){
-    return fetch("https://api.open-meteo.com/v1/forecast" +
+    return netFetch("https://api.open-meteo.com/v1/forecast" +
       "?latitude=" + encodeURIComponent(lat) +
       "&longitude=" + encodeURIComponent(lon) +
       "&hourly=temperature_2m,relative_humidity_2m,pressure_msl" +
       // 毎時の値とは別に「現在値」も受け取る。毎時の刻みより短い間隔で
       // 更新されるため、数分おきに見にきたときに実際の値が動く。
       "&current=temperature_2m,relative_humidity_2m,pressure_msl" +
-      "&past_days=1&forecast_days=2&timezone=auto", { cache:"no-store" }
+      "&past_days=1&forecast_days=2&timezone=auto"
     ).then(function(res){
       if(!res.ok) throw new Error("forecast-" + res.status);
       return res.json();
@@ -1282,9 +1297,18 @@
 
   // ---------- data flow ----------
 
-  var busy=false;
+  // 取得中は二重に走らせない。ただし、何かの拍子に印が立ったままになると
+  // 更新そのものが永久に止まるため、古くなった印は無効として扱う。
+  var busy=false, busyAt=0;
+  var BUSY_MAX_MS = 40000;   // 通信の上限より長くとる
+  function busyNow(){
+    if(!busy) return false;
+    if(Date.now() - busyAt > BUSY_MAX_MS){ setBusy(false); return false; }
+    return true;
+  }
   function setBusy(on){
     busy=on;
+    busyAt = on ? Date.now() : 0;
     // 言葉を置かず、点そのものを脈打たせて取得中を示す
     els.refreshBtn.setAttribute("aria-label", on ? "更新中" : "更新");
     els.refreshBtn.setAttribute("aria-busy", on ? "true" : "false");
@@ -1317,7 +1341,7 @@
 
   // 起動・復帰のたびに呼ぶ。auto なら現在地を取り直してから読み込む。
   function start(){
-    if(busy) return Promise.resolve();
+    if(busyNow()) return Promise.resolve();
     var pref=loadPref();
     if(pref.mode==="manual") return load(pref.name, pref.lat, pref.lon);
 
