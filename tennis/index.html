@@ -277,6 +277,7 @@
   .btn.solid{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
 
   .note{ margin:12px 0 0; font-size:10.5px; line-height:1.62; color:var(--ghost); }
+  .note code{ font-family:var(--mono); font-size:.95em; background:var(--soft); padding:1px 4px; border-radius:3px; }
   .note a{ color:inherit; }
 
   /* ── 日を送る ─────────────────────────────── */
@@ -343,6 +344,11 @@
     width:30px; height:30px; flex:0 0 30px; border-radius:50%;
     display:grid; place-items:center; background:var(--soft);
     font-family:var(--mono); font-size:10px;
+  }
+  /* 番付では、順位が本題。顔の隣にもう一つ丸を置くと重いので、数字だけにする。 */
+  .prow .rk.plain{
+    width:22px; flex-basis:22px; background:none; justify-items:end;
+    font-size:12px; letter-spacing:-.02em; opacity:.55;
   }
   .prow .body{ flex:1 1 auto; min-width:0; }
   .prow .nm{ font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -636,6 +642,25 @@
       </div>
 
       <div class="panel">
+        <h3>Relay — 中継</h3>
+        <div id="relayList"></div>
+        <p class="note">
+          配信元が直接つながらないとき、ここを経由して取りに行きます。無料の相乗りなので、
+          止まることがあります。全部だめなときは、下から自分の中継を足せます。
+        </p>
+        <div class="seek" style="margin-top:12px">
+          <svg class="lens" viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"/></svg>
+          <input id="relayTpl" type="url" inputmode="url" autocomplete="off" autocorrect="off"
+                 spellcheck="false" placeholder="https://例.workers.dev/?url={url}" aria-label="中継の住所">
+        </div>
+        <button class="btn" id="relayAdd">この中継を足す</button>
+        <p class="note" id="relayNote">
+          <code>{url}</code> が符号化した住所に、<code>{raw}</code> がそのままの住所に置き換わります。
+        </p>
+        <button class="btn" id="relayHelp">自分の中継の作り方</button>
+      </div>
+
+      <div class="panel">
         <h3>Interval — 更新の間隔</h3>
         <div id="ivList"></div>
       </div>
@@ -668,6 +693,13 @@
 
       <div id="qResult"></div>
       <p class="note" id="qNote">名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。</p>
+
+      <div class="panel" id="rankPanel">
+        <h3>Top 10 — 番付</h3>
+        <div class="chips" id="rankTabs"></div>
+        <div id="rankList"></div>
+        <p class="note" id="rankNote"></p>
+      </div>
 
       <div class="panel" id="favPanel">
         <h3>Recent — 最近みた選手</h3>
@@ -751,12 +783,68 @@ var store = {
 /* ── 1. 情報源 ────────────────────────────────────────────────
    中継は上から順にためす。direct が通るならそれがいちばん速い。
    ─────────────────────────────────────────────────────────── */
-var RELAYS = [
-  { id:"direct",     name:"直接",            wrap:function(u){ return u; } },
-  { id:"allorigins", name:"allorigins 経由", wrap:function(u){ return "https://api.allorigins.win/raw?url=" + encodeURIComponent(u); } },
-  { id:"codetabs",   name:"codetabs 経由",   wrap:function(u){ return "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u); } },
-  { id:"corsproxy",  name:"corsproxy 経由",  wrap:function(u){ return "https://corsproxy.io/?url=" + encodeURIComponent(u); } }
+/* 組み込みの中継。無料の相乗りなので、いつ止まってもおかしくない。
+   数を持たせたうえで、利用者が自分の中継を足せるようにしてある（下記 userRelays）。 */
+var BUILTIN_RELAYS = [
+  { id:"direct",     name:"直接",             tpl:null },
+  { id:"allorigins", name:"allorigins",       tpl:"https://api.allorigins.win/raw?url={url}" },
+  { id:"codetabs",   name:"codetabs",         tpl:"https://api.codetabs.com/v1/proxy?quest={url}" },
+  { id:"corsproxy",  name:"corsproxy",        tpl:"https://corsproxy.io/?url={url}" },
+  { id:"isomorphic", name:"isomorphic-git",   tpl:"https://cors.isomorphic-git.org/{raw}" },
+  { id:"thingproxy", name:"thingproxy",       tpl:"https://thingproxy.freeboard.io/fetch/{raw}" },
+  { id:"whatever",   name:"whateverorigin",   tpl:"https://www.whateverorigin.org/get?url={url}" }
 ];
+
+/* 利用者が足した中継。{url} は符号化した住所、{raw} はそのままの住所に置き換わる。
+   組み込みが全滅しても、ここに一本足せば動き続けられる。 */
+var userRelays = store.get("relays", []) || [];
+
+/* ── 中継の調子 ──────────────────────────────────────────────
+   通った回数と落ちた回数を覚えておき、よく通る中継を前に出す。
+   直近に落ちたものはしばらく後ろに回す（完全には外さない。
+   相手側の一時的な不調で、戻ることがあるため）。
+
+   この二つは allRelays より先に置くこと。var は巻き上がるが値は入らないので、
+   後ろに置くと、読み込みのさなかに RELAYS を組むところで落ちる。
+   ─────────────────────────────────────────────────────────── */
+var relayHealth = store.get("relayHealth", {}) || {};
+
+function relayScore(r){
+  var h = relayHealth[r.id];
+  if(!h) return r.id === "direct" ? 1 : 0;      /* 直接が通るならいちばん速い */
+  var base = (h.ok || 0) * 2 - (h.ng || 0);
+  /* 落ちた直後はしばらく下げる */
+  if(h.lastNg && (Date.now() - h.lastNg) < 10 * 60000) base -= 6;
+  return base;
+}
+function markRelay(id, ok){
+  var h = relayHealth[id] || { ok:0, ng:0 };
+  if(ok){ h.ok++; h.last = Date.now(); }
+  else  { h.ng++; h.lastNg = Date.now(); }
+  relayHealth[id] = h;
+  store.set("relayHealth", relayHealth);
+}
+
+function relayFromTpl(id, name, tpl){
+  return {
+    id: id, name: name, tpl: tpl,
+    wrap: function(u){
+      if(!tpl) return u;
+      return tpl.replace(/\{url\}/g, encodeURIComponent(u)).replace(/\{raw\}/g, u);
+    }
+  };
+}
+
+/* 組み込み＋自前。調子の良い順に並べ直す。 */
+function allRelays(){
+  var out = BUILTIN_RELAYS.map(function(r){ return relayFromTpl(r.id, r.name, r.tpl); });
+  userRelays.forEach(function(r, i){
+    out.push(relayFromTpl(r.id || ("mine" + i), r.name || "自前の中継", r.tpl));
+  });
+  return out.sort(function(a, b){ return relayScore(b) - relayScore(a); });
+}
+var RELAYS = allRelays();
+function refreshRelays(){ RELAYS = allRelays(); }
 
 function fetchJSON(url, ms){
   var ctl = ("AbortController" in window) ? new AbortController() : null;
@@ -809,6 +897,9 @@ var SOURCES = [
     profile: function(id){ return SOFA + "/team/" + id; },
     /* 画像は <img> で読む。画素に触らない限り CORS を要さないので、中継を通さない。 */
     image:   function(id){ return SOFA + "/team/" + id + "/image"; },
+    /* 番付。5 が男子、6 が女子。 */
+    ranking: function(tour){ return SOFA + "/rankings/type/" + (tour === "WTA" ? 6 : 5); },
+    parseRanking: sofaRanking,
     stats:   function(m){ return SOFA + "/event/" + m.raw + "/statistics"; },
     parse:        function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
     parseDay:     function(j){ return (j && j.events) ? j.events.map(fromSofa) : []; },
@@ -829,6 +920,8 @@ var SOURCES = [
       return [ ESPN + "/atp/summary?event=" + (m.evtId || m.raw),
                ESPN + "/atp/summary?event=" + m.raw ];
     },
+    ranking: function(){ return ESPN + "/atp/rankings"; },
+    parseRanking: espnRanking,
     parseStats: espnStats,
     parse:    function(j){ return fromEspn(j, "ATP"); },
     parseDay: function(j){ return fromEspn(j, "ATP"); }
@@ -843,6 +936,8 @@ var SOURCES = [
       return [ ESPN + "/wta/summary?event=" + (m.evtId || m.raw),
                ESPN + "/wta/summary?event=" + m.raw ];
     },
+    ranking: function(){ return ESPN + "/wta/rankings"; },
+    parseRanking: espnRanking,
     parseStats: espnStats,
     parse:    function(j){ return fromEspn(j, "WTA"); },
     parseDay: function(j){ return fromEspn(j, "WTA"); }
@@ -1046,6 +1141,59 @@ function espnFindStats(j, m){
 
 function espnStats(j, m){ return mapStats(espnFindStats(j, m)); }
 
+/* ── 番付 ────────────────────────────────────────────────────
+   上位の顔ぶれ。置き場所が配信元で違うので、それぞれに読み手を置く。
+   返すのは { rank, id, name, short, country, points } の並び。
+   ─────────────────────────────────────────────────────────── */
+function sofaRanking(j){
+  var rows = (j && (j.rankings || j.rankingRows)) || [];
+  if(!Array.isArray(rows)) return [];
+  var out = [];
+  rows.forEach(function(r){
+    if(!r) return;
+    var t = r.team || r.player || r.rowName || {};
+    var id = (t && t.id != null) ? t.id : null;
+    var name = (t && t.name) || r.name || "";
+    if(!name) return;
+    out.push({
+      rank: r.ranking != null ? r.ranking : (r.rank != null ? r.rank : out.length + 1),
+      id: id,
+      name: name,
+      short: (t && t.shortName) || surname(name),
+      country: (t && t.country && (t.country.alpha3 || t.country.alpha2 || t.country.name)) || "",
+      points: r.points != null ? r.points : null
+    });
+  });
+  out.sort(function(a, b){ return (a.rank || 999) - (b.rank || 999); });
+  return out;
+}
+
+function espnRanking(j){
+  /* ESPN は rankings[].ranks[] の形。種類がいくつか並ぶので、最初のものを採る。 */
+  var groups = (j && (j.rankings || j.items)) || [];
+  if(!Array.isArray(groups) || !groups.length) return [];
+  var ranks = groups[0] && (groups[0].ranks || groups[0].competitors || groups[0].entries);
+  if(!Array.isArray(ranks)) return [];
+  var out = [];
+  ranks.forEach(function(r, i){
+    if(!r) return;
+    var a = r.athlete || r.competitor || r.team || {};
+    var name = a.displayName || a.name || r.name || "";
+    if(!name) return;
+    out.push({
+      rank: (r.current != null) ? r.current : (r.rank != null ? r.rank : i + 1),
+      id: (a.id != null) ? a.id : null,
+      photo: (a.headshot && (a.headshot.href || a.headshot)) || null,
+      name: name,
+      short: surname(name),
+      country: (a.flag && a.flag.alt) || (a.citizenship) || "",
+      points: (r.points != null) ? r.points : null
+    });
+  });
+  out.sort(function(a, b){ return (a.rank || 999) - (b.rank || 999); });
+  return out;
+}
+
 function sofaProfile(j){
   var t = (j && j.team) || {};
   var info = t.playerTeamInfo || {};
@@ -1211,7 +1359,11 @@ var probeState = {};                          /* sourceId → {state, count, rel
 function tryOne(src, relay){
   return fetchJSON(relay.wrap(src.url), 9000).then(function(j){
     var list = (src.parse(j) || []).filter(Boolean);
+    markRelay(relay.id, true);
     return { ok:true, relay:relay, list:list };
+  }).catch(function(err){
+    markRelay(relay.id, false);
+    throw err;
   });
 }
 
@@ -1260,6 +1412,7 @@ function probeAll(){
     ingestLive(win.list);
     renderSources();
     pullDay();                                   /* その日のカードも続けて取る */
+    fetchRanking(rankTour, false);               /* 番付は一日に一度でよい */
     return win;
   });
 }
@@ -2182,6 +2335,220 @@ function pick(src, relay, list){
   pullDay();
 }
 
+/* ── 番付 ────────────────────────────────────────────────────
+   一度取れたら端末に覚えておく。以後は圏外でも、配信元が落ちていても、
+   顔ぶれは出る（古さは明記する）。押せばその選手の試合結果へ行ける。
+   ─────────────────────────────────────────────────────────── */
+var rankTour = store.get("rankTour", "ATP");
+var rankCache = store.get("ranks", {}) || {};
+var rankBusy = {};
+
+function canRank(){ var s = activeSource(); return !!(s && s.ranking && s.parseRanking); }
+
+function fetchRanking(tour, force){
+  var src = activeSource();
+  if(!src || !src.ranking || !src.parseRanking) return Promise.resolve(null);
+  if(rankBusy[tour]) return Promise.resolve(null);
+  var have = rankCache[tour];
+  /* 一日に一度で足りる。番付はそう動かない。 */
+  if(!force && have && have.at && (Date.now() - have.at) < 86400000) return Promise.resolve(have);
+  rankBusy[tour] = 1;
+  return askSource(src.ranking, tour, src.parseRanking, true).then(function(rows){
+    rankBusy[tour] = 0;
+    if(!rows || !rows.length) return null;
+    rankCache[tour] = { at: Date.now(), src: src.id, rows: rows.slice(0, 10) };
+    store.set("ranks", rankCache);
+    renderRank();
+    return rankCache[tour];
+  }).catch(function(){
+    rankBusy[tour] = 0;
+    renderRank();
+    return null;
+  });
+}
+
+function renderRank(){
+  var tabs = $("rankTabs"), box = $("rankList"), note = $("rankNote");
+  if(!tabs) return;
+
+  tabs.textContent = "";
+  ["ATP", "WTA"].forEach(function(t){
+    tabs.appendChild(chip(t, null, rankTour === t, function(){
+      rankTour = t; store.set("rankTour", t);
+      renderRank(); fetchRanking(t, false);
+    }));
+  });
+
+  box.textContent = "";
+  var have = rankCache[rankTour];
+  if(!have || !have.rows.length){
+    note.textContent = rankBusy[rankTour] ? "番付を取っています…"
+      : canRank() ? "番付がまだ取れていません。下の「取り直す」を押してください。"
+      : "いまの配信元からは番付を引けません。";
+    box.appendChild(rankRefresh());
+    return;
+  }
+
+  have.rows.slice(0, 10).forEach(function(p){
+    var b = el("button", "prow");
+    b.type = "button";
+    b.appendChild(faceEl(p, "sm"));
+    var rk = el("span", "rk plain");
+    rk.textContent = String(p.rank);
+    var body = el("div", "body");
+    var nm = el("div", "nm"); nm.textContent = p.short || p.name;
+    var mt = el("div", "meta");
+    /* いま出ているかを、台帳から照らす */
+    var live = playerMatches(p).filter(function(m){ return m.status === "live"; })[0];
+    if(live){
+      var dot = el("span", "srv");
+      dot.style.cssText = "display:inline-block;vertical-align:middle;margin-right:6px";
+      mt.appendChild(dot);
+      mt.appendChild(document.createTextNode("進行中 · " + live.tournament));
+    }else{
+      mt.appendChild(document.createTextNode(
+        [p.country, p.points != null ? p.points + " pt" : ""].filter(Boolean).join(" · ") || "—"));
+    }
+    body.appendChild(nm); body.appendChild(mt);
+    var go = el("span", "go"); go.textContent = "試合";
+    b.appendChild(rk); b.appendChild(body); b.appendChild(go);
+    b.addEventListener("click", function(){ openPlayer(p); });
+    box.appendChild(b);
+  });
+
+  var age = Math.floor((Date.now() - have.at) / 3600000);
+  note.textContent = (age < 1 ? "さきほど" : age + " 時間前") + "に "
+    + nameOfSource(have.src) + " から取った番付。押すと、その選手の直近の試合結果が出ます。";
+  box.appendChild(rankRefresh());
+}
+
+function rankRefresh(){
+  var b = el("button", "btn");
+  b.type = "button";
+  b.textContent = "番付を取り直す";
+  b.disabled = !canRank();
+  if(!canRank()) b.style.opacity = ".45";
+  b.addEventListener("click", function(){
+    $("rankNote").textContent = "番付を取っています…";
+    fetchRanking(rankTour, true);
+  });
+  return b;
+}
+
+/* ── 中継の一覧を描く ───────────────────────────────────── */
+function renderRelays(){
+  var box = $("relayList");
+  if(!box) return;
+  box.textContent = "";
+  allRelays().forEach(function(r){
+    var h = relayHealth[r.id] || {};
+    var inUse = chosen && chosen.relayId === r.id && !demoOn;
+    var row = el("div", "srcrow" + (inUse ? " on" : ""));
+    var led = el("span", "led " + (inUse ? "ok" : (h.ok ? "" : (h.ng ? "no" : ""))));
+    var body = el("div", "body");
+    var nm = el("div", "nm"); nm.textContent = r.name;
+    var mt = el("div", "meta");
+    var mine = userRelays.some(function(x){ return (x.id || "") === r.id; });
+    mt.textContent = [
+      mine ? "自前" : "組み込み",
+      h.ok ? "通った " + h.ok + " 回" : "",
+      h.ng ? "だめ " + h.ng + " 回" : "",
+      (!h.ok && !h.ng) ? "未使用" : ""
+    ].filter(Boolean).join(" · ");
+    body.appendChild(nm); body.appendChild(mt);
+    row.appendChild(led); row.appendChild(body);
+
+    if(inUse){
+      var p = el("span", "pick"); p.textContent = "使用中";
+      row.appendChild(p);
+    }else if(mine){
+      var x = el("button", "pick");
+      x.type = "button";
+      x.textContent = "外す";
+      x.style.cssText = "border:0;background:none;padding:4px 2px";
+      x.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        userRelays = userRelays.filter(function(y){ return (y.id || "") !== r.id; });
+        store.set("relays", userRelays);
+        refreshRelays(); renderRelays();
+      });
+      row.appendChild(x);
+    }
+    box.appendChild(row);
+  });
+}
+
+/* 自分の中継を足す。形だけ確かめて取り込む（通るかは次の探索で分かる）。 */
+function addUserRelay(){
+  var inp = $("relayTpl");
+  var tpl = String(inp.value || "").trim();
+  var note = $("relayNote");
+  if(!tpl){ note.textContent = "住所を入れてください。"; return; }
+  if(!/^https:\/\//i.test(tpl)){
+    note.textContent = "https で始まる住所にしてください。http だと、この画面からは読めません。";
+    return;
+  }
+  if(tpl.indexOf("{url}") < 0 && tpl.indexOf("{raw}") < 0){
+    note.textContent = "住所のどこに差し込むかが要ります。末尾に {url} を付けてください。";
+    return;
+  }
+  var host = "";
+  try{ host = new URL(tpl.replace(/\{url\}|\{raw\}/g, "x")).hostname; }
+  catch(e){ note.textContent = "住所として読めませんでした。"; return; }
+  if(userRelays.some(function(x){ return x.tpl === tpl; })){
+    note.textContent = "その中継はもう入っています。"; return;
+  }
+  userRelays.push({ id: "mine:" + host + ":" + userRelays.length, name: host, tpl: tpl });
+  store.set("relays", userRelays);
+  refreshRelays();
+  inp.value = "";
+  note.textContent = host + " を足しました。「もう一度さがす」を押すと、この中継でもためします。";
+  renderRelays();
+}
+
+/* 自分の中継の作り方。器の中で完結させ、外へ連れ出さない。 */
+function showRelayHelp(){
+  var body = $("sheetBody");
+  body.textContent = "";
+  var h = el("h2"); h.textContent = "自分の中継を持つ";
+  body.appendChild(h);
+  var p1 = el("p", "note");
+  p1.textContent = "配信元の多くは、ほかの頁から直に読まれることを許していません。"
+    + "あいだに一枚挟むと読めるようになります。無料の相乗りは止まることがあるので、"
+    + "自分のものを一つ持っておくと、以後は途切れません。";
+  body.appendChild(p1);
+
+  var h2 = el("div", "sect"); h2.textContent = "Cloudflare Workers の場合";
+  body.appendChild(h2);
+  var steps = el("p", "note");
+  steps.innerHTML = "1. Cloudflare に登録し、Workers で新しいものを作る<br>"
+    + "2. 下の中身をそのまま貼って、保存して配る<br>"
+    + "3. 配られた住所の末尾に <code>/?url={url}</code> を付けて、前の画面で足す";
+  body.appendChild(steps);
+
+  var code = el("pre");
+  code.style.cssText = "font-family:var(--mono);font-size:10px;line-height:1.5;background:var(--soft);"
+    + "padding:12px;border-radius:10px;overflow-x:auto;margin-top:10px;white-space:pre";
+  code.textContent = [
+    "export default {",
+    "  async fetch(req) {",
+    "    const u = new URL(req.url).searchParams.get('url');",
+    "    if (!u) return new Response('url?', { status: 400 });",
+    "    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0' } });",
+    "    const h = new Headers(r.headers);",
+    "    h.set('access-control-allow-origin', '*');",
+    "    return new Response(r.body, { status: r.status, headers: h });",
+    "  }",
+    "};"
+  ].join("\n");
+  body.appendChild(code);
+
+  var p2 = el("p", "note");
+  p2.textContent = "無料の枠で足ります。自分の中継なので、誰かの都合で止まることがありません。";
+  body.appendChild(p2);
+  openSheet();
+}
+
 var INTERVALS = [ 10000, 20000, 60000 ];
 var interval = store.get("interval", 20000);
 function renderIntervals(){
@@ -2244,6 +2611,7 @@ function askSource(urlFn, arg, parse, wantRows){
     }
     var u = urls[i++];
     return fetchJSON(relay.wrap(u), 12000).then(function(j){
+      markRelay(relay.id, true);
       var rows = parse.call(src, j, arg);
       /* 中身が空でも、まだ試す口が残っていれば次を当てる */
       if(wantRows && (!rows || !rows.length) && i < urls.length){
@@ -2253,6 +2621,7 @@ function askSource(urlFn, arg, parse, wantRows){
       return rows;
     }).catch(function(err){
       lastErr = err;
+      markRelay(relay.id, false);
       return step();
     });
   }
@@ -2275,6 +2644,7 @@ function renderRoster(){
     if(!$("q").value.trim()) note.textContent = "名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。";
   }
   $("rosterSub").textContent = canSearch() ? "選手を引く" : "この配信元では引けません";
+  renderRank();
   renderRecent();
   renderToday();
 }
@@ -2329,6 +2699,23 @@ function matchesFor(frags){
   return scored.map(function(x){ return x.m; });
 }
 function rankOf(m){ return m.status === "live" ? 0 : m.status === "soon" ? 1 : 2; }
+
+/* ひとりの選手から、その人が出ている試合をさがす。
+   matchesFor は住所のかけら向けで、語がどれか一つ当たれば拾う。選手ひとりに
+   使うと「Alexander Zverev」が「Alexander Blockx」の試合に当たってしまうので、
+   こちらは姓で照合する。 */
+function playerMatches(p){
+  var target = String((p && (p.name || p.short)) || "");
+  var sur = surname(target).toLowerCase();
+  if(sur.length < 3) return [];
+  var full = target.toLowerCase();
+  return matches.filter(function(m){
+    return m.players.some(function(q){
+      var n = String(q.name || "").toLowerCase();
+      return n === full || surname(n).toLowerCase() === sur;
+    });
+  }).sort(function(a, b){ return rankOf(a) - rankOf(b) || (b.startTs||0) - (a.startTs||0); });
+}
 
 /* 検索結果に出す「試合」の行 */
 function matchRow(m){
@@ -2531,19 +2918,53 @@ function openPlayer(p){
   body.appendChild(l);
   openSheet();
 
+  /* 台帳にあるその選手の試合。戦績の口が無くても、ここまでは必ず出せる。 */
+  function fromLedger(){
+    return playerMatches(p).filter(function(m){ return m.status === "done"; })
+      .sort(function(a,b){ return (b.startTs||0) - (a.startTs||0); });
+  }
+  function showLedger(why){
+    var list = fromLedger();
+    l.remove();
+    if(why){
+      var n = el("p", "note");
+      n.textContent = why;
+      body.appendChild(n);
+    }
+    if(list.length){
+      var h2 = el("div", "sect"); h2.textContent = "From today — いま手元にある分";
+      body.appendChild(h2);
+      paintPlayer(body, p, list.slice(0, 14));
+    }else{
+      /* 終わった試合が無くても、進行中・開始前なら案内できる */
+      var now = playerMatches(p);
+      if(now.length){
+        var h3 = el("div", "sect"); h3.textContent = "Today — 今日の試合";
+        body.appendChild(h3);
+        now.slice(0, 6).forEach(function(m){ body.appendChild(matchRow(m)); });
+      }else{
+        var n2 = el("p", "note");
+        n2.textContent = "手元の台帳にも、この選手の試合はありません。日を送ると見つかることがあります。";
+        body.appendChild(n2);
+      }
+    }
+  }
+
   var src = activeSource();
-  if(!src || !src.history){
-    l.textContent = "この配信元では戦績を引けません。";
+  if(!src || !src.history || p.id == null){
+    showLedger("いまつながっている「" + (demoOn ? "デモ" : nameOfSource(chosen && chosen.srcId))
+      + "」からは、過去にさかのぼった戦績を引けません。SofaScore につながると出ます。");
     return;
   }
   askSource(src.history, p.id, src.parseHistory).then(function(evts){
     var list = (evts || []).filter(function(m){ return m && m.status === "done"; });
     /* 新しい順に */
     list.sort(function(a,b){ return (b.startTs||0) - (a.startTs||0); });
+    if(!list.length){ showLedger(null); return; }
     l.remove();
     paintPlayer(body, p, list.slice(0, 14));
   }).catch(function(err){
-    l.textContent = "直近の試合が取れませんでした（" + reasonOf(err) + "）。";
+    showLedger("戦績が取れませんでした（" + reasonOf(err) + "）。");
   });
 }
 
@@ -2871,7 +3292,7 @@ function levelRow(r){
 function renderAll(){
   ensureInView();
   renderNow(); renderDeck(); renderList();
-  renderChips(); renderDay(); renderSources(); renderRoster();
+  renderChips(); renderDay(); renderSources(); renderRelays(); renderRoster();
 }
 
 /* ── 4. 動かす ───────────────────────────────────────────────
@@ -2897,12 +3318,14 @@ function pull(force){
   pulling = true;
   return fetchJSON(relayById(chosen.relayId).wrap(src.url), 12000).then(function(j){
     pulling = false; misses = 0; lastAt = Date.now();
+    markRelay(chosen.relayId, true);
     ingestLive((src.parse(j) || []).filter(Boolean));
   }).catch(function(){
     pulling = false;
     misses++;
+    markRelay(chosen.relayId, false);
     /* 三度続けて取れなければ、経路を選び直す */
-    if(misses >= 3){ misses = 0; probeAll(); }
+    if(misses >= 3){ misses = 0; refreshRelays(); probeAll(); }
     renderNow();
   });
 }
@@ -3040,7 +3463,12 @@ $("cornerFav").addEventListener("click", function(){
 
 $("toNow3").addEventListener("click", function(){ goPane(0); });
 $("openStats").addEventListener("click", openStats);
-$("btnProbe").addEventListener("click", function(){ probeAll(); });
+$("btnProbe").addEventListener("click", function(){ refreshRelays(); probeAll(); });
+$("relayAdd").addEventListener("click", addUserRelay);
+$("relayHelp").addEventListener("click", showRelayHelp);
+$("relayTpl").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); addUserRelay(); }
+});
 
 /* 日を送る。ラベルを押すと今日へ戻る。 */
 $("dayPrev").addEventListener("click", function(){ goDay(-1); });
@@ -3117,6 +3545,7 @@ if(chosen && chosen.srcId === "demo"){
       $("srcNote").textContent = nameOfSource(chosen.srcId) + " につながっています。";
       renderSources();
       pullDay();
+      fetchRanking(rankTour, false);
     }
   });
 }else{
