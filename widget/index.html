@@ -531,6 +531,7 @@
     <p>気圧・気温・湿度の変化にもとづく一般的な目安です。医学的な診断ではありません。体調がすぐれないときは無理をせず、症状が続く場合は医療機関にご相談ください。</p>
     <p>気象データ: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
     <p>表示中のバージョン: <span id="buildId">-</span></p>
+    <p>最後の通信: <span id="netNote">-</span></p>
   </details>
  </div>
 
@@ -568,7 +569,7 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v44";
+  var BUILD = "v45";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
@@ -581,7 +582,7 @@
     placeBtn:$("placeBtn"), placeName:$("placeName"),
     heroValue:$("heroValue"),
     status:$("status"), statusWord:$("statusWord"), statusNote:$("statusNote"),
-    riskCircle:$("riskCircle"),
+    riskCircle:$("riskCircle"), netNote:$("netNote"),
     tMax:$("tMax"), tMin:$("tMin"),
     strip:$("strip"),
     plot:$("plot"), chartPressure:$("chartPressure"), plotMid:$("plotMid"),
@@ -634,6 +635,8 @@
     if(ctrl) o.signal = ctrl.signal;
     return withDeadline(fetch(url, o), NET_MS).catch(function(e){
       if(ctrl){ try{ ctrl.abort(); }catch(_){} }
+      // 打ち切りか、そもそもつながらなかったかを区別できるようにする
+      e.netKind = (e && e.message === "deadline") ? "timeout" : "offline";
       throw e;
     });
   }
@@ -691,7 +694,11 @@
       "&current=temperature_2m,relative_humidity_2m,pressure_msl" +
       "&past_days=1&forecast_days=2&timezone=auto"
     ).then(function(res){
-      if(!res.ok) throw new Error("forecast-" + res.status);
+      if(!res.ok){
+        var he = new Error("forecast-" + res.status);
+        he.netKind = "http"; he.status = res.status;
+        throw he;
+      }
       return res.json();
     }).then(function(json){
       var times = json.hourly.time;
@@ -875,6 +882,29 @@
 
   // ---------- self-care ----------
   // ---------- format ----------
+
+  // 通信がうまくいかなかったとき、何が起きたのかを短く言う。
+  // 「更新できませんでした」だけでは、電波なのか相手側なのか分からない。
+  function renderNetNote(){
+    if(!els.netNote) return;
+    var e = state.lastError;
+    if(e){
+      els.netNote.textContent = localClock(state.data ? state.data.utcOffset : 0) + " 失敗（" + e.why + "）";
+    }else if(state.fetchedAt){
+      els.netNote.textContent = describeAge(state.fetchedAt) + " 成功";
+    }else{
+      els.netNote.textContent = "-";
+    }
+  }
+
+  function describeNetError(e){
+    if(!e) return "原因不明";
+    if(e.netKind === "timeout") return "応答がありません";
+    if(e.netKind === "http")    return "気象サーバーの応答 " + e.status;
+    if(e.netKind === "offline") return "接続できません";
+    if(e.message && e.message.indexOf("forecast-") === 0) return "気象サーバーの応答 " + e.message.slice(9);
+    return "原因不明";
+  }
 
   function describeAge(ms){
     var min=Math.floor((Date.now()-ms)/60000);
@@ -1102,7 +1132,7 @@
 
   // ---------- render ----------
 
-  var state = { data:null, fetchedAt:0, place:"", scrub:null };
+  var state = { data:null, fetchedAt:0, place:"", scrub:null, lastError:null };
 
   function renderHero(animate){
     var d=state.data; if(!d) return;
@@ -1329,12 +1359,16 @@
       state.data=data; state.fetchedAt=Date.now(); state.place=place; state.scrub=null;
       els.placeName.textContent=place;
       writeJSON(CACHE_KEY,{place:place,lat:lat,lon:lon,data:data,fetchedAt:Date.now()});
+      state.lastError = null; renderNetNote();
       renderAll(true); setBusy(false);
     }).catch(function(err){
       setBusy(false); console.error(err);
+      var why = describeNetError(err);
+      state.lastError = { at: Date.now(), why: why };
+      renderNetNote();
       var had = state.data!=null;
-      setMsg(had ? "更新できませんでした。表示は"+describeAge(state.fetchedAt)+"のデータです。"
-                 : "データを取得できませんでした。通信環境を確認してください。");
+      setMsg(had ? "更新できませんでした（"+why+"）。表示は"+describeAge(state.fetchedAt)+"のデータです。"
+                 : "データを取得できませんでした（"+why+"）。通信環境を確認してください。");
       if(had) renderStatus();
     });
   }
