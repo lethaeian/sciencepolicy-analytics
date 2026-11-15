@@ -1,8 +1,8 @@
 {
-  "name": "速報 — テニスをオーディオ機器として聴く",
-  "short_name": "速報",
-  "description": "進行中のテニスの試合を、一台のオーディオ機器の面として見る。局はスピーカーのグリルを中心から埋め、試合はテープの波形になる。",
-  "lang": "ja",
+  "name": "Live — tennis as an audio machine",
+  "short_name": "Live",
+  "description": "Live tennis read as one audio machine. Games fill the speaker grille from the centre out; the match becomes a tape waveform.",
+  "lang": "en",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",

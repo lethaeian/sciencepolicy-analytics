@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="速報">
-<meta name="description" content="進行中のテニスの試合を、オーディオ機器の面として見る速報。局はグリルの点で埋まり、試合はテープの波形になる。">
-<title>速報 — テニスをオーディオ機器として聴く</title>
+<meta name="apple-mobile-web-app-title" content="Live">
+<meta name="description" content="Live tennis read as an audio machine. Games fill the speaker grille; the match becomes a tape waveform.">
+<title>Live — tennis as an audio machine</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -518,10 +518,10 @@
     <section class="pane now" id="paneNow">
       <div class="top">
         <div class="grow">
-          <h1 class="title" id="nowTitle">読み込み中</h1>
-          <p class="sub" id="nowSub">情報源をさがしています</p>
+          <h1 class="title" id="nowTitle">Loading</h1>
+          <p class="sub" id="nowSub">Looking for a source</p>
         </div>
-        <button class="caret" id="toDial" aria-label="選局の面へ">
+        <button class="caret" id="toDial" aria-label="Go to Tuner">
           <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>
@@ -530,30 +530,30 @@
 
       <div class="wheel">
         <div class="ring"></div>
-        <button class="key up" id="keyHold" aria-label="自動更新の停止と再開">
+        <button class="key up" id="keyHold" aria-label="Pause or resume auto-refresh">
           <svg viewBox="0 0 24 24" id="keyHoldIcon"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg>
         </button>
-        <button class="key left" id="keyPrev" aria-label="前の試合">
+        <button class="key left" id="keyPrev" aria-label="Previous match">
           <svg viewBox="0 0 24 24"><path d="M11 12L20 6v12zM2 12l9-6v12z"/></svg>
         </button>
-        <button class="key right" id="keyNext" aria-label="次の試合">
+        <button class="key right" id="keyNext" aria-label="Next match">
           <svg viewBox="0 0 24 24"><path d="M13 12L4 6v12zM22 12l-9-6v12z"/></svg>
         </button>
-        <button class="key down" id="keyDeck" aria-label="デッキの面へ">
+        <button class="key down" id="keyDeck" aria-label="Go to Deck">
           <svg viewBox="0 0 24 24"><path d="M12 16l-6-7h12z"/></svg>
         </button>
-        <button class="hub" id="hub" aria-label="いまのポイント">
+        <button class="hub" id="hub" aria-label="Current point">
           <span class="pts" id="hubPts">–</span>
           <span class="cap" id="hubCap">POINT</span>
         </button>
       </div>
 
       <div class="corners">
-        <button class="corner" id="cornerSets" aria-label="セットの並びを読み上げ">
+        <button class="corner" id="cornerSets" aria-label="Jump to the closest match">
           <svg viewBox="0 0 24 24"><path d="M3 14h2v6H3zM7 9h2v11H7zM11 4h2v16h-2zM15 11h2v9h-2zM19 7h2v13h-2z"/></svg>
         </button>
         <div class="sets" id="nowSets"></div>
-        <button class="corner" id="cornerFav" aria-label="この試合を覚えておく">
+        <button class="corner" id="cornerFav" aria-label="Remember this match">
           <svg viewBox="0 0 24 24" id="favIcon"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>
         </button>
       </div>
@@ -571,10 +571,10 @@
     <section class="pane deck" id="paneDeck">
       <div class="top">
         <div class="grow">
-          <h1 class="title" id="deckTitle">デッキ</h1>
-          <p class="sub" id="deckSub">試合をテープとして見る</p>
+          <h1 class="title" id="deckTitle">Deck</h1>
+          <p class="sub" id="deckSub">The match as tape</p>
         </div>
-        <button class="caret" id="toNow" aria-label="いまの面へ">
+        <button class="caret" id="toNow" aria-label="Go to Now">
           <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
         </button>
       </div>
@@ -598,32 +598,32 @@
       <div class="bands" id="bands"></div>
 
       <button class="opener" id="openStats" type="button">
-        <span class="lb">計器盤</span>
+        <span class="lb">Meters</span>
         <span class="hint" id="openStatsHint">ACES · SERVE · POINTS</span>
         <span class="arw">▸</span>
       </button>
 
       <div class="spacer"></div>
-      <p class="note" id="deckNote">波形は一本が一ゲーム。上が上段の選手、下が下段の選手。丈はその局の競り具合を示す。</p>
+      <p class="note" id="deckNote">One bar per game. Up is the top player, down is the bottom one; height shows how hard the game was fought.</p>
     </section>
 
     <!-- ── 三枚目：選局 ───────────────────────── -->
     <section class="pane dial" id="paneDial">
       <div class="top">
         <div class="grow">
-          <h1 class="title">選局</h1>
+          <h1 class="title">Tuner</h1>
           <p class="sub" id="dialSub">—</p>
         </div>
-        <button class="caret" id="toNow2" aria-label="いまの面へ">
+        <button class="caret" id="toNow2" aria-label="Go to Now">
           <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
         </button>
       </div>
 
       <!-- 日を送る。その日のカードを丸ごと取るので、昨日の結果も明日の予定も見られる -->
       <div class="daynav">
-        <button class="dbtn" id="dayPrev" aria-label="前の日"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="dbtn" id="dayPrev" aria-label="Previous day"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
         <button class="dlabel" id="dayLabel">—</button>
-        <button class="dbtn" id="dayNext" aria-label="次の日"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button class="dbtn" id="dayNext" aria-label="Next day"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
 
       <!-- 帯域。ラジオの AM/FM のつもりで、ツアーの区分を切り替える -->
@@ -635,39 +635,39 @@
       <p class="note" id="listNote"></p>
 
       <div class="panel">
-        <h3>Source — 情報源</h3>
+        <h3>Source</h3>
         <div id="srcList"></div>
-        <button class="btn" id="btnProbe">もう一度さがす</button>
-        <p class="note" id="srcNote">この端末のブラウザから各配信元に実際に当たり、いちばん多くの試合が取れたものを自動で選びます。</p>
+        <button class="btn" id="btnProbe">Search again</button>
+        <p class="note" id="srcNote">This device tries each feed for real and picks whichever returns the most matches.</p>
       </div>
 
       <div class="panel">
-        <h3>Relay — 中継</h3>
+        <h3>Relay</h3>
         <div id="relayList"></div>
         <p class="note">
-          配信元が直接つながらないとき、ここを経由して取りに行きます。無料の相乗りなので、
-          止まることがあります。全部だめなときは、下から自分の中継を足せます。
+          When a feed will not answer this page directly, we go through one of these. They are free
+          shared services, so they do stop. If none of them work, add your own below.
         </p>
         <div class="seek" style="margin-top:12px">
           <svg class="lens" viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"/></svg>
           <input id="relayTpl" type="url" inputmode="url" autocomplete="off" autocorrect="off"
-                 spellcheck="false" placeholder="https://例.workers.dev/?url={url}" aria-label="中継の住所">
+                 spellcheck="false" placeholder="https://yours.workers.dev/?url={url}" aria-label="Relay address">
         </div>
-        <button class="btn" id="relayAdd">この中継を足す</button>
+        <button class="btn" id="relayAdd">Add this relay</button>
         <p class="note" id="relayNote">
-          <code>{url}</code> が符号化した住所に、<code>{raw}</code> がそのままの住所に置き換わります。
+          <code>{url}</code> becomes the encoded address, <code>{raw}</code> the plain one.
         </p>
-        <button class="btn" id="relayHelp">自分の中継の作り方</button>
+        <button class="btn" id="relayHelp">How to run your own</button>
       </div>
 
       <div class="panel">
-        <h3>Interval — 更新の間隔</h3>
+        <h3>Interval</h3>
         <div id="ivList"></div>
       </div>
 
       <p class="note">
-        スコアは各配信元の公開データをそのまま表示しています。数値の正確さと更新の早さは配信元に依存します。
-        本アプリは端末内でのみ動き、閲覧内容をどこにも送りません。
+        Scores are shown exactly as each feed publishes them; their accuracy and speed are the feed's.
+        This app runs only on your device and sends nothing about what you watch anywhere.
       </p>
       <div class="spacer"></div>
     </section>
@@ -676,10 +676,10 @@
     <section class="pane list" id="paneRoster">
       <div class="top">
         <div class="grow">
-          <h1 class="title">名簿</h1>
-          <p class="sub" id="rosterSub">選手を引く</p>
+          <h1 class="title">Roster</h1>
+          <p class="sub" id="rosterSub">Look up a player</p>
         </div>
-        <button class="caret" id="toNow3" aria-label="いまの面へ">
+        <button class="caret" id="toNow3" aria-label="Go to Now">
           <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
         </button>
       </div>
@@ -687,27 +687,27 @@
       <div class="seek">
         <svg class="lens" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
         <input id="q" type="search" inputmode="search" autocomplete="off" autocorrect="off"
-               spellcheck="false" placeholder="選手の名、または試合の住所" aria-label="選手や試合を検索">
-        <button class="clr" id="qClear" aria-label="消す"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+               spellcheck="false" placeholder="Player name, or a match link" aria-label="Search players and matches">
+        <button class="clr" id="qClear" aria-label="Clear"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
 
       <div id="qResult"></div>
-      <p class="note" id="qNote">名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。</p>
+      <p class="note" id="qNote">Part of a name is enough. Paste a match page link and we will find that pairing.</p>
 
       <div class="panel" id="rankPanel">
-        <h3>Top 10 — 番付</h3>
+        <h3>Top 10</h3>
         <div class="chips" id="rankTabs"></div>
         <div id="rankList"></div>
         <p class="note" id="rankNote"></p>
       </div>
 
       <div class="panel" id="favPanel">
-        <h3>Recent — 最近みた選手</h3>
+        <h3>Recently viewed</h3>
         <div id="recentList"></div>
       </div>
 
       <div class="panel" id="todayPanel">
-        <h3>Today — 今日出ている選手</h3>
+        <h3>Playing today</h3>
         <div id="todayList"></div>
       </div>
 
@@ -721,8 +721,8 @@
   <!-- ── 選手の札。どの面からでも、選手名を押すと上がってくる ── -->
   <div class="sheetwrap" id="sheetWrap" hidden>
     <div class="scrim" id="sheetScrim"></div>
-    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="選手の戦績">
-      <button class="grab" id="sheetClose" aria-label="閉じる"></button>
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Player record">
+      <button class="grab" id="sheetClose" aria-label="Close"></button>
       <div id="sheetBody"></div>
     </section>
   </div>
@@ -786,7 +786,7 @@ var store = {
 /* 組み込みの中継。無料の相乗りなので、いつ止まってもおかしくない。
    数を持たせたうえで、利用者が自分の中継を足せるようにしてある（下記 userRelays）。 */
 var BUILTIN_RELAYS = [
-  { id:"direct",     name:"直接",             tpl:null },
+  { id:"direct",     name:"Direct",           tpl:null },
   { id:"allorigins", name:"allorigins",       tpl:"https://api.allorigins.win/raw?url={url}" },
   { id:"codetabs",   name:"codetabs",         tpl:"https://api.codetabs.com/v1/proxy?quest={url}" },
   { id:"corsproxy",  name:"corsproxy",        tpl:"https://corsproxy.io/?url={url}" },
@@ -839,7 +839,7 @@ function relayFromTpl(id, name, tpl){
 function allRelays(){
   var out = BUILTIN_RELAYS.map(function(r){ return relayFromTpl(r.id, r.name, r.tpl); });
   userRelays.forEach(function(r, i){
-    out.push(relayFromTpl(r.id || ("mine" + i), r.name || "自前の中継", r.tpl));
+    out.push(relayFromTpl(r.id || ("mine" + i), r.name || "My relay", r.tpl));
   });
   return out.sort(function(a, b){ return relayScore(b) - relayScore(a); });
 }
@@ -881,7 +881,7 @@ var SOURCES = [
     name: "SofaScore",
     /* ATP・WTA に加え、チャレンジャー、ITF、団体戦まで全試合が並ぶ。
        通常いちばん試合数が多く、選手の検索と戦績も引ける。 */
-    note: "ATP・WTA・チャレンジャー・ITF",
+    note: "ATP, WTA, Challenger and ITF",
     url: SOFA + "/sport/tennis/events/live",
     day: function(d){ return SOFA + "/sport/tennis/scheduled-events/" + d; },
     search: function(q){
@@ -911,7 +911,7 @@ var SOURCES = [
   {
     id: "espn-atp",
     name: "ESPN (ATP)",
-    note: "ATP 本戦のみ",
+    note: "ATP main draw only",
     url: ESPN + "/atp/scoreboard",
     day: function(d){ return ESPN + "/atp/scoreboard?dates=" + d.replace(/-/g, ""); },
     stats: function(m){
@@ -929,7 +929,7 @@ var SOURCES = [
   {
     id: "espn-wta",
     name: "ESPN (WTA)",
-    note: "WTA 本戦のみ",
+    note: "WTA main draw only",
     url: ESPN + "/wta/scoreboard",
     day: function(d){ return ESPN + "/wta/scoreboard?dates=" + d.replace(/-/g, ""); },
     stats: function(m){
@@ -985,24 +985,24 @@ function sofaSearch(j){
    捨てずに「その他」に残す（こちらの当て方が古いだけかもしれない）。
    ─────────────────────────────────────────────────────────── */
 var STAT_SPECS = [
-  { id:"aces", ja:"エース",                   sec:"serve",  re:[/^aces?$/, /^ace$/] },
-  { id:"df",   ja:"ダブルフォルト",            sec:"serve",  re:[/double\s*faults?/] },
-  { id:"fsw",  ja:"ファーストサーブ得点率",     sec:"serve",  re:[/(1st|first)\s*serve\s*points?\s*won/] },
-  { id:"ssw",  ja:"セカンドサーブ得点率",       sec:"serve",  re:[/(2nd|second)\s*serve\s*points?\s*won/] },
-  { id:"fs",   ja:"ファーストサーブ率",         sec:"serve",  re:[/(1st|first)\s*serve(\s*percentage)?$/, /^first\s*serve$/] },
-  { id:"spw",  ja:"サービスポイント率",         sec:"serve",  re:[/service\s*points?\s*won/, /^serve\s*points?\s*won/] },
-  { id:"sgw",  ja:"サービスゲーム獲得数",       sec:"serve",  re:[/service\s*games?\s*won/] },
-  { id:"bps",  ja:"ブレイクポイントを凌いだ数", sec:"serve",  re:[/break\s*points?\s*saved/] },
+  { id:"aces", label:"Aces",                   sec:"serve",  re:[/^aces?$/, /^ace$/] },
+  { id:"df",   label:"Double faults",            sec:"serve",  re:[/double\s*faults?/] },
+  { id:"fsw",  label:"1st serve points won",     sec:"serve",  re:[/(1st|first)\s*serve\s*points?\s*won/] },
+  { id:"ssw",  label:"2nd serve points won",       sec:"serve",  re:[/(2nd|second)\s*serve\s*points?\s*won/] },
+  { id:"fs",   label:"1st serve in",         sec:"serve",  re:[/(1st|first)\s*serve(\s*percentage)?$/, /^first\s*serve$/] },
+  { id:"spw",  label:"Service points won",         sec:"serve",  re:[/service\s*points?\s*won/, /^serve\s*points?\s*won/] },
+  { id:"sgw",  label:"Service games won",       sec:"serve",  re:[/service\s*games?\s*won/] },
+  { id:"bps",  label:"Break points saved", sec:"serve",  re:[/break\s*points?\s*saved/] },
 
-  { id:"bp",   ja:"ブレイクポイント",           sec:"return", re:[/break\s*points?\s*(converted|won|scored)/, /^break\s*points?$/] },
-  { id:"rpw",  ja:"リターンゲーム得点数",       sec:"return", re:[/receiver\s*points?\s*won/, /return(ing)?\s*(games?\s*)?points?\s*won/] },
-  { id:"rgw",  ja:"リターンゲーム獲得数",       sec:"return", re:[/return(ing)?\s*games?\s*won/, /receiver\s*games?\s*won/] },
+  { id:"bp",   label:"Break points won",           sec:"return", re:[/break\s*points?\s*(converted|won|scored)/, /^break\s*points?$/] },
+  { id:"rpw",  label:"Return points won",       sec:"return", re:[/receiver\s*points?\s*won/, /return(ing)?\s*(games?\s*)?points?\s*won/] },
+  { id:"rgw",  label:"Return games won",       sec:"return", re:[/return(ing)?\s*games?\s*won/, /receiver\s*games?\s*won/] },
 
-  { id:"tb",   ja:"タイブレイク勝利数",         sec:"total",  re:[/tie\s*-?\s*breaks?(\s*won)?/] },
-  { id:"tpw",  ja:"ポイント獲得数",             sec:"total",  re:[/total\s*points?\s*won/, /^points?\s*won$/] },
-  { id:"gw",   ja:"ゲーム獲得数",               sec:"total",  re:[/total\s*games?\s*won/, /^games?\s*won$/] },
-  { id:"mpr",  ja:"連続獲得ポイント数",         sec:"total",  re:[/max(imum)?\s*points?\s*in\s*a\s*row/, /points?\s*in\s*a\s*row/] },
-  { id:"mgr",  ja:"連続獲得ゲーム数",           sec:"total",  re:[/max(imum)?\s*games?\s*in\s*a\s*row/, /games?\s*in\s*a\s*row/] }
+  { id:"tb",   label:"Tiebreaks won",         sec:"total",  re:[/tie\s*-?\s*breaks?(\s*won)?/] },
+  { id:"tpw",  label:"Total points won",             sec:"total",  re:[/total\s*points?\s*won/, /^points?\s*won$/] },
+  { id:"gw",   label:"Games won",               sec:"total",  re:[/total\s*games?\s*won/, /^games?\s*won$/] },
+  { id:"mpr",  label:"Points in a row",         sec:"total",  re:[/max(imum)?\s*points?\s*in\s*a\s*row/, /points?\s*in\s*a\s*row/] },
+  { id:"mgr",  label:"Games in a row",           sec:"total",  re:[/max(imum)?\s*games?\s*in\s*a\s*row/, /games?\s*in\s*a\s*row/] }
 ];
 
 /* 表示は "23/40 (58%)" のような文字列で来る。棒の長さに使う数を取り出す。 */
@@ -1052,7 +1052,7 @@ function mapStats(items){
       if(!hitted) continue;
       used[i] = 1;
       rows.push({
-        id: spec.id, ja: spec.ja, sec: spec.sec, name: it.name || spec.ja,
+        id: spec.id, label: spec.label, sec: spec.sec, name: it.name || spec.label,
         home: it.home != null ? String(it.home) : "—",
         away: it.away != null ? String(it.away) : "—",
         hv: statNum(it, "home"), av: statNum(it, "away")
@@ -1066,7 +1066,7 @@ function mapStats(items){
   items.forEach(function(it, i){
     if(used[i]) return;
     other.push({
-      id: "x" + i, ja: it.name || String(it.key || "—"), sec:"other", name: it.name || "",
+      id: "x" + i, label: it.name || String(it.key || "—"), sec:"other", name: it.name || "",
       home: it.home != null ? String(it.home) : "—",
       away: it.away != null ? String(it.away) : "—",
       hv: statNum(it, "home"), av: statNum(it, "away")
@@ -1374,7 +1374,7 @@ function probeSource(src){
   var i = 0;
   function step(){
     if(i >= RELAYS.length){
-      probeState[src.id] = { state:"no", count:0, relay:null, err:"どの経路でも届きませんでした" };
+      probeState[src.id] = { state:"no", count:0, relay:null, err:"No route reached it" };
       renderSources();
       return Promise.resolve(null);
     }
@@ -1392,12 +1392,12 @@ function probeSource(src){
 }
 
 function probeAll(){
-  $("srcNote").textContent = "各配信元に順に当たっています…";
+  $("srcNote").textContent = "Trying each feed in turn…";
   return Promise.all(SOURCES.map(probeSource)).then(function(results){
     var hits = results.filter(Boolean);
     if(!hits.length){
       $("srcNote").textContent =
-        "どの配信元にも届きませんでした。回線か、配信元側の遮断が考えられます。デモの試合で動かします。";
+        "No feed could be reached — the network, or the feed blocking us. Running on demo matches.";
       useDemo();
       return null;
     }
@@ -1408,7 +1408,7 @@ function probeAll(){
     store.set("chosen", chosen);
     demoOn = false;
     $("srcNote").textContent =
-      win.src.name + "（" + win.relay.name + "）を採用。進行中 " + win.live + " 試合。";
+      win.src.name + " via " + win.relay.name + ". " + win.live + " live.";
     ingestLive(win.list);
     renderSources();
     pullDay();                                   /* その日のカードも続けて取る */
@@ -1422,11 +1422,11 @@ function probeAll(){
    点を刻む簡単な機構を積んでおく。名前は実在の人物ではない。
    ─────────────────────────────────────────────────────────── */
 var DEMO_SEEDS = [
-  { t:"Metropolitan Open",  r:"準々決勝", a:"K. Aotani",   b:"L. Ferreira", g:"Hard"  },
-  { t:"Riviera Classic",    r:"2回戦",   a:"M. Solberg",  b:"D. Ivanek",   g:"Clay"  },
-  { t:"Harbourside 250",    r:"1回戦",   a:"R. Nakagawa", b:"T. Villard",  g:"Hard"  },
-  { t:"Northgate Challenger", r:"準決勝", a:"S. Okonkwo",  b:"P. Halvorsen",g:"Indoor"},
-  { t:"Lakeside Cup",       r:"決勝",     a:"E. Marchetti",b:"Y. Sugimoto", g:"Grass" }
+  { t:"Metropolitan Open",  r:"Quarterfinal", a:"K. Aotani",   b:"L. Ferreira", g:"Hard"  },
+  { t:"Riviera Classic",    r:"Round of 32",   a:"M. Solberg",  b:"D. Ivanek",   g:"Clay"  },
+  { t:"Harbourside 250",    r:"Round of 64",   a:"R. Nakagawa", b:"T. Villard",  g:"Hard"  },
+  { t:"Northgate Challenger", r:"Semifinal", a:"S. Okonkwo",  b:"P. Halvorsen",g:"Indoor"},
+  { t:"Lakeside Cup",       r:"Final",     a:"E. Marchetti",b:"Y. Sugimoto", g:"Grass" }
 ];
 
 function DemoMatch(seed, idx){
@@ -1509,7 +1509,7 @@ DemoMatch.prototype.toMatch = function(){
     sets: sets, tbs: tbs, point: pt,
     firstServer: this.firstServer,
     status: this.done ? "done" : "live",
-    statusText: this.done ? "終了" : "進行中",
+    statusText: this.done ? "Finished" : "Live",
     startTs: this.startTs,
     winner: -1
   };
@@ -1865,8 +1865,8 @@ function paintWho(dotEl, nameEl, m, side){
 function renderNow(){
   var m = cur();
   if(!m){
-    $("nowTitle").textContent = "進行中の試合なし";
-    $("nowSub").textContent = chosen ? "配信元に進行中の試合が並んでいません" : "情報源をさがしています";
+    $("nowTitle").textContent = "No live match";
+    $("nowSub").textContent = chosen ? "The feed lists nothing in progress" : "Looking for a source";
     $("hubPts").textContent = "–";
     paintGrille(null);
     return;
@@ -1894,17 +1894,17 @@ function renderNow(){
   }
 
   var v = view(), n = v.length, i = v.indexOf(m);
-  var srcName = demoOn ? "デモ" : (chosen ? nameOfSource(chosen.srcId) : "—");
+  var srcName = demoOn ? "Demo" : (chosen ? nameOfSource(chosen.srcId) : "—");
   $("nowFoot").textContent =
     (i >= 0 ? (i+1) + " / " + n : "—") + "   ·   " + srcName +
-    "   ·   " + (holding ? "更新 停止中" : "更新 " + (interval/1000) + "秒") +
+    "   ·   " + (holding ? "HOLD" : "EVERY " + (interval/1000) + "s") +
     (lastAt ? "   ·   " + pad2(new Date(lastAt).getHours()) + ":" + pad2(new Date(lastAt).getMinutes()) : "");
 
   $("favIcon").style.opacity = (store.get("fav", null) === m.id) ? "1" : ".38";
 }
 
 function nameOfSource(id){
-  if(id === "demo") return "デモ";
+  if(id === "demo") return "Demo";
   for(var i=0;i<SOURCES.length;i++) if(SOURCES[i].id === id) return SOURCES[i].name;
   return id || "—";
 }
@@ -2071,8 +2071,8 @@ function paintMeters(m){
     d.appendChild(v); d.appendChild(c); d.appendChild(bar);
     return d;
   }
-  box.appendChild(meter("Games — 獲得ゲーム", gm[0], gm[1], ""));
-  box.appendChild(meter("Breaks — ブレーク", br[0], br[1], ""));
+  box.appendChild(meter("Games won", gm[0], gm[1], ""));
+  box.appendChild(meter("Breaks", br[0], br[1], ""));
 }
 
 function paintBands(m){
@@ -2099,8 +2099,8 @@ function paintBands(m){
 function renderDeck(){
   var m = cur();
   if(!m){
-    $("deckTitle").textContent = "デッキ";
-    $("deckSub").textContent = "試合が選ばれていません";
+    $("deckTitle").textContent = "Deck";
+    $("deckSub").textContent = "No match selected";
     paintWave(null); paintReels(null); paintBands(null);
     return;
   }
@@ -2116,7 +2116,7 @@ function renderDeck(){
   paintWho($("dSrvB"), $("dNameB"), m, 1);
 
   var el0 = m.startTs ? (Date.now() - m.startTs) / 1000 : null;
-  $("tlLeft").textContent = m.status === "soon" ? "開始前" : hhmm(el0);
+  $("tlLeft").textContent = m.status === "soon" ? "Not started" : hhmm(el0);
   $("tlMid").textContent = "SET " + Math.max(1, m.sets.length) + (inTiebreak(m) ? " · TB" : "");
   $("tlRight").textContent = totalGames(m.sets) + " GAMES";
 
@@ -2124,17 +2124,17 @@ function renderDeck(){
   var hint = $("openStatsHint");
   if(hint){
     var missed = !canStats(m) || (!embeddedStats(m) && statsMiss[(chosen && chosen.srcId) || ""]);
-    hint.textContent = missed ? "この配信元では出ないかもしれません" : "ACES · SERVE · POINTS";
+    hint.textContent = missed ? "This feed may not have them" : "ACES · SERVE · POINTS";
   }
 
   var rec = logs[m.id];
   var pre = rec ? rec.games.filter(function(g){ return g.pre; }).length : 0;
   $("deckNote").textContent = pre
-    ? ("波形は一本が一ゲーム。上が " + m.players[0].short + "、下が " + m.players[1].short +
-       "。開いてから決まった局は、ブレークを高く赤で示す。開く前の " + pre +
-       " 局は順序が配信元から得られないため、薄く均した形で置いてある。")
-    : "波形は一本が一ゲーム。上が " + m.players[0].short + "、下が " + m.players[1].short +
-      "。ブレークは高く赤で示す。";
+    ? ("One bar per game. Up is " + m.players[0].short + ", down is " + m.players[1].short +
+       ". Games decided since you opened this show breaks tall and red. The " + pre +
+       " games before that are laid flat — the feed does not give their order.")
+    : "One bar per game. Up is " + m.players[0].short + ", down is " + m.players[1].short +
+      ". Breaks show tall and red.";
 }
 
 /* ── 3-3 選局：試合の一覧と、情報源の設定 ────────────────── */
@@ -2162,16 +2162,16 @@ function renderList(){
 
   if(!v.length){
     note.textContent = matches.length
-      ? "この帯域・大会には試合がありません。上のつまみを戻してください。"
-      : (chosen ? "この日のカードが取れていません。日を送るか、情報源をさがし直してください。"
-                : "情報源をさがしています…");
+      ? "No matches in this band or tournament. Widen the filters above."
+      : (chosen ? "No card for this day. Change the day, or search for a source again."
+                : "Looking for a source…");
     return;
   }
   var live = v.filter(function(m){ return m.status === "live"; }).length;
   var soon = v.filter(function(m){ return m.status === "soon"; }).length;
   var done = v.filter(function(m){ return m.status === "done"; }).length;
-  note.textContent = "進行中 " + live + " · 開始前 " + soon + " · 終了 " + done +
-    (v.length > 60 ? "（上から 60 件を表示）" : "");
+  note.textContent = live + " live · " + soon + " upcoming · " + done + " finished" +
+    (v.length > 60 ? " (showing the first 60)" : "");
 
   v.slice(0, 60).forEach(function(m, i){
     var b = el("button", "track" + (m.id === curId ? " cur" : ""));
@@ -2199,8 +2199,8 @@ function renderList(){
     });
     var meta = el("div", "meta");
     meta.textContent = [ m.tour !== "\u2014" ? m.tour : "", m.tournament, m.round,
-                         m.status === "done" ? "終了" :
-                         m.status === "soon" ? (hhmmOf(m.startTs) ? hhmmOf(m.startTs) + " 開始" : "開始前") : ""
+                         m.status === "done" ? "Finished" :
+                         m.status === "soon" ? (hhmmOf(m.startTs) ? "starts " + hhmmOf(m.startTs) : "Upcoming") : ""
                        ].filter(Boolean).join(" · ");
     body.appendChild(meta);
     b.appendChild(body);
@@ -2216,12 +2216,12 @@ function renderList(){
 
 /* ── つまみ：帯域と大会 ──────────────────────────────────── */
 var BANDS = [
-  { id:"ALL", name:"すべて" },
+  { id:"ALL", name:"All" },
   { id:"ATP", name:"ATP" },
   { id:"WTA", name:"WTA" },
-  { id:"CH",  name:"チャレンジャー" },
+  { id:"CH",  name:"Challenger" },
   { id:"ITF", name:"ITF" },
-  { id:"CUP", name:"団体戦" }
+  { id:"CUP", name:"Team events" }
 ];
 
 function chip(label, count, on, fn){
@@ -2253,7 +2253,7 @@ function renderChips(){
   var list = tourList();
   if(list.length <= 1){ tb.classList.add("hide"); return; }
   tb.classList.remove("hide");
-  tb.appendChild(chip("大会すべて", list.length, !tourPick, function(){
+  tb.appendChild(chip("All events", list.length, !tourPick, function(){
     tourPick = null; store.set("tourPick", null); renderAll();
   }));
   list.slice(0, 40).forEach(function(t){
@@ -2266,14 +2266,14 @@ function renderChips(){
 }
 
 /* ── 日を送る ────────────────────────────────────────────── */
-var WD = ["日","月","火","水","木","金","土"];
+var WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 function renderDay(){
   var lab = $("dayLabel");
   var d = new Date(dayDate + "T12:00:00");
   var today = ymd(new Date());
   var diff = Math.round((new Date(dayDate + "T12:00:00") - new Date(today + "T12:00:00")) / 86400000);
-  var when = diff === 0 ? "今日" : diff === -1 ? "昨日" : diff === 1 ? "明日" : "";
-  lab.textContent = (d.getMonth()+1) + "/" + d.getDate() + "（" + WD[d.getDay()] + "）" + (when ? " " + when : "");
+  var when = diff === 0 ? "today" : diff === -1 ? "yesterday" : diff === 1 ? "tomorrow" : "";
+  lab.textContent = WD[d.getDay()] + " " + (d.getMonth()+1) + "/" + d.getDate() + (when ? " · " + when : "");
   lab.className = "dlabel" + (diff === 0 ? " today" : "");
 }
 
@@ -2289,15 +2289,15 @@ function renderSources(){
     var body = el("div", "body");
     var nm = el("div", "nm"); nm.textContent = name;
     var mt = el("div", "meta");
-    if(st.state === "busy") mt.textContent = "確認中…";
-    else if(st.state === "ok") mt.textContent = note + " — 進行中 " + st.count + " 試合" +
-      (st.relay && st.relay.id !== "direct" ? "（" + st.relay.name + "）" : "");
-    else if(st.state === "no") mt.textContent = st.err || "届きません";
+    if(st.state === "busy") mt.textContent = "Checking…";
+    else if(st.state === "ok") mt.textContent = note + " — " + st.count + " live" +
+      (st.relay && st.relay.id !== "direct" ? " via " + st.relay.name : "");
+    else if(st.state === "no") mt.textContent = st.err || "Not reachable";
     else mt.textContent = note;
     body.appendChild(nm); body.appendChild(mt);
     var pick = el("span", "pick");
-    pick.textContent = (chosen && chosen.srcId === id) ? "使用中"
-                     : (st.state === "ok" || id === "demo") ? "選ぶ" : "";
+    pick.textContent = (chosen && chosen.srcId === id) ? "In use"
+                     : (st.state === "ok" || id === "demo") ? "Use" : "";
     b.appendChild(led); b.appendChild(body); b.appendChild(pick);
     if(onPick) b.addEventListener("click", onPick);
     box.appendChild(b);
@@ -2316,13 +2316,13 @@ function renderSources(){
     });
   });
 
-  row("demo", "デモの試合", "実在の試合ではありません",
+  row("demo", "Demo matches", "Not real matches",
       { state: demoOn ? "ok" : "no", count: demoMatches.length }, function(){ useDemo(); });
 
   $("dialSub").textContent = demoOn
-    ? "デモ · " + matches.length + " 試合"
-    : (chosen ? nameOfSource(chosen.srcId) + " · 進行中 " +
-        matches.filter(function(m){ return m.status==="live"; }).length + " 試合" : "—");
+    ? "Demo · " + matches.length + " matches"
+    : (chosen ? nameOfSource(chosen.srcId) + " · " +
+        matches.filter(function(m){ return m.status==="live"; }).length + " live" : "—");
 }
 
 function pick(src, relay, list){
@@ -2382,9 +2382,9 @@ function renderRank(){
   box.textContent = "";
   var have = rankCache[rankTour];
   if(!have || !have.rows.length){
-    note.textContent = rankBusy[rankTour] ? "番付を取っています…"
-      : canRank() ? "番付がまだ取れていません。下の「取り直す」を押してください。"
-      : "いまの配信元からは番付を引けません。";
+    note.textContent = rankBusy[rankTour] ? "Fetching the rankings…"
+      : canRank() ? "No rankings yet. Press refresh below."
+      : "This feed does not publish rankings.";
     box.appendChild(rankRefresh());
     return;
   }
@@ -2404,32 +2404,32 @@ function renderRank(){
       var dot = el("span", "srv");
       dot.style.cssText = "display:inline-block;vertical-align:middle;margin-right:6px";
       mt.appendChild(dot);
-      mt.appendChild(document.createTextNode("進行中 · " + live.tournament));
+      mt.appendChild(document.createTextNode("Live · " + live.tournament));
     }else{
       mt.appendChild(document.createTextNode(
         [p.country, p.points != null ? p.points + " pt" : ""].filter(Boolean).join(" · ") || "—"));
     }
     body.appendChild(nm); body.appendChild(mt);
-    var go = el("span", "go"); go.textContent = "試合";
+    var go = el("span", "go"); go.textContent = "Matches";
     b.appendChild(rk); b.appendChild(body); b.appendChild(go);
     b.addEventListener("click", function(){ openPlayer(p); });
     box.appendChild(b);
   });
 
   var age = Math.floor((Date.now() - have.at) / 3600000);
-  note.textContent = (age < 1 ? "さきほど" : age + " 時間前") + "に "
-    + nameOfSource(have.src) + " から取った番付。押すと、その選手の直近の試合結果が出ます。";
+  note.textContent = "Rankings from " + nameOfSource(have.src) + ", "
+    + (age < 1 ? "just now" : age + "h ago") + ". Tap a name for that player's recent results.";
   box.appendChild(rankRefresh());
 }
 
 function rankRefresh(){
   var b = el("button", "btn");
   b.type = "button";
-  b.textContent = "番付を取り直す";
+  b.textContent = "Refresh rankings";
   b.disabled = !canRank();
   if(!canRank()) b.style.opacity = ".45";
   b.addEventListener("click", function(){
-    $("rankNote").textContent = "番付を取っています…";
+    $("rankNote").textContent = "Fetching the rankings…";
     fetchRanking(rankTour, true);
   });
   return b;
@@ -2450,21 +2450,21 @@ function renderRelays(){
     var mt = el("div", "meta");
     var mine = userRelays.some(function(x){ return (x.id || "") === r.id; });
     mt.textContent = [
-      mine ? "自前" : "組み込み",
-      h.ok ? "通った " + h.ok + " 回" : "",
-      h.ng ? "だめ " + h.ng + " 回" : "",
-      (!h.ok && !h.ng) ? "未使用" : ""
+      mine ? "yours" : "built in",
+      h.ok ? h.ok + " ok" : "",
+      h.ng ? h.ng + " failed" : "",
+      (!h.ok && !h.ng) ? "unused" : ""
     ].filter(Boolean).join(" · ");
     body.appendChild(nm); body.appendChild(mt);
     row.appendChild(led); row.appendChild(body);
 
     if(inUse){
-      var p = el("span", "pick"); p.textContent = "使用中";
+      var p = el("span", "pick"); p.textContent = "In use";
       row.appendChild(p);
     }else if(mine){
       var x = el("button", "pick");
       x.type = "button";
-      x.textContent = "外す";
+      x.textContent = "Remove";
       x.style.cssText = "border:0;background:none;padding:4px 2px";
       x.addEventListener("click", function(ev){
         ev.stopPropagation();
@@ -2483,26 +2483,26 @@ function addUserRelay(){
   var inp = $("relayTpl");
   var tpl = String(inp.value || "").trim();
   var note = $("relayNote");
-  if(!tpl){ note.textContent = "住所を入れてください。"; return; }
+  if(!tpl){ note.textContent = "Enter an address."; return; }
   if(!/^https:\/\//i.test(tpl)){
-    note.textContent = "https で始まる住所にしてください。http だと、この画面からは読めません。";
+    note.textContent = "Use an https address — http cannot be read from this page.";
     return;
   }
   if(tpl.indexOf("{url}") < 0 && tpl.indexOf("{raw}") < 0){
-    note.textContent = "住所のどこに差し込むかが要ります。末尾に {url} を付けてください。";
+    note.textContent = "Mark where the address goes — add {url} at the end.";
     return;
   }
   var host = "";
   try{ host = new URL(tpl.replace(/\{url\}|\{raw\}/g, "x")).hostname; }
-  catch(e){ note.textContent = "住所として読めませんでした。"; return; }
+  catch(e){ note.textContent = "That is not a readable address."; return; }
   if(userRelays.some(function(x){ return x.tpl === tpl; })){
-    note.textContent = "その中継はもう入っています。"; return;
+    note.textContent = "That relay is already here."; return;
   }
   userRelays.push({ id: "mine:" + host + ":" + userRelays.length, name: host, tpl: tpl });
   store.set("relays", userRelays);
   refreshRelays();
   inp.value = "";
-  note.textContent = host + " を足しました。「もう一度さがす」を押すと、この中継でもためします。";
+  note.textContent = "Added " + host + ". Press Search again to try it.";
   renderRelays();
 }
 
@@ -2510,20 +2510,20 @@ function addUserRelay(){
 function showRelayHelp(){
   var body = $("sheetBody");
   body.textContent = "";
-  var h = el("h2"); h.textContent = "自分の中継を持つ";
+  var h = el("h2"); h.textContent = "Run your own relay";
   body.appendChild(h);
   var p1 = el("p", "note");
-  p1.textContent = "配信元の多くは、ほかの頁から直に読まれることを許していません。"
-    + "あいだに一枚挟むと読めるようになります。無料の相乗りは止まることがあるので、"
-    + "自分のものを一つ持っておくと、以後は途切れません。";
+  p1.textContent = "Most feeds will not let another page read them directly. Putting one hop in "
+    + "between fixes that. Free shared relays do stop, so keeping one of your own "
+    + "means it never cuts out again.";
   body.appendChild(p1);
 
-  var h2 = el("div", "sect"); h2.textContent = "Cloudflare Workers の場合";
+  var h2 = el("div", "sect"); h2.textContent = "With Cloudflare Workers";
   body.appendChild(h2);
   var steps = el("p", "note");
-  steps.innerHTML = "1. Cloudflare に登録し、Workers で新しいものを作る<br>"
-    + "2. 下の中身をそのまま貼って、保存して配る<br>"
-    + "3. 配られた住所の末尾に <code>/?url={url}</code> を付けて、前の画面で足す";
+  steps.innerHTML = "1. Sign up at Cloudflare and create a new Worker<br>"
+    + "2. Paste the code below as it is, then save and deploy<br>"
+    + "3. Add <code>/?url={url}</code> to the address it gives you, and enter that on the previous screen";
   body.appendChild(steps);
 
   var code = el("pre");
@@ -2544,7 +2544,7 @@ function showRelayHelp(){
   body.appendChild(code);
 
   var p2 = el("p", "note");
-  p2.textContent = "無料の枠で足ります。自分の中継なので、誰かの都合で止まることがありません。";
+  p2.textContent = "The free tier is enough. It is yours, so nobody else's outage can stop it.";
   body.appendChild(p2);
   openSheet();
 }
@@ -2559,11 +2559,11 @@ function renderIntervals(){
     b.type = "button";
     var led = el("span", "led " + (interval === ms ? "ok" : "no"));
     var body = el("div", "body");
-    var nm = el("div", "nm"); nm.textContent = (ms/1000) + " 秒ごと";
+    var nm = el("div", "nm"); nm.textContent = "Every " + (ms/1000) + " seconds";
     var mt = el("div", "meta");
-    mt.textContent = ms === 10000 ? "いちばん早いが、通信も電池もいちばん使う"
-                   : ms === 20000 ? "ふだんはこれで足りる"
-                   : "電池を使わない。ながら見に";
+    mt.textContent = ms === 10000 ? "Fastest, but uses the most data and battery"
+                   : ms === 20000 ? "Enough for most watching"
+                   : "Easy on the battery, for half-watching";
     body.appendChild(nm); body.appendChild(mt);
     b.appendChild(led); b.appendChild(body);
     b.addEventListener("click", function(){
@@ -2584,13 +2584,13 @@ function activeSource(){ return chosen ? srcById(chosen.srcId) : null; }
    「失敗しました」とだけ出すと、次に直しようがない。 */
 function reasonOf(err){
   var m = err && err.message ? String(err.message) : "";
-  if(!m) return "理由不明";
-  if(/^HTTP 4\d\d/.test(m)) return m + " — 配信元に断られた";
-  if(/^HTTP 5\d\d/.test(m)) return m + " — 配信元の不調";
+  if(!m) return "unknown";
+  if(/^HTTP 4\d\d/.test(m)) return m + " — the feed refused us";
+  if(/^HTTP 5\d\d/.test(m)) return m + " — the feed is unwell";
   if(/^HTTP/.test(m)) return m;
-  if(/abort/i.test(m)) return "時間切れ";
-  if(/JSON|Unexpected token/i.test(m)) return "応答の形が読めない";
-  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "届かない（CORS か回線）";
+  if(/abort/i.test(m)) return "timed out";
+  if(/JSON|Unexpected token/i.test(m)) return "unreadable response";
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "unreachable (CORS or network)";
   return m.slice(0, 40);
 }
 function canSearch(){ var s = activeSource(); return !!(s && s.search && s.history); }
@@ -2599,7 +2599,7 @@ function canSearch(){ var s = activeSource(); return !!(s && s.search && s.histo
    上から順に当てる。全部だめなら、最後の理由を添えて投げ返す。 */
 function askSource(urlFn, arg, parse, wantRows){
   var src = activeSource();
-  if(!src || !urlFn) return Promise.reject(new Error("配信元がありません"));
+  if(!src || !urlFn) return Promise.reject(new Error("no source")); 
   var got = urlFn.call(src, arg);
   var urls = Array.isArray(got) ? got.slice() : [got];
   var relay = relayById(chosen.relayId);
@@ -2607,7 +2607,7 @@ function askSource(urlFn, arg, parse, wantRows){
 
   function step(){
     if(i >= urls.length){
-      return Promise.reject(lastErr || new Error("どの経路でも読めませんでした"));
+      return Promise.reject(lastErr || new Error("no route could read it"));
     }
     var u = urls[i++];
     return fetchJSON(relay.wrap(u), 12000).then(function(j){
@@ -2615,7 +2615,7 @@ function askSource(urlFn, arg, parse, wantRows){
       var rows = parse.call(src, j, arg);
       /* 中身が空でも、まだ試す口が残っていれば次を当てる */
       if(wantRows && (!rows || !rows.length) && i < urls.length){
-        lastErr = new Error("空の応答");
+        lastErr = new Error("empty response");
         return step();
       }
       return rows;
@@ -2636,14 +2636,14 @@ function renderRoster(){
     seek.classList.add("hide");
     $("qResult").textContent = "";
     note.textContent = demoOn
-      ? "デモの試合では選手を引けません。配信元につながると使えるようになります。"
-      : "いまの配信元（" + nameOfSource(chosen && chosen.srcId) + "）は選手の検索に対応していません。"
-        + "選局の面で SofaScore が通っていれば使えます。";
+      ? "Demo matches have no players to look up. Connect to a feed and this starts working."
+      : "The current feed (" + nameOfSource(chosen && chosen.srcId) + ") has no player search. "
+        + "It works when SofaScore is reachable — check the Tuner screen.";
   }else{
     seek.classList.remove("hide");
-    if(!$("q").value.trim()) note.textContent = "名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。";
+    if(!$("q").value.trim()) note.textContent = "Part of a name is enough. Paste a match page link and we will find that pairing.";
   }
-  $("rosterSub").textContent = canSearch() ? "選手を引く" : "この配信元では引けません";
+  $("rosterSub").textContent = canSearch() ? "Look up a player" : "Not available on this feed";
   renderRank();
   renderRecent();
   renderToday();
@@ -2729,11 +2729,11 @@ function matchRow(m){
   nm.textContent = m.players[0].short + " — " + m.players[1].short;
   var mt = el("div", "meta");
   mt.textContent = [ m.tour !== "—" ? m.tour : "", m.tournament, m.round,
-                     m.status === "done" ? "終了" : m.status === "soon" ? "開始前" :
-                     (m.sets.map(function(st){ return st[0] + "-" + st[1]; }).join(" ") || "進行中")
+                     m.status === "done" ? "Finished" : m.status === "soon" ? "Upcoming" :
+                     (m.sets.map(function(st){ return st[0] + "-" + st[1]; }).join(" ") || "Live")
                    ].filter(Boolean).join(" · ");
   body.appendChild(nm); body.appendChild(mt);
-  var go = el("span", "go"); go.textContent = "ひらく";
+  var go = el("span", "go"); go.textContent = "Open";
   b.appendChild(rk); b.appendChild(body); b.appendChild(go);
   b.addEventListener("click", function(){
     /* 絞りの外にある試合でも開けるよう、絞りを外してから移る */
@@ -2752,12 +2752,12 @@ function matchRow(m){
 function searchNote(frags, found, rows){
   var parts = [];
   if(frags.length && !found.length){
-    parts.push("この住所の顔合わせ（" + frags.join(" と ") +
-               "）は、いま取れている試合の中にありません。日を送るか、帯域の絞りを外してみてください。");
+    parts.push("That link's pairing (" + frags.join(" and ") +
+               ") is not among the matches we have. Try another day, or clear the band filter.");
   }else if(found.length){
-    parts.push("試合 " + found.length + " 件。");
+    parts.push(found.length + " match" + (found.length === 1 ? "" : "es") + ".");
   }
-  if(rows && rows.length) parts.push(rows.length + " 人。押すと戦績が出ます。");
+  if(rows && rows.length) parts.push(rows.length + " player" + (rows.length === 1 ? "" : "s") + ". Tap for the record.");
   return parts.join(" ");
 }
 
@@ -2765,13 +2765,13 @@ function runSearch(q){
   var seq = ++qSeq;
   var box = $("qResult");
   box.textContent = "";
-  if(!q){ $("qNote").textContent = "名前の一部でかまいません。試合ページの住所を貼れば、その顔合わせをさがします。"; return; }
+  if(!q){ $("qNote").textContent = "Part of a name is enough. Paste a match page link and we will find that pairing."; return; }
   /* 住所が貼られたら、そこに含まれる選手名で台帳の試合を当てる。
      網には出ないので、これは必ず先に済ませる。 */
   var frags = namesFromLink(q);
   var found = matchesFor(frags.length ? frags : [q]);
   if(found.length){
-    var h = el("div", "sect"); h.textContent = "Match — この顔合わせ";
+    var h = el("div", "sect"); h.textContent = "Match";
     box.appendChild(h);
     found.slice(0, 6).forEach(function(m){ box.appendChild(matchRow(m)); });
   }
@@ -2780,10 +2780,10 @@ function runSearch(q){
   /* 選手そのものの検索は、網に出す */
   var pq = frags.length ? (frags[0].split(/\s+/)[0] || q) : q;
   if(!canSearch()){
-    if(!found.length && !frags.length) $("qNote").textContent = "この配信元は選手の検索に対応していません。";
+    if(!found.length && !frags.length) $("qNote").textContent = "This feed has no player search.";
     return;
   }
-  var l = el("div", "loading"); l.textContent = "さがしています…";
+  var l = el("div", "loading"); l.textContent = "Searching…";
   box.appendChild(l);
 
   askSource(activeSource().search, pq, activeSource().parseSearch, true).then(function(rows){
@@ -2791,10 +2791,10 @@ function runSearch(q){
     l.remove();
     if(!rows.length){
       $("qNote").textContent = searchNote(frags, found, null) ||
-        ("「" + pq + "」に当たる選手が見つかりませんでした。");
+        ("No player found for \u201c" + pq + "\u201d.");
       return;
     }
-    var h2 = el("div", "sect"); h2.textContent = "Player — 選手";
+    var h2 = el("div", "sect"); h2.textContent = "Player";
     box.appendChild(h2);
     rows.slice(0, 20).forEach(function(p){ box.appendChild(playerRow(p)); });
     $("qNote").textContent = searchNote(frags, found, rows);
@@ -2802,8 +2802,8 @@ function runSearch(q){
     if(seq !== qSeq) return;
     var lg = box.querySelector(".loading"); if(lg) lg.remove();
     /* 何が起きたかを残す。次に直すとき、これが手がかりになる。 */
-    $("qNote").textContent = "選手の検索は届きませんでした（" + reasonOf(err) + "）。"
-      + (found.length ? "試合のほうは上に出ています。" : "回線か中継の具合かもしれません。");
+    $("qNote").textContent = "Player search did not get through (" + reasonOf(err) + "). "
+      + (found.length ? "The matches above still stand." : "It may be the network or the relay.");
   });
 }
 
@@ -2814,10 +2814,10 @@ function playerRow(p){
   var body = el("div", "body");
   var nm = el("div", "nm"); nm.textContent = p.name;
   var mt = el("div", "meta");
-  mt.textContent = [ p.country, p.rank ? "世界 " + p.rank + " 位" : "", p.gender === "F" ? "女子" : p.gender === "M" ? "男子" : "" ]
+  mt.textContent = [ p.country, p.rank ? "No. " + p.rank + " in the world" : "", p.gender === "F" ? "Women" : p.gender === "M" ? "Men" : "" ]
                    .filter(Boolean).join(" · ") || "—";
   body.appendChild(nm); body.appendChild(mt);
-  var go = el("span", "go"); go.textContent = "戦績";
+  var go = el("span", "go"); go.textContent = "Record";
   b.appendChild(body); b.appendChild(go);
   b.addEventListener("click", function(){ openPlayer(p); });
   return b;
@@ -2875,7 +2875,7 @@ function renderToday(){
     }
     mt.appendChild(document.createTextNode(p.where || ""));
     body.appendChild(nm); body.appendChild(mt);
-    var go = el("span", "go"); go.textContent = "戦績";
+    var go = el("span", "go"); go.textContent = "Record";
     b.appendChild(body); b.appendChild(go);
     b.addEventListener("click", function(){ openPlayerByName(p.name); });
     box.appendChild(b);
@@ -2911,10 +2911,10 @@ function openPlayer(p){
   top.appendChild(hw);
   body.appendChild(top);
   var w = el("p", "who2");
-  w.textContent = [ p.country, p.rank ? "世界 " + p.rank + " 位" : "" ].filter(Boolean).join(" · ") || "—";
+  w.textContent = [ p.country, p.rank ? "No. " + p.rank + " in the world" : "" ].filter(Boolean).join(" · ") || "—";
   body.appendChild(w);
 
-  var l = el("div", "loading"); l.textContent = "直近の試合を取っています…";
+  var l = el("div", "loading"); l.textContent = "Fetching recent matches…";
   body.appendChild(l);
   openSheet();
 
@@ -2932,19 +2932,19 @@ function openPlayer(p){
       body.appendChild(n);
     }
     if(list.length){
-      var h2 = el("div", "sect"); h2.textContent = "From today — いま手元にある分";
+      var h2 = el("div", "sect"); h2.textContent = "What we have here";
       body.appendChild(h2);
       paintPlayer(body, p, list.slice(0, 14));
     }else{
       /* 終わった試合が無くても、進行中・開始前なら案内できる */
       var now = playerMatches(p);
       if(now.length){
-        var h3 = el("div", "sect"); h3.textContent = "Today — 今日の試合";
+        var h3 = el("div", "sect"); h3.textContent = "Today";
         body.appendChild(h3);
         now.slice(0, 6).forEach(function(m){ body.appendChild(matchRow(m)); });
       }else{
         var n2 = el("p", "note");
-        n2.textContent = "手元の台帳にも、この選手の試合はありません。日を送ると見つかることがあります。";
+        n2.textContent = "Nothing for this player here either. Changing the day may turn something up.";
         body.appendChild(n2);
       }
     }
@@ -2952,8 +2952,8 @@ function openPlayer(p){
 
   var src = activeSource();
   if(!src || !src.history || p.id == null){
-    showLedger("いまつながっている「" + (demoOn ? "デモ" : nameOfSource(chosen && chosen.srcId))
-      + "」からは、過去にさかのぼった戦績を引けません。SofaScore につながると出ます。");
+    showLedger("The feed in use (" + (demoOn ? "Demo" : nameOfSource(chosen && chosen.srcId))
+      + ") cannot reach back through past results. SofaScore can.");
     return;
   }
   askSource(src.history, p.id, src.parseHistory).then(function(evts){
@@ -2964,7 +2964,7 @@ function openPlayer(p){
     l.remove();
     paintPlayer(body, p, list.slice(0, 14));
   }).catch(function(err){
-    showLedger("戦績が取れませんでした（" + reasonOf(err) + "）。");
+    showLedger("Could not fetch the record (" + reasonOf(err) + ").");
   });
 }
 
@@ -2984,7 +2984,7 @@ function sideOf(m, p){
 function paintPlayer(body, p, list){
   if(!list.length){
     var n = el("p", "note");
-    n.textContent = "直近の終了した試合が見つかりませんでした。";
+    n.textContent = "No finished matches found recently.";
     body.appendChild(n);
     return;
   }
@@ -3017,9 +3017,9 @@ function paintPlayer(body, p, list){
     d.appendChild(vv); d.appendChild(c);
     return d;
   }
-  row.appendChild(stat(wins + " – " + losses, "", "Recent — 直近の勝敗"));
-  row.appendChild(stat(streak ? String(streak) : "–", streak ? (streakWon ? "勝" : "敗") : "",
-                       streakWon === false ? "Streak — 連敗" : "Streak — 連勝"));
+  row.appendChild(stat(wins + " – " + losses, "", "Recent W–L"));
+  row.appendChild(stat(streak ? String(streak) : "–", streak ? (streakWon ? "W" : "L") : "",
+                       streakWon === false ? "Losing streak" : "Winning streak"));
   body.appendChild(row);
 
   /* 直近の並び。左が新しい。 */
@@ -3033,7 +3033,7 @@ function paintPlayer(body, p, list){
 
   var head = el("h3");
   head.style.cssText = "margin:20px 0 2px;font-family:var(--mono);font-size:9px;letter-spacing:.17em;text-transform:uppercase;color:var(--ghost);font-weight:600";
-  head.textContent = "History — 直近の試合";
+  head.textContent = "Recent matches";
   body.appendChild(head);
 
   results.forEach(function(r){
@@ -3144,7 +3144,7 @@ function noteStatsMiss(missed){
   if(missed) statsMiss[id] = 1; else delete statsMiss[id];
   store.set("statsMiss", statsMiss);
   var hint = $("openStatsHint");
-  if(hint) hint.textContent = statsMiss[id] ? "この配信元では出ないかもしれません" : "ACES · SERVE · POINTS";
+  if(hint) hint.textContent = statsMiss[id] ? "This feed may not have them" : "ACES · SERVE · POINTS";
 }
 
 function openStats(){
@@ -3172,7 +3172,7 @@ function openStats(){
   sub.textContent = [m.tour !== "—" ? m.tour : "", m.tournament, m.round].filter(Boolean).join(" · ");
   body.appendChild(sub);
 
-  var l = el("div", "loading"); l.textContent = "数字を取っています…";
+  var l = el("div", "loading"); l.textContent = "Fetching the numbers…";
   body.appendChild(l);
   openSheet();
 
@@ -3205,7 +3205,7 @@ function openStats(){
     l.remove();
     noteStatsMiss(true);
     var n = el("p", "note");
-    n.textContent = "数字が取れませんでした（" + reasonOf(err) + "）。";
+    n.textContent = "Could not fetch the numbers (" + reasonOf(err) + ").";
     body.appendChild(n);
     body.appendChild(noStatsNote());
   });
@@ -3216,18 +3216,18 @@ function openStats(){
 function noStatsNote(){
   var wrap = el("div");
   var n = el("p", "note");
-  var who = demoOn ? "デモの試合" : nameOfSource(chosen && chosen.srcId);
+  var who = demoOn ? "Demo matches" : nameOfSource(chosen && chosen.srcId);
   if(demoOn){
-    n.textContent = "デモの試合には詳細な数字がありません。配信元につながると出ます。";
+    n.textContent = "Demo matches carry no detailed numbers. Connect to a feed and they appear.";
   }else{
-    n.textContent = "いまつながっている「" + who + "」からは、この試合の詳細な数字が取れませんでした。"
-      + "SofaScore につながると、エースやサーブの率まで揃います。"
-      + "選局の面のいちばん下「情報源」で、SofaScore が緑になっているかを確かめてください。";
+    n.textContent = "The feed in use (" + who + ") gave no detailed numbers for this match. "
+      + "SofaScore carries aces and serve percentages. "
+      + "Check whether SofaScore shows green under Source on the Tuner screen.";
   }
   wrap.appendChild(n);
   var b = el("button", "btn");
   b.type = "button";
-  b.textContent = "情報源をさがし直す";
+  b.textContent = "Search for a source again";
   b.addEventListener("click", function(){
     closeSheet();
     goPane(2);
@@ -3238,17 +3238,17 @@ function noStatsNote(){
 }
 
 var SECTS = [
-  { id:"serve",  ja:"Service — サービス" },
-  { id:"return", ja:"Return — リターン" },
-  { id:"total",  ja:"Total — 通算" },
-  { id:"other",  ja:"Other — そのほか" }
+  { id:"serve",  label:"Service" },
+  { id:"return", label:"Return" },
+  { id:"total",  label:"Total" },
+  { id:"other",  label:"Other" }
 ];
 
 function paintStats(body, m, res){
   var rows = (res && res.rows) || [], other = (res && res.other) || [];
   if(!rows.length && !other.length){
     var n = el("p", "note");
-    n.textContent = "この試合の数字はまだ出ていません。始まって間もない試合では、しばらく空のことがあります。";
+    n.textContent = "No numbers for this match yet. Early in a match they can stay empty for a while.";
     body.appendChild(n);
     return;
   }
@@ -3256,13 +3256,13 @@ function paintStats(body, m, res){
   SECTS.forEach(function(sec){
     var mine = all.filter(function(r){ return r.sec === sec.id; });
     if(!mine.length) return;
-    var h = el("div", "sect"); h.textContent = sec.ja;
+    var h = el("div", "sect"); h.textContent = sec.label;
     body.appendChild(h);
     mine.forEach(function(r){ body.appendChild(levelRow(r)); });
   });
 
   var foot = el("p", "note");
-  foot.textContent = "数字は配信元がそのまま出しているもの。棒は左右の比で、値そのものの大小ではない。";
+  foot.textContent = "Numbers are exactly as the feed publishes them. The bar shows the split between the two, not the size of the value.";
   body.appendChild(foot);
 }
 
@@ -3276,7 +3276,7 @@ function levelRow(r){
      こちらで優劣を決めず、数も色も等しく置いて、分かれ目だけを示す。 */
   var top = el("div", "top2");
   var a = el("span", "v va"); a.textContent = r.home;
-  var c = el("span", "cap2"); c.textContent = r.ja;
+  var c = el("span", "cap2"); c.textContent = r.label;
   var b = el("span", "v vb"); b.textContent = r.away;
   top.appendChild(a); top.appendChild(c); top.appendChild(b);
 
@@ -3338,14 +3338,14 @@ function pullDay(){
   var src = activeSource();
   if(!src || !src.day || dayPulling) return Promise.resolve();
   dayPulling = true;
-  $("listNote").textContent = "この日のカードを取っています…";
+  $("listNote").textContent = "Fetching the card for this day…";
   return fetchJSON(relayById(chosen.relayId).wrap(src.day(dayDate)), 15000).then(function(j){
     dayPulling = false;
     ingestDay(((src.parseDay || src.parse).call(src, j) || []).filter(Boolean));
   }).catch(function(){
     dayPulling = false;
     ingestDay([]);
-    $("listNote").textContent = "この日のカードが取れませんでした。進行中の試合だけを出しています。";
+    $("listNote").textContent = "Could not fetch this day's card. Showing live matches only.";
   });
 }
 
@@ -3534,7 +3534,7 @@ if(chosen && chosen.srcId === "demo"){
   useDemo();
 }else if(chosen && srcById(chosen.srcId)){
   /* 前に通った経路をまず試す。だめならあらためて全部さがす。 */
-  $("srcNote").textContent = "前回つながった経路をためしています…";
+  $("srcNote").textContent = "Trying the route that worked last time…";
   probeState[chosen.srcId] = { state:"busy", count:0, relay:relayById(chosen.relayId) };
   renderSources();
   pull(true).then(function(){
@@ -3542,7 +3542,7 @@ if(chosen && chosen.srcId === "demo"){
     else{
       probeState[chosen.srcId] = { state:"ok", relay:relayById(chosen.relayId),
         count: matches.filter(function(m){ return m.status==="live"; }).length };
-      $("srcNote").textContent = nameOfSource(chosen.srcId) + " につながっています。";
+      $("srcNote").textContent = "Connected to " + nameOfSource(chosen.srcId) + ".";
       renderSources();
       pullDay();
       fetchRanking(rankTour, false);
