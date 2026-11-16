@@ -569,11 +569,10 @@
   "use strict";
 
   // 画面が更新されたかを端末側で確かめられるようにする。
-  var BUILD = "v45";
+  var BUILD = "v46";
   var WINDOW_H   = 12;              // グラフに映す前後の時間
   var TICK_MS    = 5 * 60 * 1000;   // 取得と文面の入れ替えの間隔
   var REFRESH_MS = TICK_MS;
-  var STALE_MS   = 3 * 60 * 60 * 1000;
   var LOCATION_KEY = "wxwidget.location.v2";
   var CACHE_KEY    = "wxwidget.cache.v2";
 
@@ -709,6 +708,9 @@
         temp: json.hourly.temperature_2m,
         humidity: json.hourly.relative_humidity_2m,
         nowIndex: computeNowIndex(times, json.utc_offset_seconds),
+        // cur は「取得した時間帯」の実測値。時計が次の時間帯へ進んだら
+        // 使わない（どの時間帯のものかを覚えておく）。
+        curIndex: computeNowIndex(times, json.utc_offset_seconds),
         utcOffset: json.utc_offset_seconds || 0,
         cur: cur ? {
           pressure: cur.pressure_msl,
@@ -917,6 +919,41 @@
   function hhmm(iso){ return iso.slice(11,16); }
   function hourOf(iso){ return iso.slice(11,13); }
   function localClock(off){ return new Date(Date.now()+(off||0)*1000).toISOString().slice(11,16); }
+
+  // ---------- 時計に追従させる ----------
+
+  // 取得した毎時の並びは、前日 0時 から翌日 23時 まで入っている。
+  // 「今」の位置を取得したときのまま固定してしまうと、通信が途切れている
+  // あいだ画面が丸ごと止まる。グラフの現在線も危険度も時刻の帯も動かず、
+  // 最高最低気温だけが時計どおりに変わるので、更新できていないように見える。
+  // 手元にあるデータは先の時間帯まで持っているのだから、描くたびに
+  // 時計から引き直せば、通信が戻るまでのあいだも正しく進む。
+  function syncNow(d){
+    if(!d || !d.times || !d.times.length) return d;
+    var i = computeNowIndex(d.times, d.utcOffset);
+    if(i !== d.nowIndex){
+      d.nowIndex = i;
+      state.scrub = null;      // 位置がずれるので、なぞった跡は消す
+    }
+    return d;
+  }
+
+  // 手元のデータが今の時間帯を含んでいるか。含まなくなったら、
+  // もう表示できる内容がないので更新を促す。
+  function covers(d){
+    if(!d || !d.times || !d.times.length) return false;
+    var key = new Date(Date.now() + (d.utcOffset||0)*1000).toISOString().slice(0,13);
+    return d.times[0].slice(0,13) <= key && key <= d.times[d.times.length-1].slice(0,13);
+  }
+
+  // 実測の「現在値」は、取得した時間帯のあいだだけ毎時の値より確か。
+  // 時計が先へ進んだら毎時の値に戻す。
+  function liveCur(d){
+    if(!d || !d.cur) return null;
+    // どの時間帯のものか分からない古い形のキャッシュは、毎時の値に譲る
+    if(d.curIndex == null) return null;
+    return (d.curIndex === d.nowIndex) ? d.cur : null;
+  }
 
   // ---------- svg ----------
 
@@ -1137,7 +1174,7 @@
   function renderHero(animate){
     var d=state.data; if(!d) return;
     var i = (state.scrub==null) ? d.nowIndex : state.scrub;
-    var live = (state.scrub==null && d.cur) ? d.cur : null;
+    var live = (state.scrub==null) ? liveCur(d) : null;
     var pv = live && live.pressure!=null ? live.pressure : d.pressure[i];
     var shown = pv==null ? "--" : String(Math.round(pv));
     els.heroValue.textContent = shown;
@@ -1205,15 +1242,18 @@
   }
 
   function renderStatus(){
-    var d=state.data; if(!d) return;
+    var d=syncNow(state.data); if(!d) return;
     var a=computeAlarm(d);
     els.status.setAttribute("data-level", a.level);
     els.status.setAttribute("data-risk", a.risk);
     drawRisk(a.risk);
     els.statusWord.textContent = a.word;
-    els.statusNote.textContent = (Date.now()-state.fetchedAt > STALE_MS)
-      ? describeAge(state.fetchedAt)+"のデータです。更新してください。"
-      : a.lines.join(" · ");
+    // 取得が古いこと自体は咎めない。手元のデータが今の時間帯を含んでいる
+    // あいだは、その時間帯の予報として正しく読める。含まなくなったときだけ、
+    // もう出せる内容がないことを言う。
+    els.statusNote.textContent = covers(d)
+      ? a.lines.join(" · ")
+      : describeAge(state.fetchedAt)+"のデータです。更新してください。";
   }
 
   // 3時間ごとの気圧予報。Weat の時刻ストリップにあたる部分。
@@ -1223,7 +1263,8 @@
     var d=state.data; if(!d) return;
     var base = d.pressure[d.nowIndex];
     // 実測値があればそちらを「今」として出す（差分は予報の基準値から測る）
-    var shownNow = (d.cur && d.cur.pressure!=null) ? d.cur.pressure : base;
+    var lc = liveCur(d);
+    var shownNow = (lc && lc.pressure!=null) ? lc.pressure : base;
     els.strip.innerHTML="";
     for(var k=0;k<5;k++){      // 今 / +3 / +6 / +9 / +12 時間。グラフの右端に合わせる
       var i=d.nowIndex+k*3;
@@ -1269,7 +1310,7 @@
   }
 
   function renderAll(animate){
-    var d=state.data; if(!d) return;
+    var d=syncNow(state.data); if(!d) return;
     renderHero(animate);
     renderStatus();
     renderMinMax();
@@ -1369,7 +1410,10 @@
       var had = state.data!=null;
       setMsg(had ? "更新できませんでした（"+why+"）。表示は"+describeAge(state.fetchedAt)+"のデータです。"
                  : "データを取得できませんでした（"+why+"）。通信環境を確認してください。");
-      if(had) renderStatus();
+      // 取れなかったときも、手元のデータを今の時刻に合わせて引き直す。
+      // 判定文だけを入れ替えると、グラフの現在線・時刻の帯・時計が
+      // 取得できた時点のまま残り、画面全体が止まって見える。
+      if(had) renderAll(false);
     });
   }
 
@@ -1381,7 +1425,8 @@
 
     setBusy(true);
     return getCurrentPosition().then(function(pos){
-      setBusy(false);
+      // ここで印を降ろすと、地名を引いているあいだ（最長15秒）が無防備に
+      // なる。load() が引き継いで降ろすので、通したままにする。
       var c=readJSON(CACHE_KEY);
       var moved = !c || c.place==null ||
         Math.abs((c.lat||0)-pos.lat)>0.05 || Math.abs((c.lon||0)-pos.lon)>0.05;
@@ -1522,8 +1567,9 @@
   setInterval(function(){
     if(document.visibilityState!=="visible") return;
     start();
-    // 取得が失敗しても、判定文と対策は時計に沿って入れ替える
-    if(state.data) renderStatus();
+    // 取得が失敗しても、画面は時計に沿って進める。グラフの現在線、
+    // 時刻の帯、危険度まで引き直さないと、止まって見える。
+    if(state.data){ renderAll(false); renderNetNote(); }
   }, TICK_MS);
 
   var buildEl = document.getElementById("buildId");
