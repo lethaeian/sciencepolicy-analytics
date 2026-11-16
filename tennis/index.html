@@ -408,7 +408,7 @@
   @keyframes fade{ from{ opacity:0; } }
   .sheet{
     position:relative; width:100%; max-width:560px;
-    max-height:88vh; overflow-y:auto; overscroll-behavior:contain;
+    max-height:calc(var(--vph) * .88); overflow-y:auto; overscroll-behavior:contain;
     background:var(--paper); color:var(--ink);
     --rule:rgba(16,16,16,.16); --ghost:rgba(16,16,16,.44); --soft:rgba(16,16,16,.06);
     border-radius:20px 20px 0 0;

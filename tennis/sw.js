@@ -9,7 +9,7 @@
  *   - HTML は network-first。更新版があれば取りに行き、無ければ手元の版を返す。
  */
 
-var VERSION = "v10";
+var VERSION = "v11";
 var CACHE = "tennis-shell-" + VERSION;
 
 var SHELL = [
