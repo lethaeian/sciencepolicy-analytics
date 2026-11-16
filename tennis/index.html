@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#1c5f9e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +27,8 @@
   :root{
     color-scheme: dark;
 
-    --yellow:  #f5d312;   /* 「いま」の地 */
+    --court:   #1c5f9e;   /* 「いま」の地。ハードコートの青 */
+    --ball:    #d7f205;   /* 球の色。青の地の上では、橙より読める差し色 */
     --cream:   #d9d2c5;   /* 「デッキ」の地 */
     --ink:     #101010;   /* 黒。器の色 */
     --paper:   #f2efe6;
@@ -69,7 +70,9 @@
     overflow-y:auto; overscroll-behavior-y:contain;
     padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px);
   }
-  .pane.now  { background:var(--yellow); color:var(--ink); --rule:rgba(16,16,16,.22); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.09); }
+  .pane.now  { background:var(--court); color:var(--paper); --rule:rgba(242,239,230,.28); --ghost:rgba(242,239,230,.85); --soft:rgba(242,239,230,.12);
+               --hot:var(--ball); }   /* 青の上の橙は対比 2.1。差し色は球の色に替える。
+                                         薄い字は .60 だと対比 3.1 で沈むので .85（4.6）にしてある */
   .pane.deck { background:var(--cream);  color:var(--ink); --rule:rgba(16,16,16,.20); --ghost:rgba(16,16,16,.40); --soft:rgba(16,16,16,.08); }
   .pane.dial { background:var(--ink);    color:var(--paper); --rule:rgba(242,239,230,.16); --ghost:rgba(242,239,230,.40); --soft:rgba(242,239,230,.07); }
   .pane.list { background:var(--paper);  color:var(--ink); --rule:rgba(16,16,16,.18); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.07); }
@@ -103,7 +106,7 @@
   /* ── スピーカーのグリル ───────────────────── */
   .grille{ margin:14px auto 0; width:min(72vw, 25vh, 300px); }
   .grille svg{ display:block; width:100%; height:auto; }
-  .grille circle{ fill:var(--ink); }
+  .grille circle{ fill:var(--paper); }
   .grille circle.off{ opacity:.11; }
   .grille circle.home{ opacity:1; }
   .grille circle.away{ opacity:.42; }
@@ -121,7 +124,7 @@
   }
   .wheel .hub{
     position:absolute; inset:26%; border-radius:50%;
-    background:var(--yellow); color:var(--ink);
+    background:var(--court); color:var(--paper);
     display:grid; place-items:center; text-align:center; line-height:1;
     transition:transform .12s ease;
   }
@@ -129,7 +132,7 @@
   .wheel .hub:active{ transform:scale(.94); }
   .wheel .hub .pts{ font-size:calc(var(--wsz) * .11); font-weight:800; letter-spacing:-.04em; }
   .wheel .hub .pts .vs{ opacity:.34; margin:0 .12em; font-weight:600; }
-  .wheel .hub .cap{ margin-top:5px; font-family:var(--mono); opacity:.55;
+  .wheel .hub .cap{ margin-top:5px; font-family:var(--mono); opacity:.85;
     font-size:max(7px, calc(var(--wsz) * .029)); letter-spacing:.11em; }
 
   /* 輪の上の四つの鍵 */
@@ -154,7 +157,7 @@
   }
   .corner:active{ background:var(--soft); }
   .corner svg{ width:19px; height:19px; fill:currentColor; }
-  .corner.on{ background:var(--ink); color:var(--yellow); border-color:var(--ink); }
+  .corner.on{ background:var(--ink); color:var(--ball); border-color:var(--ink); }
 
   /* ── セットのスコア（小さな数字の列） ─────── */
   .sets{ display:flex; gap:7px; align-items:center; }
@@ -167,8 +170,7 @@
 
   /* 選手の行（サーブ権を丸で示す） */
   .who{ display:flex; align-items:center; gap:9px; min-width:0; }
-  .who .dot{ width:9px; height:9px; flex:0 0 9px; border-radius:50%; border:1.4px solid var(--ink); }
-  .pane.dial .who .dot{ border-color:var(--paper); }
+  .who .dot{ width:9px; height:9px; flex:0 0 9px; border-radius:50%; border:1.4px solid currentColor; }
   .who .dot.serving{ background:var(--hot); border-color:var(--hot); }
   .who .nm{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .who .nm .sd{ font-size:.72em; font-weight:600; color:var(--ghost); margin-left:.4em; }
@@ -3378,7 +3380,7 @@ function paneIndex(){
 /* 面ごとの地色。下端の帯・body・状態バーが、送っている面に追従する。
    帯を黒で固定していたため、黄と生成りの面では下端が黒く潰れていた。 */
 var SKIN = [
-  { bg:"#f5d312", ink:"rgba(16,16,16,.26)",   on:"#101010" },   /* いま   */
+  { bg:"#1c5f9e", ink:"rgba(242,239,230,.30)", on:"#f2efe6" },  /* Now    */
   { bg:"#d9d2c5", ink:"rgba(16,16,16,.24)",   on:"#101010" },   /* デッキ */
   { bg:"#101010", ink:"rgba(242,239,230,.24)", on:"#f2efe6" },  /* 選局   */
   { bg:"#f2efe6", ink:"rgba(16,16,16,.24)",   on:"#101010" }    /* 名簿   */
