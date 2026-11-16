@@ -112,7 +112,10 @@
                --hot:var(--ball); }   /* 青の上の橙は対比 2.1。差し色は球の色に替える。
                                          薄い字は .60 だと対比 3.1 で沈むので .85（4.6）にしてある */
   .pane.deck { background:var(--cream);  color:var(--ink); --rule:rgba(16,16,16,.20); --ghost:rgba(16,16,16,.40); --soft:rgba(16,16,16,.08); }
-  .pane.dial { background:var(--ink);    color:var(--paper); --rule:rgba(242,239,230,.16); --ghost:rgba(242,239,230,.40); --soft:rgba(242,239,230,.07); }
+  /* 三枚目も「いま」と同じコートの青。薄い字と差し色の決め方も合わせる
+     （青の上では橙が対比 2.1 で沈むので、差し色は球の色にする） */
+  .pane.dial { background:var(--court); color:var(--paper); --rule:rgba(242,239,230,.28); --ghost:rgba(242,239,230,.85); --soft:rgba(242,239,230,.12);
+               --hot:var(--ball); }
   .pane.list { background:var(--paper);  color:var(--ink); --rule:rgba(16,16,16,.18); --ghost:rgba(16,16,16,.42); --soft:rgba(16,16,16,.07); }
 
   /* ── 見出しの帯 ───────────────────────────── */
@@ -151,7 +154,6 @@
   .grille circle.away{ opacity:.42; }  /* 下の選手の陣。外側と紛れない濃さにする */
   .grille circle.live{ animation:beat 1.15s ease-in-out infinite; }
   /* 二つの陣の境。ここが中心からどちらへ寄っているかが、優劣そのもの */
-  .grille .edge{ stroke:var(--ball); stroke-width:1.6; opacity:.9; }
   @keyframes beat{ 0%,100%{ opacity:1; } 50%{ opacity:.22; } }
 
   /* ── 操作輪 ───────────────────────────────── */
@@ -352,11 +354,16 @@
     white-space:nowrap; transition:background .15s ease, color .15s ease, border-color .15s ease;
   }
   .chip2 b{ font-weight:700; }
-  .chip2 i{ font-style:normal; font-family:var(--mono); font-size:9.5px; opacity:.5; margin-left:6px; }
+  /* 大会名のとなりの試合数。.5 だと青の地で対比 2.3 まで落ちるので .85 にする。
+     選んである chip では地と字が入れ替わるため、--ghost ではなく opacity で持つ。 */
+  .chip2 i{ font-style:normal; font-family:var(--mono); font-size:9.5px; opacity:.85; margin-left:6px; }
   .chip2.on{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
-  .chip2.on i{ opacity:.55; }
+  .chip2.on i{ opacity:.68; }   /* .55 では 9.5px の字が対比 4.0 で足りない */
   .pane.list .chip2.on{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
-  .chips.sub .chip2{ font-size:11.5px; padding:6px 11px; font-weight:600; }
+  /* 以前は class="chips sub" と書いていたが、この sub は見出しの副題の class と
+     同じ名前で、副題の color:var(--ghost) まで引き継いでいた。黒い地では
+     気づかなかったが、青の地では大会名の数字が対比 3.8 まで落ちる。名前を分けた。 */
+  .chips.tight .chip2{ font-size:11.5px; padding:6px 11px; font-weight:600; }
 
   /* ── 検索 ─────────────────────────────────── */
   .seek{
@@ -677,7 +684,7 @@
       <!-- 帯域。ラジオの AM/FM のつもりで、ツアーの区分を切り替える -->
       <div class="chips" id="bandChips"></div>
       <!-- そのなかの大会 -->
-      <div class="chips sub" id="tourChips"></div>
+      <div class="chips tight" id="tourChips"></div>
 
       <div class="list" id="list"></div>
       <p class="note" id="listNote"></p>
@@ -1837,7 +1844,7 @@ function svg(tag, attrs){
 
 /* グリルの点を、中心から外へ環状に並べる。一つの点が一つの局。 */
 var grilleDots = [];
-var grilleEdge = null, GRILLE_MAX = 84;
+var GRILLE_MAX = 84;
 function buildGrille(){
   var box = $("grille");
   var s = svg("svg", { viewBox:"0 0 200 200", "aria-hidden":"true" });
@@ -1855,16 +1862,14 @@ function buildGrille(){
     }
   }
   /* 境の線。描く位置は試合ごとに動かす */
-  grilleEdge = svg("line", { "class":"edge", x1:0, y1:100, x2:0, y2:100 });
-  s.appendChild(grilleEdge);
   box.appendChild(s);
 }
 
 function paintGrille(m){
   /* ── この円の読み方 ────────────────────────────────────────
      円ぜんぶを二人で分け合う。上の選手の陣が明るい点、下の選手の陣が
-     暗い点、そのあいだに境の線が走る。境が中心より下にあれば上の選手が
-     優勢、上にあれば下の選手が優勢。離れているほど差が大きい。
+     暗い点。明暗の変わり目が中心より下にあれば上の選手が優勢、上にあれば
+     下の選手が優勢。離れているほど差が大きい。
 
      前は「点ひとつ＝1局」で中心から埋めていたが、148 点に対して局は
      20〜25 しかなく、どちらが優勢かは数えないと分からなかった。いまは
@@ -1898,23 +1903,6 @@ function paintGrille(m){
     if(g.d > activeR) set(g.el, "off");
   });
 
-  /* 境の線。ちょうど色の変わるところへ引く。 */
-  if(grilleEdge){
-    if(total === 0 || nA === 0 || nA >= active.length){
-      grilleEdge.setAttribute("x1", 0); grilleEdge.setAttribute("x2", 0);
-    }else{
-      var y = (active[nA - 1].y + active[nA].y) / 2;
-      /* その高さでの円の幅に合わせて、線を内側に収める */
-      var half = Math.sqrt(Math.max(0, activeR * activeR - (y - 100) * (y - 100)));
-      grilleEdge.setAttribute("x1", (100 - half - 3).toFixed(2));
-      grilleEdge.setAttribute("x2", (100 + half + 3).toFixed(2));
-      grilleEdge.setAttribute("y1", y.toFixed(2));
-      grilleEdge.setAttribute("y2", y.toFixed(2));
-    }
-    grilleEdge.style.display = (total === 0) ? "none" : "";
-  }
-
-  /* 進行中は、境のすぐ下の点をひとつ息づかせる */
   if(live && total && nA < active.length) add(active[nA].el, "live");
 
   var cap = $("grilleCap");
@@ -3485,7 +3473,7 @@ function paneIndex(){
 var SKIN = [
   { bg:"#1c5f9e", ink:"rgba(242,239,230,.30)", on:"#f2efe6" },  /* Now    */
   { bg:"#d9d2c5", ink:"rgba(16,16,16,.24)",   on:"#101010" },   /* デッキ */
-  { bg:"#101010", ink:"rgba(242,239,230,.24)", on:"#f2efe6" },  /* 選局   */
+  { bg:"#1c5f9e", ink:"rgba(242,239,230,.30)", on:"#f2efe6" },  /* 選局   */
   { bg:"#f2efe6", ink:"rgba(16,16,16,.24)",   on:"#101010" }    /* 名簿   */
 ];
 var themeMeta = document.querySelector('meta[name="theme-color"]');
