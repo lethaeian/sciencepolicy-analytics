@@ -14,6 +14,26 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+/* 見えている高さを、最初の描画より前に --vph へ入れる。
+   iOS の 100vh は棒が隠れたときの高さなので、ここで実測の値に差し替える。 */
+(function(){
+  var r = document.documentElement;
+  function vp(){
+    var v = window.visualViewport;
+    /* 指で広げている最中は visualViewport が縮む。倍率で戻してから使う。 */
+    if(v && v.height) return v.height * (v.scale || 1);
+    return window.innerHeight || 0;
+  }
+  window.__setVph = function(){
+    var h = Math.round(vp());
+    if(!h) return;
+    r.style.setProperty("--vph", h + "px");
+    r.classList.toggle("short", h < 700);
+  };
+  window.__setVph();
+})();
+</script>
 <style>
   /* ── 設計の方針 ───────────────────────────────
      テニスの試合を、一台のオーディオ機器として扱う。
@@ -26,6 +46,20 @@
      ───────────────────────────────────────── */
   :root{
     color-scheme: dark;
+
+    /* ── 画面の寸法 ───────────────────────────────
+       iOS の 100vh と @media (height) は「棒が隠れたときの高さ」を指す。
+       棒が出ているあいだは、そこより 190px ほど狭い。この二つを信じると、
+       見えている範囲より背の高い画面を組んでしまい、上下が切れる。
+       だから高さは --vph 一つに集め、下の script で実測した値を入れる。
+       script が走る前も dvh で足りるようにしてある。
+       --sat/--sab は端末の安全域。試験のとき差し替えられるよう token にした。
+       ───────────────────────────────────────── */
+    --vph: 100vh;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --circ: 1;           /* 「いま」の円の縮め具合。収まらないぶんだけ script が下げる */
+    --deck: 1;           /* 「デッキ」のリールと波形。面ごとに別で持つ */
 
     --court:   #1c5f9e;   /* 「いま」の地。ハードコートの青 */
     --ball:    #d7f205;   /* 球の色。青の地の上では、橙より読める差し色 */
@@ -40,6 +74,8 @@
     --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
   }
 
+  @supports (height: 100dvh){ :root{ --vph: 100dvh; } }
+
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
   html{ -webkit-text-size-adjust:100%; }
@@ -52,7 +88,9 @@
   }
   button{ font-family:inherit; color:inherit; border:0; background:none; padding:0; cursor:pointer; }
 
-  .shell{ position:fixed; inset:0; display:flex; flex-direction:column; max-width:560px; margin:0 auto; }
+  /* 高さは inset:0 任せにしない。iOS では棒の裏まで伸びて、下の帯が隠れる。 */
+  .shell{ position:fixed; top:0; left:0; right:0; height:var(--vph);
+          display:flex; flex-direction:column; max-width:560px; margin:0 auto; }
 
   /* ── 三つの面を横に送る ───────────────────── */
   .strip{
@@ -68,7 +106,7 @@
     scroll-snap-align:center; scroll-snap-stop:always;
     display:flex; flex-direction:column;
     overflow-y:auto; overscroll-behavior-y:contain;
-    padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px);
+    padding:calc(var(--sat) + 14px) 18px 16px;   /* 下の安全域は帯が持つ。ここで足すと二重になる */
   }
   .pane.now  { background:var(--court); color:var(--paper); --rule:rgba(242,239,230,.28); --ghost:rgba(242,239,230,.85); --soft:rgba(242,239,230,.12);
                --hot:var(--ball); }   /* 青の上の橙は対比 2.1。差し色は球の色に替える。
@@ -104,7 +142,8 @@
   .caret.open{ transform:rotate(180deg); }
 
   /* ── スピーカーのグリル ───────────────────── */
-  .grille{ margin:14px auto 0; width:min(72vw, 25vh, 300px); }
+  .grille{ margin:14px auto 0;
+           width:calc(min(72vw, var(--vph) * .25, 300px) * var(--circ)); }
   .grille svg{ display:block; width:100%; height:auto; }
   .grille circle{ fill:var(--paper); transition:opacity .45s ease; }
   .grille circle.off{ opacity:.07; }   /* まだ届いていない外側 */
@@ -118,7 +157,7 @@
   /* ── 操作輪 ───────────────────────────────── */
   /* 輪の寸法を一箇所に持ち、中の字もこれに従わせる。
      幅だけで決めると、背の低い端末で輪が縮んだときに字がはみ出す。 */
-  .wheel{ --wsz:min(72vw, 30vh, 296px);
+  .wheel{ --wsz:calc(min(72vw, var(--vph) * .30, 296px) * var(--circ));
           position:relative; margin:12px auto 0; width:var(--wsz); aspect-ratio:1; }
   .wheel .ring{
     position:absolute; inset:0; border-radius:50%;
@@ -179,7 +218,7 @@
 
   /* ── リール（デッキの面） ─────────────────── */
   .reels{ display:flex; gap:14px; justify-content:center; margin-top:14px; }
-  .reel{ flex:1 1 0; max-width:150px; }
+  .reel{ flex:1 1 0; max-width:calc(min(150px, var(--vph) * .19) * var(--deck)); }
   .reel svg{ display:block; width:100%; height:auto; }
   .reel .plate{ fill:rgba(16,16,16,.06); }
   /* テープの巻きは「太い線の円」で描く。塗りではなく線なので fill は外す */
@@ -193,7 +232,7 @@
 
   /* ── 波形（一本＝一ゲーム） ───────────────── */
   .wave{ margin-top:16px; }
-  .wave svg{ display:block; width:100%; height:78px; }
+  .wave svg{ display:block; width:100%; height:calc(min(78px, var(--vph) * .105) * var(--deck)); }
   .wave .mid{ stroke:var(--rule); stroke-width:1; }
   .wave line{ vector-effect:non-scaling-stroke; }
   .wave rect{ fill:var(--ink); }
@@ -360,7 +399,9 @@
   .prow .go{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--ghost); flex:0 0 auto; }
 
   /* ── 選手の札 ─────────────────────────────── */
-  .sheetwrap{ position:fixed; inset:0; z-index:40; display:flex; align-items:flex-end; justify-content:center; }
+  /* 札も器と同じ。iOS で inset:0 にすると下端が棒の裏に回り、札の底が切れる。 */
+  .sheetwrap{ position:fixed; top:0; left:0; right:0; height:var(--vph);
+              z-index:40; display:flex; align-items:flex-end; justify-content:center; }
   /* display を指定すると hidden 属性が効かなくなるので、明示的に伏せる */
   .sheetwrap[hidden]{ display:none; }
   .scrim{ position:absolute; inset:0; background:rgba(16,16,16,.52); animation:fade .18s ease; }
@@ -371,7 +412,7 @@
     background:var(--paper); color:var(--ink);
     --rule:rgba(16,16,16,.16); --ghost:rgba(16,16,16,.44); --soft:rgba(16,16,16,.06);
     border-radius:20px 20px 0 0;
-    padding:10px 18px calc(env(safe-area-inset-bottom) + 22px);
+    padding:10px 18px calc(var(--sab) + 22px);
     animation:rise .22s cubic-bezier(.2,.8,.3,1);
   }
   @keyframes rise{ from{ transform:translateY(14%); } }
@@ -478,7 +519,9 @@
   /* ── 下の帯（面の位置） ───────────────────── */
   .rail{
     flex:0 0 auto; display:flex; justify-content:center; gap:7px;
-    padding:9px 0 calc(env(safe-area-inset-bottom) + 9px);
+    /* 点は押すものではないので、安全域をまるごと空けると浮いて見える。
+       ホームバーの棒に被らないぶんだけ残して、画面の下に寄せる。 */
+    padding:8px 0 max(calc(var(--sab) - 14px), 7px);
     background:var(--railbg, var(--ink));
     transition:background .25s ease;
   }
@@ -491,19 +534,19 @@
 
   .spacer{ flex:1 1 auto; min-height:6px; }
 
-  /* 背の低い端末（SE など）。「いま」の面は一目で収まることを優先する。 */
-  @media (max-height: 700px){
-    .pane{ padding-top:calc(env(safe-area-inset-top) + 10px); padding-bottom:calc(env(safe-area-inset-bottom) + 12px); }
-    .title{ font-size:20px; }
-    .sub{ font-size:10.5px; }
-    .grille{ margin-top:8px; }
-    .wheel{ margin-top:8px; }
-    .corners{ margin-top:6px; }
-    .corner{ width:36px; height:36px; }
-    .corner svg{ width:16px; height:16px; }
-    .who .nm{ font-size:13.5px; }
-    .setcol b{ font-size:13px; }
-  }
+  /* 背の低い端末（SE など）。「いま」の面は一目で収まることを優先する。
+     iOS の @media (height) は棒が出ていても広いほうを答えるので、
+     下の script が実測して html.short を付ける。両方書いてあるのはそのため。 */
+  html.short .pane{ padding-top:calc(var(--sat) + 10px); padding-bottom:11px; }
+  html.short .title{ font-size:20px; }
+  html.short .sub{ font-size:10.5px; }
+  html.short .grille{ margin-top:8px; }
+  html.short .wheel{ margin-top:8px; }
+  html.short .corners{ margin-top:6px; }
+  html.short .corner{ width:36px; height:36px; }
+  html.short .corner svg{ width:16px; height:16px; }
+  html.short .who .nm{ font-size:13.5px; }
+  html.short .setcol b{ font-size:13px; }
   .hide{ display:none !important; }
 
   /* 動きを好まない人には、回転と明滅を止める */
@@ -3617,6 +3660,64 @@ restartTimer();
 
 /* デモは自前で刻むので、専用の短い拍を持たせる */
 setInterval(function(){ if(!document.hidden && !holding) demoTick(); }, 1000);
+
+/* ── 一目に収める ─────────────────────────────
+   「いま」の面は、縦に送らずに全部見えていてほしい。端末の高さ、字の大きさ、
+   選手名の長さ、セットの数で必要な丈は変わるから、定数で詰めても取り切れない。
+   そこで実際に溢れた分を測り、二つの円を縮めて合わせる。溢れていなければ
+   元の寸法に戻す。円は意味を持つ絵なので、縮めるのは六割までとした。
+   ───────────────────────────────────────── */
+var CIRC_MIN = 0.6;
+/* 高さで縮む絵。面ごとに、縮める割合を別の変数で持つ。
+   一緒くたにすると、デッキが詰まっただけで「いま」の円まで小さくなってしまう。 */
+var FIT_PANES = [
+  { pane:"paneNow",  prop:"--circ", parts:["#grille", ".wheel"] },
+  { pane:"paneDeck", prop:"--deck", parts:[".reels", ".wave"] }
+];
+function fitPanes(){
+  if(window.__setVph) window.__setVph();
+  var root = document.documentElement;
+
+  FIT_PANES.forEach(function(f){
+    var pane = $(f.pane);
+    if(!pane) return;
+    root.style.setProperty(f.prop, "1");
+    for(var i = 0; i < 8; i++){
+      var over = pane.scrollHeight - pane.clientHeight;
+      if(over <= 0) break;
+      var ref = 0;
+      for(var j = 0; j < f.parts.length; j++){
+        var el = pane.querySelector(f.parts[j]);
+        if(el) ref += el.offsetHeight;
+      }
+      if(ref <= 0) break;
+      /* 溢れた分は縮む絵から出ているものとして、そのぶんだけ比を落とす */
+      var cur = parseFloat(root.style.getPropertyValue(f.prop)) || 1;
+      var next = Math.max(CIRC_MIN, Math.min(1, cur * Math.max(0.55, (ref - over) / ref)));
+      root.style.setProperty(f.prop, next.toFixed(4));
+      if(next <= CIRC_MIN) break;
+    }
+  });
+}
+var fitPending = 0;
+function scheduleFit(){
+  if(fitPending) return;
+  fitPending = requestAnimationFrame(function(){ fitPending = 0; fitPanes(); });
+}
+window.addEventListener("resize", scheduleFit);
+window.addEventListener("orientationchange", scheduleFit);
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", scheduleFit);
+}
+/* 中身が変われば必要な丈も変わる。収める面の書き換えを見張る。 */
+if(window.MutationObserver){
+  FIT_PANES.forEach(function(f){
+    var pane = $(f.pane);
+    if(pane) new MutationObserver(scheduleFit).observe(pane,
+      { childList:true, subtree:true, characterData:true });
+  });
+}
+scheduleFit();
 
 /* Service Worker。オフラインでも器だけは開くようにする。 */
 if("serviceWorker" in navigator){
