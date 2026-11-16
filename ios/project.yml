@@ -33,6 +33,9 @@ targets:
     dependencies:
       - target: KiatsuWidgetExtension
         embed: true
+    scheme:
+      testTargets:
+        - KiatsuTests
 
   KiatsuTests:
     type: bundle.unit-test

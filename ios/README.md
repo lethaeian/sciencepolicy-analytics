@@ -74,14 +74,25 @@ node Tools/check-port.js     # Swift を JS に書き写した写しで突き合
 - ウィジェットの更新間隔は端末側が決める。だいたい15〜60分で、真の常時更新はできない
   （気象データ自体が1時間ごとなので、この用途では足りる）
 
-## ビルドで詰まったときに貼ってほしいもの
+## コマンドラインで確かめる
+
+まず判定のテストだけ通すのが早い。ここが通れば、残るは見た目とビルドの問題に絞れる。
 
 ```sh
 cd ios
 xcodegen
+# 使えるシミュレータの名前を見る
+xcrun simctl list devices available | grep iPhone | head -3
+# テスト（名前は上で出たものに置き換える）
 xcodebuild -project Kiatsu.xcodeproj -scheme Kiatsu \
-  -destination 'platform=iOS Simulator,name=iPhone 16' build 2>&1 | tail -40
+  -destination 'platform=iOS Simulator,name=iPhone 16' test 2>&1 | tail -60
 ```
 
-最後の40行をそのまま貼ってもらえれば直せる。テストだけ先に通したいときは
-`-scheme Kiatsu test` にすると、判定が Web 版と一致しているかだけを確かめられる。
+ビルドだけなら端末を指定しなくてよい。
+
+```sh
+xcodebuild -project Kiatsu.xcodeproj -scheme Kiatsu \
+  -destination 'generic/platform=iOS Simulator' build 2>&1 | tail -50
+```
+
+落ちたら、出力の最後の50行をそのまま貼ってもらえれば直す。
