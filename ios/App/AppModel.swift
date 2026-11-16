@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import SwiftUI
+import UIKit
 import WidgetKit
 
 /// 画面の状態と、取得のだんどり。Web 版の start() / load() にあたる。

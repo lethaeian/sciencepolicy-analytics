@@ -154,7 +154,7 @@ enum Risk {
         let d6 = d.back(d.pressure, i, 6)
         let f6 = d.ahead(d.pressure, i, 6)
 
-        let lv = [level(d3) { $0.past3 }, level(d6) { $0.past6 }, level(f6) { $0.future6 }]
+        let lv = [level(d3, { $0.past3 }), level(d6, { $0.past6 }), level(f6, { $0.future6 })]
         var lvl = lv.max() ?? .good
 
         // 先の下降のほうが重いときは、これから起きることを見出しにする
