@@ -73,3 +73,15 @@ node Tools/check-port.js     # Swift を JS に書き写した写しで突き合
   危険度・段階・見出し・注記のいずれもずれていない
 - ウィジェットの更新間隔は端末側が決める。だいたい15〜60分で、真の常時更新はできない
   （気象データ自体が1時間ごとなので、この用途では足りる）
+
+## ビルドで詰まったときに貼ってほしいもの
+
+```sh
+cd ios
+xcodegen
+xcodebuild -project Kiatsu.xcodeproj -scheme Kiatsu \
+  -destination 'platform=iOS Simulator,name=iPhone 16' build 2>&1 | tail -40
+```
+
+最後の40行をそのまま貼ってもらえれば直せる。テストだけ先に通したいときは
+`-scheme Kiatsu test` にすると、判定が Web 版と一致しているかだけを確かめられる。
